@@ -1,51 +1,60 @@
-from app import db
+from extensions import Base
 from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSON
 import uuid
 
-class Employer(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    company_name = db.Column(db.String(128), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    jobs = db.relationship('Job', backref='employer', lazy=True)
+class Employer(UserMixin, Base):
+    __tablename__ = 'employer'
+    id = Column(Integer, primary_key=True)
+    company_name = Column(String(128), nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password_hash = Column(String(256))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    jobs = relationship('Job', backref='employer', lazy='select')
 
-class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'), nullable=False)
-    title = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    location = db.Column(db.String(128), nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='active')
-    applications = db.relationship('Application', backref='job', lazy=True)
+class Job(Base):
+    __tablename__ = 'job'
+    id = Column(Integer, primary_key=True)
+    employer_id = Column(Integer, ForeignKey('employer.id'), nullable=False)
+    title = Column(String(128), nullable=False)
+    description = Column(Text, nullable=False)
+    location = Column(String(128), nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), default='active')
+    applications = relationship('Application', backref='job', lazy='select')
 
-class JobSeeker(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    telegram_id = db.Column(db.String(128), unique=True, nullable=False)
-    full_name = db.Column(db.String(128), nullable=False)
-    resume_path = db.Column(db.String(256))
-    skills = db.Column(db.JSON)
-    location = db.Column(db.String(128))
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    applications = db.relationship('Application', backref='job_seeker', lazy=True)
+class JobSeeker(Base):
+    __tablename__ = 'job_seeker'
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(String(128), unique=True, nullable=False)
+    full_name = Column(String(128), nullable=False)
+    resume_path = Column(String(256))
+    skills = Column(JSON)
+    location = Column(String(128))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    applications = relationship('Application', backref='job_seeker', lazy='select')
 
-class Application(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
-    job_seeker_id = db.Column(db.Integer, db.ForeignKey('job_seeker.id'), nullable=False)
-    cover_letter = db.Column(db.Text)
-    status = db.Column(db.String(20), default='pending')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
-    sender_type = db.Column(db.String(20))  # 'employer' or 'job_seeker'
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class Application(Base):
+    __tablename__ = 'application'
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey('job.id'), nullable=False)
+    job_seeker_id = Column(Integer, ForeignKey('job_seeker.id'), nullable=False)
+    cover_letter = Column(Text)
+    status = Column(String(20), default='pending')
+    created_at = Column(DateTime, default=datetime.utcnow)
+    messages = relationship('Message', backref='application', lazy='select')
+
+class Message(Base):
+    __tablename__ = 'message'
+    id = Column(Integer, primary_key=True)
+    application_id = Column(Integer, ForeignKey('application.id'), nullable=False)
+    sender_type = Column(String(20))  # 'employer' or 'job_seeker'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

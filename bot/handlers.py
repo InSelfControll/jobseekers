@@ -4,7 +4,7 @@ from models import JobSeeker, Job, Application
 from services.ai_service import extract_skills, generate_cover_letter
 from services.geo_service import get_nearby_jobs
 from services.file_service import save_resume
-from app import db
+from extensions import db
 import logging
 
 FULL_NAME, LOCATION, RESUME = range(3)

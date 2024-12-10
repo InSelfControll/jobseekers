@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from quart import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from models import Job, Application, Message
-from app import db
+from extensions import db
 from services.geo_service import get_nearby_jobs
 
 employer_bp = Blueprint('employer', __name__)

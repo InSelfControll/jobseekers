@@ -17,4 +17,6 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "quart>=0.19.9",
     "hypercorn>=0.17.3",
+    "asyncpg",
+    "aiohttp",
 ]
