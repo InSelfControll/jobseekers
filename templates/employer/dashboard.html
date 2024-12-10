@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2>Welcome, {{ current_user.company_name }}!</h2>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Jobs</h5>
+                <h2 class="card-text">{{ active_jobs }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Applications</h5>
+                <h2 class="card-text">{{ total_applications }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h3>Recent Applications</h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Applicant</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                        {% for application in job.applications[:5] %}
+                        <tr>
+                            <td>{{ job.title }}</td>
+                            <td>{{ application.job_seeker.full_name }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if application.status == 'accepted' 
+                                    else 'danger' if application.status == 'rejected' 
+                                    else 'warning' }}">
+                                    {{ application.status }}
+                                </span>
+                            </td>
+                            <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

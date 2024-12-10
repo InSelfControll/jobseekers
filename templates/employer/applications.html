@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Job Applications</h2>
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Job Title</th>
+                <th>Applicant</th>
+                <th>Status</th>
+                <th>Application Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for application in applications %}
+            <tr>
+                <td>{{ application.job.title }}</td>
+                <td>{{ application.job_seeker.full_name }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('employer.update_application', app_id=application.id) }}"
+                          class="d-inline">
+                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="pending" {% if application.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="accepted" {% if application.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="rejected" {% if application.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </form>
+                </td>
+                <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" 
+                            data-bs-target="#viewModal{{ application.id }}">
+                        View Details
+                    </button>
+                </td>
+            </tr>
+            
+            <!-- View Modal -->
+            <div class="modal fade" id="viewModal{{ application.id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Application Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Cover Letter</h6>
+                            <div class="mb-4">{{ application.cover_letter }}</div>
+                            
+                            <h6>Skills</h6>
+                            <div class="mb-4">
+                                {% for category, skills in application.job_seeker.skills.items() %}
+                                <strong>{{ category }}:</strong> {{ skills|join(', ') }}<br>
+                                {% endfor %}
+                            </div>
+                            
+                            <h6>Messages</h6>
+                            <div class="messages-container mb-3">
+                                {% for message in application.messages %}
+                                <div class="message {% if message.sender_type == 'employer' %}text-end{% endif %}">
+                                    <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    <div class="message-content">{{ message.content }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <form method="POST" action="{{ url_for('employer.send_message', app_id=application.id) }}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="message" placeholder="Type a message...">
+                                    <button type="submit" class="btn btn-primary">Send</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
