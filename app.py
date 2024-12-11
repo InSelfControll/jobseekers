@@ -1,6 +1,6 @@
 import os
 import logging
-from quart import Quart
+from quart import Quart, current_app
 from extensions import login_manager, init_db, logger, Base
 from contextlib import asynccontextmanager
 
@@ -10,11 +10,18 @@ def create_app():
     
     # Database configuration
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Initialize extensions
-    engine, async_session = init_db(app)
-    app.engine = engine
-    app.async_session = async_session
+    try:
+        engine, session_factory = init_db(app)
+        app.engine = engine
+        app.session_factory = session_factory
+        logger.info("Database engine and session factory initialized")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
     
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -31,17 +38,12 @@ def create_app():
     @app.before_serving
     async def create_tables():
         try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all, bind=engine)
+            async with app.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
         except Exception as e:
             logger.error(f"Error creating database tables: {e}")
             raise
-    
-    @app.teardown_appcontext
-    async def shutdown_session(exception=None):
-        if hasattr(app, 'async_session'):
-            await app.async_session.remove()
     
     return app
 
@@ -52,19 +54,17 @@ app = create_app()
 async def load_user(user_id):
     from models import Employer
     try:
-        async with app.async_session() as session:
+        async with app.session_factory() as session:
             user = await session.get(Employer, int(user_id))
-            await session.refresh(user)
+            if user:
+                await session.refresh(user)
             return user
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error loading user: {e}")
         return None
 
 async def get_db():
-    async with app.async_session() as session:
+    if not hasattr(current_app, 'session_factory'):
+        raise RuntimeError("Database session not initialized")
+    async with current_app.session_factory() as session:
         yield session
-
-# Context manager for application context
-@asynccontextmanager
-async def get_app_context():
-    async with app.app_context():
-        yield app

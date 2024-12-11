@@ -1,10 +1,9 @@
-from extensions import Base
+from extensions import db, Base
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
-import uuid
 
 class Employer(UserMixin, Base):
     __tablename__ = 'employer'

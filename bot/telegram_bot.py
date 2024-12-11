@@ -1,22 +1,19 @@
 import os
 import logging
+import asyncio
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 from bot.handlers import (
     start, register, handle_full_name, handle_location, handle_resume,
     handle_job_search, handle_application, cancel
 )
 
+# Configure logging
+logger = logging.getLogger(__name__)
 FULL_NAME, LOCATION, RESUME = range(3)
 
 async def start_bot():
     """Initialize and start the Telegram bot"""
     try:
-        # Configure logging
-        logging.basicConfig(
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            level=logging.INFO
-        )
-
         # Create application
         application = Application.builder().token(os.environ.get("TELEGRAM_TOKEN")).build()
 
@@ -42,9 +39,12 @@ async def start_bot():
         await application.start()
         await application.updater.start_polling()
         
-        # Keep the bot running
-        while True:
-            await asyncio.sleep(1)
+        # Keep the bot running until interrupted
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            await application.stop()
             
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
