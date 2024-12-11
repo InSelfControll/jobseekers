@@ -22,53 +22,37 @@ FULL_NAME, LOCATION, RESUME = range(3)
 
 async def start_bot():
     """Initialize and start the Telegram bot"""
-    try:
-        # Verify token exists
-        token = os.environ.get("TELEGRAM_TOKEN")
-        if not token:
-            logger.error("TELEGRAM_TOKEN not found in environment variables")
-            return
+    token = os.environ.get("TELEGRAM_TOKEN")
+    if not token:
+        logger.error("TELEGRAM_TOKEN not found in environment variables")
+        return
 
-        # Create application
-        application = (
-            ApplicationBuilder()
-            .token(token)
-            .build()
-        )
-        
-        # Add conversation handler for registration
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("register", register)],
-            states={
-                FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
-                LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
-                RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
-            },
-            fallbacks=[CommandHandler("cancel", cancel)],
-        )
-        
-        # Add handlers
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(conv_handler)
-        application.add_handler(CommandHandler("search", handle_job_search))
-        application.add_handler(CommandHandler("apply", handle_application))
-        
-        async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            logger.error(f"Update {update} caused error {context.error}")
-            if update and update.message:
-                await update.message.reply_text(
-                    "Sorry, something went wrong. Please try again later."
-                )
-        
-        application.add_error_handler(error_handler)
-        
-        # Start the bot
-        logger.info("Starting Telegram bot...")
-        await application.initialize()
-        await application.start()
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
-        
-    except Exception as e:
-        logger.error(f"Error in Telegram bot: {e}")
-        if 'application' in locals():
-            await application.shutdown()
+    application = ApplicationBuilder().token(token).build()
+    
+    # Add conversation handler for registration
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("register", register)],
+        states={
+            FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
+            LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
+            RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    
+    # Add handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(conv_handler)
+    application.add_handler(CommandHandler("search", handle_job_search))
+    application.add_handler(CommandHandler("apply", handle_application))
+    
+    async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        logger.error(f"Update {update} caused error {context.error}")
+        if update and update.message:
+            await update.message.reply_text(
+                "Sorry, something went wrong. Please try again later."
+            )
+    
+    application.add_error_handler(error_handler)
+    
+    return application

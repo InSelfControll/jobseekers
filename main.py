@@ -22,13 +22,19 @@ async def run_web_server():
 
 async def run_telegram_bot():
     """Run the Telegram bot"""
-    await start_bot()
+    application = await start_bot()
+    if application:
+        await application.initialize()
+        await application.start()
+        try:
+            await application.run_polling(allowed_updates=Update.ALL_TYPES)
+        finally:
+            await application.stop()
 
 async def main():
     """Main entry point for the application"""
     try:
         logger.info("Starting application...")
-        # Run both services concurrently
         await asyncio.gather(
             run_web_server(),
             run_telegram_bot()
@@ -37,6 +43,7 @@ async def main():
         logger.info("Shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
+        raise
 
 if __name__ == '__main__':
     asyncio.run(main())
