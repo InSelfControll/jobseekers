@@ -1,37 +1,29 @@
 import os
 import logging
-from quart import Quart, current_app
-from extensions import db, login_manager, init_db, logger, Base
-from contextlib import asynccontextmanager
+from flask import Flask
+from extensions import db, login_manager, init_db, logger
 
 def create_app():
-    app = Quart(__name__)
+    app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     
-    # Initialize extensions
+    # Configure database
+    if os.environ.get("DATABASE_URL"):
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
+    
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
     try:
-        # Setup database URL
-        db_url = os.environ.get("DATABASE_URL")
-        if not db_url:
-            raise ValueError("DATABASE_URL environment variable is not set")
-        
-        # Configure Flask-SQLAlchemy
-        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        db.init_app(app)
-        logger.info("Flask-SQLAlchemy initialized successfully")
-        
-        # Initialize async database
-        engine, session_factory = init_db(app)
-        app.engine = engine
-        app.session_factory = session_factory
-        logger.info("Async database initialized successfully")
+        # Initialize database
+        init_db(app)
         
         # Initialize login manager
-        # Initialize login manager (only once)
         login_manager.init_app(app)
         login_manager.login_view = 'auth.login'
-        logger.info("Login manager initialized successfully")
+        
+        logger.info("Application initialized successfully")
         
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}")
@@ -46,15 +38,9 @@ def create_app():
     app.register_blueprint(job_bp)
     app.register_blueprint(auth_bp)
     
-    @app.before_serving
-    async def create_tables():
-        try:
-            async with app.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables created successfully")
-        except Exception as e:
-            logger.error(f"Error creating database tables: {e}")
-            raise
+    with app.app_context():
+        db.create_all()
+        logger.info("Database tables created successfully")
     
     return app
 
@@ -63,22 +49,10 @@ app = create_app()
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Load user for Flask-Login (sync version)"""
+    """Load user for Flask-Login"""
     from models import Employer
     try:
         return Employer.query.get(int(user_id))
     except Exception as e:
         logger.error(f"Error loading user: {e}")
         return None
-
-@asynccontextmanager
-async def get_db():
-    """Async context manager for database sessions"""
-    if not hasattr(current_app, 'session_factory'):
-        raise RuntimeError("Database session not initialized")
-    try:
-        async with current_app.session_factory() as session:
-            yield session
-    except Exception as e:
-        logger.error(f"Database session error: {e}")
-        raise RuntimeError(f"Failed to create database session: {str(e)}")

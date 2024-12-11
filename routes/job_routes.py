@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from models import Job
 from services.geo_service import get_nearby_jobs
 
