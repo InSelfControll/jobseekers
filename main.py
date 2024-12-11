@@ -48,7 +48,13 @@ async def main():
         logger.info("Application shutdown complete")
 
 if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Received shutdown signal")
+    if __name__ == '__main__':
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(main())
+        except KeyboardInterrupt:
+            logger.info("Received shutdown signal")
+        finally:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.close()
