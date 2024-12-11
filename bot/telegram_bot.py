@@ -86,6 +86,9 @@ async def start_bot():
             try:
                 await application.stop()
                 await application.shutdown()
-                loop.close() #Ensure loop is closed
             except Exception as e:
                 logger.warning(f"Error during cleanup: {e}")
+            finally:
+                # Clear any pending tasks
+                for task in asyncio.all_tasks():
+                    task.cancel()
