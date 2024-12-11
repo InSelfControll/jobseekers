@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -26,6 +27,9 @@ async def start_bot():
         if not token:
             logger.error("TELEGRAM_TOKEN not found in environment variables")
             return
+        
+        # Store event loop reference
+        loop = asyncio.get_event_loop()
         
         # Create application with better error handling
         application = (
@@ -74,10 +78,6 @@ async def start_bot():
         
         logger.info("Telegram bot started successfully")
         
-        # Keep the bot running
-        while True:
-            await asyncio.sleep(1)
-            
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
         raise
@@ -86,5 +86,6 @@ async def start_bot():
             try:
                 await application.stop()
                 await application.shutdown()
+                loop.close() #Ensure loop is closed
             except Exception as e:
                 logger.warning(f"Error during cleanup: {e}")
