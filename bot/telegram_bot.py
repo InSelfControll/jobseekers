@@ -70,13 +70,12 @@ async def start_bot():
         # Start the bot
         await application.initialize()
         await application.start()
-        await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        
+        # Keep bot running until interrupted
+        try:
+            await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        except asyncio.CancelledError:
+            pass
         
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
-    finally:
-        try:
-            if 'application' in locals():
-                await application.stop()
-        except Exception as e:
-            logger.warning(f"Error during cleanup: {e}")
