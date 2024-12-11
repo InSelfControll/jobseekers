@@ -29,24 +29,28 @@ async def run_telegram_bot():
 
 async def main():
     """Main entry point for the application"""
+    tasks = []
     try:
         logger.info("Starting application...")
         
         # Create tasks for both services
         web_server_task = asyncio.create_task(run_web_server())
         telegram_bot_task = asyncio.create_task(run_telegram_bot())
+        tasks = [web_server_task, telegram_bot_task]
         
         # Wait for both tasks to complete
-        await asyncio.gather(
-            web_server_task,
-            telegram_bot_task,
-            return_exceptions=True
-        )
+        await asyncio.gather(*tasks, return_exceptions=True)
         
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
     finally:
+        # Cancel all tasks
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        # Wait for tasks to complete cancellation
+        await asyncio.gather(*tasks, return_exceptions=True)
         logger.info("Application shutdown complete")
 
 if __name__ == '__main__':
