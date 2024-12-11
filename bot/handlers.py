@@ -9,21 +9,21 @@ import logging
 
 FULL_NAME, LOCATION, RESUME = range(3)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
     await update.message.reply_text(
         "Welcome to the Job Application Bot! 🎯\n"
         "Use /register to create your profile and start applying for jobs."
     )
 
-async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
     await update.message.reply_text(
         "Let's create your profile! First, please send me your full name."
     )
     return FULL_NAME
 
-async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the full name input"""
     context.user_data['full_name'] = update.message.text
     await update.message.reply_text(
@@ -31,7 +31,7 @@ async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return LOCATION
 
-async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the location input"""
     location = update.message.location
     context.user_data['latitude'] = location.latitude

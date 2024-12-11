@@ -1,6 +1,14 @@
 import os
 import logging
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ConversationHandler,
+    filters,
+    ContextTypes
+)
 from bot.handlers import (
     start, register, handle_full_name, handle_location, handle_resume,
     handle_job_search, handle_application, cancel
@@ -14,12 +22,13 @@ async def start_bot():
     """Initialize and start the Telegram bot"""
     try:
         # Verify token exists
-        if not os.environ.get("TELEGRAM_TOKEN"):
+        token = os.environ.get("TELEGRAM_TOKEN")
+        if not token:
             logger.error("TELEGRAM_TOKEN not found in environment variables")
             return
         
         # Create application
-        application = Application.builder().token(os.environ.get("TELEGRAM_TOKEN")).build()
+        application = ApplicationBuilder().token(token).build()
         
         # Add conversation handler for registration
         conv_handler = ConversationHandler(
@@ -38,20 +47,15 @@ async def start_bot():
         application.add_handler(CommandHandler("search", handle_job_search))
         application.add_handler(CommandHandler("apply", handle_application))
         
-        # Start polling with graceful shutdown support
+        # Initialize and start the bot
         await application.initialize()
         await application.start()
-        await application.updater.start_polling()
         
-        # Keep running until shutdown
-        logger.info("Telegram bot started successfully")
-        try:
-            await application.updater.running
-        except Exception as e:
-            logger.error(f"Error in bot polling: {e}")
-        finally:
-            await application.stop()
-            
+        # Start polling
+        await application.run_polling(drop_pending_updates=True)
+        
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
         raise
+    
+    return application

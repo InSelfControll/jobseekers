@@ -1,67 +1,52 @@
 import asyncio
 import logging
-import signal
-from quart import Quart
-from bot.telegram_bot import start_bot
+import nest_asyncio
 from app import create_app
+from bot.telegram_bot import start_bot
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Create Quart app from Flask app
-flask_app = create_app()
-app = Quart(__name__)
+# Enable nested event loops
+nest_asyncio.apply()
 
-# Copy Flask app configurations to Quart app
-app.config.update(**flask_app.config)
+# Create Flask app
+app = create_app()
 
-# Register Flask blueprints with Quart
-for name, blueprint in flask_app.blueprints.items():
-    app.register_blueprint(blueprint)
+async def run_web_server():
+    """Run the web server"""
+    config = Config()
+    config.bind = ["0.0.0.0:5000"]
+    config.use_reloader = False
+    await serve(app, config)
 
-@app.route('/')
-async def index():
-    return 'Job Application Platform - Please <a href="/login">login</a> to continue'
-
-async def shutdown(signal, loop):
-    """Cleanup tasks tied to the service's shutdown."""
-    logger.info(f"Received exit signal {signal.name}...")
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    [task.cancel() for task in tasks]
-    logger.info(f"Cancelling {len(tasks)} outstanding tasks")
-    await asyncio.gather(*tasks, return_exceptions=True)
-    loop.stop()
-
-def handle_exception(loop, context):
-    msg = context.get("exception", context["message"])
-    logger.error(f"Caught exception: {msg}")
-    logger.info("Shutting down...")
-    asyncio.create_task(shutdown(signal.SIGTERM, loop))
+async def run_telegram_bot():
+    """Run the Telegram bot"""
+    await start_bot()
 
 async def main():
-    # Get or create event loop
-    loop = asyncio.get_event_loop()
-    
-    # Handle exceptions
-    loop.set_exception_handler(handle_exception)
-    
-    # Start the bot
-    bot_task = asyncio.create_task(start_bot())
-    
-    # Start Quart app
-    server = await app.run_task(
-        host='0.0.0.0',
-        port=5000,
-        debug=False  # Set to False to avoid duplicate bot instances
-    )
-    
+    """Main entry point for the application"""
     try:
-        await asyncio.gather(bot_task, server)
-    except asyncio.CancelledError:
-        logger.info("Tasks cancelled")
+        logger.info("Starting application...")
+        
+        # Run both services concurrently
+        await asyncio.gather(
+            run_web_server(),
+            run_telegram_bot(),
+            return_exceptions=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Application error: {e}")
+        raise
     finally:
-        await shutdown(signal.SIGTERM, loop)
+        logger.info("Application shutdown complete")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Received shutdown signal")
