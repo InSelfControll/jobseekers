@@ -1,4 +1,3 @@
-
 import os
 import logging
 import asyncio
@@ -67,12 +66,10 @@ async def start_bot():
         
         application.add_error_handler(error_handler)
         
-        # Start the bot
+        # Start the bot and keep running
         await application.initialize()
         await application.start()
-        
-        # Keep bot running until interrupted
-        await application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        await application.run_polling()
         
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
