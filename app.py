@@ -1,30 +1,41 @@
 import os
 import logging
 from quart import Quart, current_app
-from extensions import login_manager, init_db, logger, Base
+from extensions import db, login_manager, init_db, logger, Base
 from contextlib import asynccontextmanager
 
 def create_app():
     app = Quart(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     
-    # Database configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    
     # Initialize extensions
     try:
+        # Setup database URL
+        db_url = os.environ.get("DATABASE_URL")
+        if not db_url:
+            raise ValueError("DATABASE_URL environment variable is not set")
+        
+        # Configure Flask-SQLAlchemy
+        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        db.init_app(app)
+        logger.info("Flask-SQLAlchemy initialized successfully")
+        
+        # Initialize async database
         engine, session_factory = init_db(app)
         app.engine = engine
         app.session_factory = session_factory
-        logger.info("Database engine and session factory initialized")
+        logger.info("Async database initialized successfully")
+        
+        # Initialize login manager
+        # Initialize login manager (only once)
+        login_manager.init_app(app)
+        login_manager.login_view = 'auth.login'
+        logger.info("Login manager initialized successfully")
         
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        raise
-    
-    login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+        logger.error(f"Failed to initialize application: {e}")
+        raise RuntimeError(f"Application initialization failed: {str(e)}")
     
     # Register blueprints
     from routes.employer_routes import employer_bp
@@ -51,20 +62,23 @@ def create_app():
 app = create_app()
 
 @login_manager.user_loader
-async def load_user(user_id):
+def load_user(user_id):
+    """Load user for Flask-Login (sync version)"""
     from models import Employer
     try:
-        async with app.session_factory() as session:
-            user = await session.get(Employer, int(user_id))
-            if user:
-                await session.refresh(user)
-            return user
+        return Employer.query.get(int(user_id))
     except Exception as e:
         logger.error(f"Error loading user: {e}")
         return None
 
+@asynccontextmanager
 async def get_db():
+    """Async context manager for database sessions"""
     if not hasattr(current_app, 'session_factory'):
         raise RuntimeError("Database session not initialized")
-    async with current_app.session_factory() as session:
-        yield session
+    try:
+        async with current_app.session_factory() as session:
+            yield session
+    except Exception as e:
+        logger.error(f"Database session error: {e}")
+        raise RuntimeError(f"Failed to create database session: {str(e)}")

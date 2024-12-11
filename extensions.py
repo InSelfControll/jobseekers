@@ -25,60 +25,64 @@ def clean_database_url(url):
         parsed = urlparse(url)
         
         # Convert to async format if needed
-        if parsed.scheme == "postgresql":
+        if parsed.scheme == "postgresql" or parsed.scheme == "postgres":
             # Create new components with asyncpg
             new_components = list(parsed)
             new_components[0] = "postgresql+asyncpg"
             
-            # Remove problematic parameters from query
-            if parsed.query:
-                from urllib.parse import parse_qs, urlencode
-                query_params = parse_qs(parsed.query)
-                # Remove problematic parameters
-                for param in ['sslmode', 'target_session_attrs']:
-                    query_params.pop(param, None)
-                new_components[4] = urlencode(query_params, doseq=True)
-            
-            # Construct the new URL
-            cleaned_url = urlunparse(new_components)
-            logger.info(f"Database URL cleaned successfully")
+            # Construct the new URL without query parameters
+            # This ensures compatibility with asyncpg
+            cleaned_url = urlunparse((
+                new_components[0],  # scheme
+                new_components[1],  # netloc
+                new_components[2],  # path
+                '',                # params
+                '',                # query
+                ''                 # fragment
+            ))
+            logger.info("Database URL cleaned successfully")
             return cleaned_url
             
         return url
     except Exception as e:
         logger.error(f"Error cleaning database URL: {e}")
-        raise
+        raise ValueError(f"Failed to clean database URL: {str(e)}")
 
 def init_db(app):
     """Initialize database with SQLAlchemy"""
     try:
-        # Initialize SQLAlchemy with the app
-        db.init_app(app)
+        # Get database URL
+        db_url = os.environ.get("DATABASE_URL")
+        if not db_url:
+            raise ValueError("DATABASE_URL environment variable is not set")
         
-        # Get and clean database URL
-        db_url = clean_database_url(os.environ.get("DATABASE_URL"))
-        logger.info("Database URL cleaned and ready")
+        logger.info("Initializing database connections...")
         
-        # Create async engine
+        # Configure async SQLAlchemy engine
+        async_url = clean_database_url(db_url)
+        logger.debug(f"Using async URL format (scheme only): {urlparse(async_url).scheme}")
+        
         engine = create_async_engine(
-            db_url,
+            async_url,
             echo=True,
             future=True,
             pool_pre_ping=True,
             pool_size=5,
             max_overflow=10
         )
+        logger.info("Async engine created successfully")
         
         # Create async session factory
         async_session = async_sessionmaker(
-            engine,
+            bind=engine,
             class_=AsyncSession,
-            expire_on_commit=False
+            expire_on_commit=False,
+            autoflush=False
         )
+        logger.info("Async session factory created successfully")
         
-        logger.info("Database initialization successful")
         return engine, async_session
         
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
-        raise
+        raise RuntimeError(f"Failed to initialize database: {str(e)}")
