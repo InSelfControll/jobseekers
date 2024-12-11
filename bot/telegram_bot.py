@@ -1,3 +1,4 @@
+
 import os
 import logging
 import asyncio
@@ -27,15 +28,11 @@ async def start_bot():
         if not token:
             logger.error("TELEGRAM_TOKEN not found in environment variables")
             return
-        
-        # Create application with better error handling
+
+        # Create application
         application = (
             ApplicationBuilder()
             .token(token)
-            .read_timeout(30)
-            .write_timeout(30)
-            .pool_timeout(30)
-            .connect_timeout(30)
             .build()
         )
         
@@ -56,7 +53,6 @@ async def start_bot():
         application.add_handler(CommandHandler("search", handle_job_search))
         application.add_handler(CommandHandler("apply", handle_application))
         
-        # Error handler
         async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Update {update} caused error {context.error}")
             if update and update.message:
@@ -66,10 +62,13 @@ async def start_bot():
         
         application.add_error_handler(error_handler)
         
-        # Start the bot and keep running
+        # Start the bot
+        logger.info("Starting Telegram bot...")
         await application.initialize()
         await application.start()
-        await application.run_polling()
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
         
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
+        if 'application' in locals():
+            await application.shutdown()

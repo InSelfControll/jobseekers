@@ -31,8 +31,10 @@ async def main():
         # Run both services concurrently
         await asyncio.gather(
             run_web_server(),
-            run_telegram_bot()
+            start_bot()
         )
+    except KeyboardInterrupt:
+        logger.info("Shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
 
