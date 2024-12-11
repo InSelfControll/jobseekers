@@ -39,20 +39,28 @@ async def main():
         telegram_bot_task = asyncio.create_task(run_telegram_bot())
         tasks = [web_server_task, telegram_bot_task]
         
-        # Wait for both tasks to complete or interrupt
-        await asyncio.gather(*tasks, return_exceptions=True)
+        # Wait for tasks to complete or interrupt
+        done, pending = await asyncio.wait(
+            tasks,
+            return_when=asyncio.FIRST_EXCEPTION
+        )
         
+        # Check for exceptions
+        for task in done:
+            try:
+                await task
+            except Exception as e:
+                logger.error(f"Task error: {e}")
+                
     except Exception as e:
         logger.error(f"Application error: {e}")
     finally:
         logger.info("Shutting down...")
+        # Give tasks time to clean up
+        await asyncio.sleep(1)
         for task in tasks:
             if not task.done():
                 task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
         logger.info("Application shutdown complete")
 
 if __name__ == '__main__':
