@@ -82,5 +82,9 @@ async def start_bot():
         logger.error(f"Error in Telegram bot: {e}")
         raise
     finally:
-        # Ensure proper cleanup
-        await application.stop()
+        if 'application' in locals():
+            try:
+                await application.stop()
+                await application.shutdown()
+            except Exception as e:
+                logger.warning(f"Error during cleanup: {e}")

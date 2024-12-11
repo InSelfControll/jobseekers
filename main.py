@@ -59,3 +59,5 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")
+        # Allow time for cleanup
+        await asyncio.sleep(1)
