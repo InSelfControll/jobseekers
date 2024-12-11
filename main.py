@@ -5,6 +5,7 @@ from app import create_app
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
+from telegram import Update
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
