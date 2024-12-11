@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler
 from models import JobSeeker, Job, Application
 from services.ai_service import extract_skills, generate_cover_letter
@@ -26,8 +26,15 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the full name input"""
     context.user_data['full_name'] = update.message.text
+    location_keyboard = ReplyKeyboardMarkup(
+        [[KeyboardButton('Share Location 📍', request_location=True)]],
+        one_time_keyboard=True,
+        resize_keyboard=True
+    )
     await update.message.reply_text(
-        "Great! Now please share your location to help us find jobs near you."
+        "Please share your location to help find jobs near you.\n"
+        "Click the 'Share Location' button below 👇",
+        reply_markup=location_keyboard
     )
     return LOCATION
 
