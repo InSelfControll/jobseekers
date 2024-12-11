@@ -27,8 +27,16 @@ async def start_bot():
             logger.error("TELEGRAM_TOKEN not found in environment variables")
             return
         
-        # Create application
-        application = ApplicationBuilder().token(token).build()
+        # Create application with better error handling
+        application = (
+            ApplicationBuilder()
+            .token(token)
+            .read_timeout(30)
+            .write_timeout(30)
+            .pool_timeout(30)
+            .connect_timeout(30)
+            .build()
+        )
         
         # Add conversation handler for registration
         conv_handler = ConversationHandler(
@@ -47,15 +55,32 @@ async def start_bot():
         application.add_handler(CommandHandler("search", handle_job_search))
         application.add_handler(CommandHandler("apply", handle_application))
         
-        # Initialize and start the bot
-        await application.initialize()
-        await application.start()
+        # Error handler
+        async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            logger.error(f"Update {update} caused error {context.error}")
+            if update and update.message:
+                await update.message.reply_text(
+                    "Sorry, something went wrong. Please try again later."
+                )
         
-        # Start polling
+        application.add_error_handler(error_handler)
+        
+        # Initialize the application
+        await application.initialize()
+        
+        # Start the bot with proper shutdown handling
+        await application.start()
         await application.run_polling(drop_pending_updates=True)
         
+        logger.info("Telegram bot started successfully")
+        
+        # Keep the bot running
+        while True:
+            await asyncio.sleep(1)
+            
     except Exception as e:
         logger.error(f"Error in Telegram bot: {e}")
         raise
-    
-    return application
+    finally:
+        # Ensure proper cleanup
+        await application.stop()

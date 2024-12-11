@@ -32,10 +32,14 @@ async def main():
     try:
         logger.info("Starting application...")
         
-        # Run both services concurrently
+        # Create tasks for both services
+        web_server_task = asyncio.create_task(run_web_server())
+        telegram_bot_task = asyncio.create_task(run_telegram_bot())
+        
+        # Wait for both tasks to complete
         await asyncio.gather(
-            run_web_server(),
-            run_telegram_bot(),
+            web_server_task,
+            telegram_bot_task,
             return_exceptions=True
         )
         
@@ -47,6 +51,11 @@ async def main():
 
 if __name__ == '__main__':
     try:
+        # Set up asyncio policy for better Windows compatibility
+        if hasattr(asyncio, 'WindowsSelectorEventLoopPolicy'):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        
+        # Run the main async function
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")
