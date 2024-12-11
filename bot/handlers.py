@@ -79,48 +79,110 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle job search command"""
-    job_seeker = JobSeeker.query.filter_by(
-        telegram_id=str(update.effective_user.id)
-    ).first()
-    
-    if not job_seeker:
+    try:
+        job_seeker = JobSeeker.query.filter_by(
+            telegram_id=str(update.effective_user.id)
+        ).first()
+        
+        if not job_seeker:
+            await update.message.reply_text(
+                "⚠️ Please register first using /register command.\n"
+                "This will help us find jobs near you!"
+            )
+            return
+        
+        if not job_seeker.latitude or not job_seeker.longitude:
+            await update.message.reply_text(
+                "📍 Please share your location to find nearby jobs.\n"
+                "Use /register to update your location."
+            )
+            return
+        
+        await update.message.reply_text("🔍 Searching for jobs in your area...")
+        
+        nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude)
+        
+        if not nearby_jobs:
+            await update.message.reply_text(
+                "😔 No jobs found in your area currently.\n"
+                "We'll notify you when new positions become available!\n\n"
+                "💡 Tip: Try expanding your search radius using /search 25"
+            )
+            return
+        
         await update.message.reply_text(
-            "Please register first using /register command."
+            f"🎉 Found {len(nearby_jobs)} jobs near you!"
         )
-        return
-    
-    nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude)
-    
-    if not nearby_jobs:
+        
+        for job in nearby_jobs[:5]:  # Limit to 5 jobs per search
+            await update.message.reply_text(
+                f"🏢 *{job.title}*\n"
+                f"🏗 _{job.employer.company_name}_\n"
+                f"📍 {job.location} ({job.distance:.1f}km away)\n"
+                f"💼 {job.description[:150]}...\n\n"
+                f"📝 To apply, use /apply {job.id}",
+                parse_mode='Markdown'
+            )
+            
+        if len(nearby_jobs) > 5:
+            await update.message.reply_text(
+                f"🔍 {len(nearby_jobs) - 5} more jobs available.\n"
+                "Use /search again to see more results!"
+            )
+            
+    except Exception as e:
+        logging.error(f"Error in handle_job_search: {e}")
         await update.message.reply_text(
-            "No jobs found in your area. We'll notify you when new positions become available!"
-        )
-        return
-    
-    for job in nearby_jobs:
-        await update.message.reply_text(
-            f"🏢 {job.title}\n"
-            f"📍 {job.location}\n"
-            f"📝 {job.description[:200]}...\n\n"
-            f"To apply, use /apply {job.id}"
+            "😓 Sorry, something went wrong while searching for jobs.\n"
+            "Please try again later."
         )
 
 async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle job application"""
     try:
+        if not context.args:
+            await update.message.reply_text(
+                "⚠️ Please specify a job ID.\n"
+                "Example: /apply 123"
+            )
+            return
+            
         job_id = int(context.args[0])
         job_seeker = JobSeeker.query.filter_by(
             telegram_id=str(update.effective_user.id)
         ).first()
         
         if not job_seeker:
-            await update.message.reply_text("Please register first using /register command.")
+            await update.message.reply_text(
+                "⚠️ Please register first using /register command.\n"
+                "This will help us create your profile!"
+            )
             return
         
         job = Job.query.get(job_id)
         if not job:
-            await update.message.reply_text("Job not found.")
+            await update.message.reply_text(
+                "❌ Job not found. Please check the job ID and try again.\n"
+                "Use /search to see available jobs."
+            )
             return
+            
+        # Check if already applied
+        existing_application = Application.query.filter_by(
+            job_id=job.id,
+            job_seeker_id=job_seeker.id
+        ).first()
+        
+        if existing_application:
+            await update.message.reply_text(
+                "📝 You have already applied for this position!\n"
+                f"Current status: {existing_application.status}"
+            )
+            return
+        
+        await update.message.reply_text(
+            "🤖 Generating your personalized cover letter..."
+        )
         
         # Generate cover letter using AI
         cover_letter = generate_cover_letter(job_seeker.skills, job.description)
@@ -136,14 +198,22 @@ async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE)
         db.session.commit()
         
         await update.message.reply_text(
-            "Application submitted successfully! 🎉\n"
-            "We'll notify you of any updates."
+            f"✅ Application submitted successfully for:\n"
+            f"🏢 {job.title} at {job.employer.company_name}\n\n"
+            f"Your cover letter has been generated based on your skills.\n"
+            "We'll notify you of any updates from the employer!"
         )
         
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Invalid job ID. Please use a number.\n"
+            "Example: /apply 123"
+        )
     except Exception as e:
         logging.error(f"Error in handle_application: {e}")
         await update.message.reply_text(
-            "Sorry, there was an error submitting your application. Please try again."
+            "😓 Sorry, there was an error submitting your application.\n"
+            "Please try again later."
         )
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
