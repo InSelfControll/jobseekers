@@ -40,14 +40,25 @@ async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the location input"""
-    location = update.message.location
-    context.user_data['latitude'] = location.latitude
-    context.user_data['longitude'] = location.longitude
-    
-    await update.message.reply_text(
-        "Perfect! Finally, please send your resume as a PDF file."
-    )
-    return RESUME
+    try:
+        location = update.message.location
+        if not location:
+            await update.message.reply_text("Please share your location using the button below.")
+            return LOCATION
+            
+        context.user_data['latitude'] = location.latitude
+        context.user_data['longitude'] = location.longitude
+        
+        await update.message.reply_text(
+            "Perfect! Finally, please send your resume as a PDF file."
+        )
+        return RESUME
+    except Exception as e:
+        logging.error(f"Error handling location: {str(e)}")
+        await update.message.reply_text(
+            "There was an error processing your location. Please try again."
+        )
+        return LOCATION
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the resume upload"""
