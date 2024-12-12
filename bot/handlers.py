@@ -51,16 +51,16 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the resume upload"""
-    from app import create_app
-    app = create_app()
-    
     try:
-        with app.app_context():
-            file = await update.message.document.get_file()
-            resume_path = await save_resume(file)
-            
-            # Extract skills using AI
-            skills = extract_skills(resume_path)
+        if not update.message.document:
+            await update.message.reply_text("Please send your resume as a PDF file.")
+            return ConversationHandler.END
+
+        file = await update.message.document.get_file()
+        resume_path = await save_resume(file)
+        
+        # Extract skills using AI
+        skills = extract_skills(resume_path)
         
         # Create job seeker profile
         job_seeker = JobSeeker(
@@ -72,19 +72,29 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             longitude=context.user_data['longitude']
         )
         
-        db.session.add(job_seeker)
-        db.session.commit()
-        
-        await update.message.reply_text(
-            "Registration complete! 🎉\n"
-            "Use /search to find jobs in your area."
-        )
-        return ConversationHandler.END
-        
+        try:
+            db.session.add(job_seeker)
+            db.session.commit()
+            logging.info(f"Successfully registered job seeker: {job_seeker.telegram_id}")
+            
+            await update.message.reply_text(
+                "Registration complete! 🎉\n"
+                "Use /search to find jobs in your area."
+            )
+            return ConversationHandler.END
+            
+        except Exception as db_error:
+            db.session.rollback()
+            logging.error(f"Database error in handle_resume: {db_error}")
+            await update.message.reply_text(
+                "Error saving your profile. Please try registering again with /register"
+            )
+            return ConversationHandler.END
+            
     except Exception as e:
-        logging.error(f"Error in handle_resume: {e}")
+        logging.error(f"Error processing resume: {str(e)}")
         await update.message.reply_text(
-            "Sorry, there was an error processing your resume. Please try again."
+            "Please send your resume as a PDF file and try again."
         )
         return ConversationHandler.END
 
