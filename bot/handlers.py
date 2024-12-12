@@ -62,16 +62,20 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the resume upload"""
+    from app import create_app
+    app = create_app()
+    
     try:
         if not update.message.document:
             await update.message.reply_text("Please send your resume as a PDF file.")
             return ConversationHandler.END
 
-        file = await update.message.document.get_file()
-        resume_path = await save_resume(file)
-        
-        # Extract skills using AI
-        skills = extract_skills(resume_path)
+        with app.app_context():
+            file = await update.message.document.get_file()
+            resume_path = await save_resume(file)
+            
+            # Extract skills using AI
+            skills = extract_skills(resume_path)
         
         # Create job seeker profile
         job_seeker = JobSeeker(
