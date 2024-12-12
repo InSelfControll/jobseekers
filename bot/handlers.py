@@ -1,3 +1,4 @@
+
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler
 from models import JobSeeker, Job, Application
@@ -79,12 +80,12 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             # Create job seeker profile
             job_seeker = JobSeeker(
-            telegram_id=str(update.effective_user.id),
-            full_name=context.user_data['full_name'],
-            resume_path=resume_path,
-            skills=skills,
-            latitude=context.user_data['latitude'],
-            longitude=context.user_data['longitude']
+                telegram_id=str(update.effective_user.id),
+                full_name=context.user_data['full_name'],
+                resume_path=resume_path,
+                skills=skills,
+                latitude=context.user_data['latitude'],
+                longitude=context.user_data['longitude']
             )
             
             db.session.add(job_seeker)
@@ -96,20 +97,12 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Use /search to find jobs in your area."
             )
             return ConversationHandler.END
-            
-        except Exception as db_error:
-            if 'db' in locals():
-                db.session.rollback()
-            logging.error(f"Database error in handle_resume: {db_error}")
-            await update.message.reply_text(
-                "Error saving your profile. Please try registering again with /register"
-            )
-            return ConversationHandler.END
-            
-    except Exception as e:
-        logging.error(f"Error processing resume: {str(e)}")
+    except Exception as db_error:
+        if 'db' in locals():
+            db.session.rollback()
+        logging.error(f"Database error in handle_resume: {db_error}")
         await update.message.reply_text(
-            "Please send your resume as a PDF file and try again."
+            "Error saving your profile. Please try registering again with /register"
         )
         return ConversationHandler.END
 
