@@ -62,15 +62,18 @@ async def start_bot():
         
         with open("bot.lock", "w") as f:
             f.write(str(os.getpid()))
-            
-    async with _lock:
-        if _instance is None:
-            _instance = (
-                ApplicationBuilder()
-                .token(token)
-                .concurrent_updates(False)
-                .build()
-            )
+        
+        async with _lock:
+            if _instance is None:
+                _instance = (
+                    ApplicationBuilder()
+                    .token(token)
+                    .concurrent_updates(False)
+                    .build()
+                )
+    except Exception as e:
+        logger.error(f"Error initializing bot: {e}")
+        return None
         
         # Add conversation handler for registration
         conv_handler = ConversationHandler(
