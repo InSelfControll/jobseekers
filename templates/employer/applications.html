@@ -35,6 +35,10 @@
                             data-bs-target="#viewModal{{ application.id }}">
                         View Details
                     </button>
+                    <a href="https://t.me/{{ application.job_seeker.telegram_id }}?text=Hello, I'm from {{ application.job.employer.company_name }}!" 
+                       class="btn btn-sm btn-success" target="_blank">
+                        Message on Telegram
+                    </a>
                 </td>
             </tr>
             
