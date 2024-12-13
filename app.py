@@ -1,3 +1,4 @@
+
 import os
 import logging
 from flask import Flask
@@ -6,10 +7,10 @@ from extensions import db, login_manager, init_db, logger
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
-app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_ENABLED'] = True
 
-from flask_wtf.csrf import CSRFProtect
-csrf = CSRFProtect(app)
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
