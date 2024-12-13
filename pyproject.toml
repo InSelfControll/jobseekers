@@ -19,5 +19,6 @@ dependencies = [
     "asyncpg",
     "aiohttp",
     "sqlalchemy-utils>=0.41.2",
-    "python-telegram-bot==20.7"
+    "python-telegram-bot==20.7",
+    "python3-saml>=1.15.0"
 ]
