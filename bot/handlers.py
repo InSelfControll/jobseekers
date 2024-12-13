@@ -149,9 +149,31 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "Example: /search 25 to search within 25km"
                 )
                 return
-        
-        if not nearby_jobs:
+
             await update.message.reply_text(
+                f"🎉 Found {len(nearby_jobs)} jobs near you!"
+            )
+
+            for job in nearby_jobs[:5]:  # Limit to 5 jobs per search
+                # Load employer relationship within context
+                employer_name = db.session.merge(job).employer.company_name
+                await update.message.reply_text(
+                    f"🏢 *{job.title}*\n"
+                    f"🏗 _{employer_name}_\n"
+                    f"📍 {job.location} ({job.distance:.1f}km away)\n"
+                    f"💼 {job.description[:150]}...\n\n"
+                    f"📝 To apply, use /apply {job.id}",
+                    parse_mode='Markdown'
+                )
+
+            if len(nearby_jobs) > 5:
+                await update.message.reply_text(
+                    f"🔍 {len(nearby_jobs) - 5} more jobs available.\n"
+                    "Use /search again to see more results!"
+                )
+            return
+            
+        await update.message.reply_text(
                 f"😔 No jobs found within {radius}km of your location.\n"
                 "We'll notify you when new positions become available!\n\n"
                 "💡 Tip: Try expanding your search radius using /search <radius>\n"
