@@ -56,7 +56,7 @@ def applications():
 
 @employer_bp.route('/application/<int:app_id>', methods=['POST'])
 @login_required
-async def update_application(app_id):
+def update_application(app_id):
     application = Application.query.get_or_404(app_id)
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
@@ -67,15 +67,19 @@ async def update_application(app_id):
         application.status = status
         db.session.commit()
         
-        # Get job seeker and send notification
+        # Get job seeker and send notification asynchronously
         job_seeker = application.job_seeker
         if job_seeker and job_seeker.telegram_id:
             from bot.telegram_bot import send_status_notification
-            await send_status_notification(
-                job_seeker.telegram_id,
-                application.job.title,
-                status
-            )
+            import asyncio
+            try:
+                asyncio.create_task(send_status_notification(
+                    job_seeker.telegram_id,
+                    application.job.title,
+                    status
+                ))
+            except Exception as e:
+                print(f"Failed to send notification: {e}")
         
         flash('Application status updated', 'success')
     
