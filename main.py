@@ -1,40 +1,29 @@
 import asyncio
 import logging
-from app import create_app, db # Added db import
+from app import create_app, db  # Added db import
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 
+
 def install_missing_modules():
-    """Install any missing Python modules"""
-    import subprocess
-    import sys
+    """Install any missing Python modules using poetry"""
+    import os
+    
     required_modules = [
-        "flask",
-        "flask-login",
-        "flask-sqlalchemy",
-        "openai",
-        "sqlalchemy",
-        "flask-wtf",
-        "psycopg2-binary", 
-        "email-validator",
-        "geopy",
-        "nest-asyncio",
-        "quart",
-        "hypercorn",
-        "asyncpg",
-        "aiohttp",
-        "sqlalchemy-utils",
-        "python-telegram-bot==20.7",
-        "python3-saml",
+        "flask", "flask-login", "flask-sqlalchemy", "openai", "sqlalchemy",
+        "flask-wtf", "psycopg2-binary", "email-validator", "geopy",
+        "nest-asyncio", "quart", "hypercorn", "asyncpg", "aiohttp",
+        "sqlalchemy-utils", "python-telegram-bot==20.7", "python3-saml",
         "requests-oauthlib"
     ]
-    
+
     for module in required_modules:
         try:
             __import__(module.replace('-', '_').split('==')[0])
         except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", module])
+            os.system(f"poetry add {module}")
             logger.info(f"Installed {module}")
+
 
 from hypercorn.asyncio import serve
 from telegram import Update
@@ -46,12 +35,14 @@ logger = logging.getLogger(__name__)
 # Create Flask app
 app = create_app()
 
+
 async def run_web_server():
     """Run the web server"""
     config = Config()
     config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False
     await serve(app, config)
+
 
 async def run_telegram_bot():
     """Run the Telegram bot"""
@@ -60,7 +51,8 @@ async def run_telegram_bot():
         await application.initialize()
         await application.start()
         await application.updater.start_polling()
-        
+
+
 async def main():
     """Main entry point for the application"""
     try:
@@ -79,6 +71,7 @@ async def main():
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
+
 
 if __name__ == '__main__':
     asyncio.run(main())
