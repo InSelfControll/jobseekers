@@ -15,6 +15,7 @@ class Employer(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_owner = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    login_count = db.Column(db.Integer, default=0)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
 class Job(db.Model):

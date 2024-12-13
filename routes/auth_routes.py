@@ -45,7 +45,12 @@ def login():
         
         employer = Employer.query.filter_by(email=email).first()
         if employer and check_password_hash(employer.password_hash, password):
+            employer.login_count += 1
+            db.session.commit()
             login_user(employer)
+            
+            if employer.is_admin and employer.login_count > 1 and not employer.sso_domain:
+                return redirect(url_for('admin.sso_config'))
             return redirect(url_for('employer.dashboard'))
         
         flash('Invalid email or password', 'error')
