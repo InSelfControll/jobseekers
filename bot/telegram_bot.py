@@ -1,4 +1,3 @@
-
 import os
 import logging
 import asyncio
@@ -75,3 +74,17 @@ async def start_bot():
     application.add_error_handler(error_handler)
     
     return application
+
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Start the registration process"""
+    try:
+        await update.message.reply_text(
+            "Let's create your profile! First, please send me your full name."
+        )
+        return FULL_NAME
+    except Exception as e:
+        logger.error(f"Error in register handler: {e}")
+        await update.message.reply_text(
+            "Sorry, there was an error. Please try again."
+        )
+        return ConversationHandler.END
