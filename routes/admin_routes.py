@@ -94,6 +94,12 @@ def save_domain():
         'shadow_url': f"https://{domain}/login"  # Shadow interface URL
     })
 
+@admin_bp.route('/sso-config', methods=['GET'])
+@login_required
+@admin_required
+def sso_config():
+    return render_template('admin/sso_config.html')
+
 @admin_bp.route('/update-domain', methods=['POST'])
 @login_required
 @admin_required
