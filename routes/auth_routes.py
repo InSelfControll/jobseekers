@@ -65,10 +65,16 @@ def register():
             flash('Email already registered', 'error')
             return redirect(url_for('auth.register'))
         
+        domain = email.split('@')[1]
+        existing_company = Employer.query.filter_by(company_domain=domain).first()
+        
         employer = Employer(
             email=email,
             company_name=company_name,
-            password_hash=generate_password_hash(password)
+            company_domain=domain,
+            password_hash=generate_password_hash(password),
+            is_admin=not existing_company,  # First user is admin
+            is_owner=not existing_company   # First user is owner
         )
         
         db.session.add(employer)
