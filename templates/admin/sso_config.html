@@ -55,8 +55,15 @@
                     <label class="form-label">Provider</label>
                     <select class="form-control" id="provider" name="provider" onchange="toggleProviderSettings()">
                         <option value="GITHUB">GitHub</option>
-                        <option value="SAML">SAML</option>
+                        <option value="AZURE_AD">Microsoft Azure AD</option>
+                        <option value="SAML">Other SAML Provider</option>
                     </select>
+                </div>
+                <div id="azure-settings" class="mb-3" style="display: none;">
+                    <label class="form-label">Azure AD Tenant ID</label>
+                    <input type="text" class="form-control" name="tenant_id" value="{{ current_user.tenant_id }}">
+                    <label class="form-label mt-2">Azure AD Application ID</label>
+                    <input type="text" class="form-control" name="application_id" value="{{ current_user.application_id }}">
                 </div>
                 <div id="github-settings" class="mb-3">
                     <label class="form-label">GitHub Client ID</label>

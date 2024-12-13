@@ -31,6 +31,15 @@ function toggleProviderSettings() {
     }
 }
 
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    const githubSettings = document.getElementById('github-settings');
+    const azureSettings = document.getElementById('azure-settings');
+    
+    githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
+    azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+}
+
 async function saveDomain(provider) {
     const domainId = provider === 'azure' ? 'azure_domain' : 'sso_domain';
     const domain = document.getElementById(domainId).value;
@@ -106,6 +115,15 @@ async function verifyDomain(provider) {
         alert('Error verifying domain');
     }
 }
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    const githubSettings = document.getElementById('github-settings');
+    const azureSettings = document.getElementById('azure-settings');
+    
+    githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
+    azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+}
+
 async function saveDomain(provider) {
     const domain = document.getElementById('sso_domain').value.trim();
     if (!domain) {
