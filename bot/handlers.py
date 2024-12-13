@@ -210,6 +210,9 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle job application"""
+    from app import create_app
+    app = create_app()
+    
     try:
         if not context.args:
             await update.message.reply_text(
@@ -218,10 +221,11 @@ async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
             return
             
-        job_id = int(context.args[0])
-        job_seeker = JobSeeker.query.filter_by(
-            telegram_id=str(update.effective_user.id)
-        ).first()
+        with app.app_context():
+            job_id = int(context.args[0])
+            job_seeker = JobSeeker.query.filter_by(
+                telegram_id=str(update.effective_user.id)
+            ).first()
         
         if not job_seeker:
             await update.message.reply_text(
