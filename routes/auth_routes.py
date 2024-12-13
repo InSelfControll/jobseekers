@@ -1,8 +1,26 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Employer
 from extensions import db
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
+from config.saml import SAML_SETTINGS
+
+def init_saml_auth(req):
+    auth = OneLogin_Saml2_Auth(req, SAML_SETTINGS)
+    return auth
+
+def prepare_flask_request(request):
+    url_data = request.url.split('?')[0].split('/')
+    return {
+        'https': 'on' if request.scheme == 'https' else 'off',
+        'http_host': request.host,
+        'server_port': url_data[2:3][0] if len(url_data) > 2 else '',
+        'script_name': request.path,
+        'get_data': request.args.copy(),
+        'post_data': request.form.copy()
+    }
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -49,4 +67,40 @@ def register():
 @login_required
 def logout():
     logout_user()
+
+
+@auth_bp.route('/saml/login')
+def saml_login():
+    req = prepare_flask_request(request)
+    auth = init_saml_auth(req)
+    return redirect(auth.login())
+
+@auth_bp.route('/saml/callback', methods=['POST'])
+def saml_callback():
+    req = prepare_flask_request(request)
+    auth = init_saml_auth(req)
+    auth.process_response()
+    errors = auth.get_errors()
+    
+    if not errors:
+        if auth.is_authenticated():
+            attributes = auth.get_attributes()
+            email = attributes.get('email', [None])[0]
+            
+            if email:
+                employer = Employer.query.filter_by(email=email).first()
+                if employer:
+                    login_user(employer)
+                    return redirect(url_for('employer.dashboard'))
+                    
+    flash('SAML Authentication failed', 'error')
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/saml/logout')
+@login_required
+def saml_logout():
+    req = prepare_flask_request(request)
+    auth = init_saml_auth(req)
+    return redirect(auth.logout())
+
     return redirect(url_for('auth.login'))
