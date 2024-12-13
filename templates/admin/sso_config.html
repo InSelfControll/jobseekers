@@ -49,16 +49,16 @@
             <form id="ssoForm">
                 <div class="mb-3">
                     <label class="form-label">Domain</label>
-                    <input type="text" class="form-control" name="domain" value="{{ current_user.sso_domain }}" required>
+                    <input type="text" class="form-control" name="domain" id="sso_domain" value="{{ current_user.sso_domain }}" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Provider</label>
                     <select class="form-control" id="provider" name="provider" onchange="toggleProviderSettings()">
-                        <option value="GITHUB" {% if current_user.sso_provider == 'GITHUB' %}selected{% endif %}>GitHub</option>
-                        <option value="SAML" {% if current_user.sso_provider == 'SAML' %}selected{% endif %}>SAML</option>
+                        <option value="GITHUB">GitHub</option>
+                        <option value="SAML">SAML</option>
                     </select>
                 </div>
-                <div id="github-settings" class="mb-3" {% if current_user.sso_provider != 'GITHUB' %}style="display: none;"{% endif %}>
+                <div id="github-settings" class="mb-3">
                     <label class="form-label">GitHub Client ID</label>
                     <input type="text" class="form-control" name="github_client_id" value="{{ current_user.github_client_id }}">
                     <label class="form-label mt-2">GitHub Client Secret</label>
@@ -73,56 +73,6 @@
                     <pre id="dns-records"></pre>
                     <div id="verification-status"></div>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Microsoft/Azure AD SSO Configuration</h4>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label">Domain Configuration</label>
-                <input type="text" class="form-control" id="azure_domain" name="azure_domain" value="{{ azure_domain }}{% if current_user.azure_domain_verified %} (Verified){% endif %}" placeholder="e.g. sso.yourdomain.com" required {% if current_user.azure_domain_verified %}readonly{% endif %}>
-                <button class="btn btn-primary" onclick="saveDomain('azure')" type="button">Save Domain</button>
-                <span id="azure-verification-status" class="ms-2 {% if current_user.azure_domain_verified %}text-success{% else %}text-danger{% endif %}">
-                    {% if current_user.azure_domain_verified %}
-                    <i class="fas fa-check-circle"></i> Verified
-                    {% else %}
-                    <i class="fas fa-times-circle"></i> Not Verified
-                    {% endif %}
-                </span>
-                <button class="btn btn-secondary ms-2" onclick="verifyDomain('azure')" type="button">Re-verify Domain</button>
-                <div id="azure-domain-records" class="mt-3" style="display: none;">
-                    <h5>DNS Records (Configure at least one):</h5>
-                    <pre id="azure-dns-records"></pre>
-                    <small class="text-muted">Add either the CNAME or TXT record to your DNS and click "Re-verify Domain" when ready</small>
-                </div>
-                <small class="text-muted">Enter the domain where your Azure SSO will be hosted</small>
-            </div>
-            <form method="POST" action="{{ url_for('admin.update_saml_config') }}">
-                <div class="mb-3">
-                    <label class="form-label">Entity ID</label>
-                    <input type="password" class="form-control" name="entity_id" value="{{ saml_entity_id }}" autocomplete="off">
-                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">SSO URL</label>
-                    <input type="password" class="form-control" name="sso_url" value="{{ saml_sso_url }}" autocomplete="off">
-                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">IDP Certificate</label>
-                    <textarea class="form-control" name="idp_cert" rows="5" placeholder="Enter new certificate to update">{{ '********' if saml_idp_cert else '' }}</textarea>
-                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Admin Groups (comma-separated)</label>
-                    <input type="text" class="form-control" name="admin_groups" value="{{ admin_groups }}">
-                    <small class="text-muted">Azure AD/SAML group names that should have admin access</small>
-                </div>
-                <button type="submit" class="btn btn-primary">Save SAML Settings</button>
             </form>
         </div>
     </div>

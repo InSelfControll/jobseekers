@@ -105,7 +105,27 @@ def save_domain():
 @login_required
 @admin_required
 def sso_config():
-    return render_template('admin/sso_config.html')
+    users = Employer.query.all()
+    return render_template('admin/sso_config.html', 
+                         users=users,
+                         current_user=current_user,
+                         saml_idp_cert=current_user.saml_idp_cert if hasattr(current_user, 'saml_idp_cert') else None,
+                         admin_groups=current_user.admin_groups if hasattr(current_user, 'admin_groups') else '')
+
+@admin_bp.route('/toggle-admin/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_admin(user_id):
+    if not current_user.is_owner:
+        abort(403)
+        
+    user = Employer.query.get(user_id)
+    if not user:
+        abort(404)
+        
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    return redirect(url_for('admin.sso_config'))
 
 @admin_bp.route('/update-domain', methods=['POST'])
 @login_required
