@@ -1,0 +1,28 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h4>Configure SSO Domain</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('auth.github_callback') }}">
+                <div class="mb-3">
+                    <label class="form-label">Custom Domain</label>
+                    <input type="text" class="form-control" name="domain" placeholder="e.g. login.yourdomain.com" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Configure SSO</button>
+            </form>
+            
+            {% if session.sso_records %}
+            <div class="mt-4">
+                <h5>DNS Records to Configure:</h5>
+                <pre>{{ session.sso_records.cname }}
+{{ session.sso_records.txt }}</pre>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
