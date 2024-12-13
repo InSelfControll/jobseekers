@@ -5,7 +5,7 @@ from models import Job, Application, Message
 from extensions import db
 from services.geo_service import get_nearby_jobs
 
-employer_bp = Blueprint('employer', __name__)
+employer_bp = Blueprint('employer', __name__, url_prefix='/employer')
 
 @employer_bp.route('/dashboard')
 @login_required

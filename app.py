@@ -29,20 +29,20 @@ def create_app():
         logger.error(f"Failed to initialize application: {e}")
         raise RuntimeError(f"Application initialization failed: {str(e)}")
     
-    # Register blueprints with URL prefixes
+    # Register blueprints
     from routes.employer_routes import employer_bp
     from routes.job_routes import job_bp
     from routes.auth_routes import auth_bp
     from flask import redirect, url_for
 
+    app.register_blueprint(employer_bp)
+    app.register_blueprint(job_bp)
+    app.register_blueprint(auth_bp)
+
     # Add root route
     @app.route('/')
     def index():
         return redirect(url_for('auth.login'))
-    
-    app.register_blueprint(employer_bp, url_prefix='/employer')
-    app.register_blueprint(job_bp, url_prefix='/jobs')
-    app.register_blueprint(auth_bp, url_prefix='/auth')
     
     with app.app_context():
         db.create_all()
