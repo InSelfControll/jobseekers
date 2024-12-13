@@ -46,6 +46,11 @@
             <h4>GitHub SSO Configuration</h4>
         </div>
         <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Domain Configuration</label>
+                <input type="text" class="form-control" name="github_domain" value="{{ github_domain }}" placeholder="e.g. login.yourdomain.com" required>
+                <small class="text-muted">Enter the domain where your GitHub SSO will be hosted</small>
+            </div>
             <form method="POST" action="{{ url_for('admin.update_github_config') }}">
                 <div class="mb-3">
                     <label class="form-label">Client ID</label>
@@ -67,6 +72,11 @@
             <h4>Microsoft/Azure AD SSO Configuration</h4>
         </div>
         <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Domain Configuration</label>
+                <input type="text" class="form-control" name="azure_domain" value="{{ azure_domain }}" placeholder="e.g. sso.yourdomain.com" required>
+                <small class="text-muted">Enter the domain where your Azure SSO will be hosted</small>
+            </div>
             <form method="POST" action="{{ url_for('admin.update_saml_config') }}">
                 <div class="mb-3">
                     <label class="form-label">Entity ID</label>
