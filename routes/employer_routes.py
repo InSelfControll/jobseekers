@@ -62,46 +62,13 @@ def update_application(app_id):
         flash('Unauthorized access', 'error')
         return redirect(url_for('employer.applications'))
     
-    action = request.form.get('action')
-    if action == 'update_status':
-        status = request.form.get('status')
-        if status in ['accepted', 'rejected', 'pending']:
-            application.status = status
-            db.session.commit()
-            flash('Application status updated', 'success')
-    elif action == 'send_test':
-        job = application.job
-        if job.has_test:
-            # Send test via Telegram bot
-            from bot.telegram_bot import send_test_to_candidate
-            asyncio.create_task(send_test_to_candidate(
-                application.job_seeker.telegram_id,
-                job.test_content,
-                job.test_duration,
-                application.id
-            ))
-            flash('Test sent to candidate', 'success')
-    elif action == 'request_contact':
-        from bot.telegram_bot import request_contact_details
-        asyncio.create_task(request_contact_details(application.job_seeker.telegram_id))
-        flash('Contact request sent to candidate', 'success')
+    status = request.form.get('status')
+    if status in ['accepted', 'rejected', 'pending']:
+        application.status = status
+        db.session.commit()
+        flash('Application status updated', 'success')
     
     return redirect(url_for('employer.applications'))
-
-@employer_bp.route('/jobs/<int:job_id>/test', methods=['POST'])
-@login_required
-def update_job_test(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    job.has_test = True
-    job.test_content = request.form['test_content']
-    job.test_duration = int(request.form['test_duration'])
-    db.session.commit()
-    flash('Job test updated successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
 
 @employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
 @login_required
