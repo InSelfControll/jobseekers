@@ -37,43 +37,45 @@ async def send_status_notification(telegram_id: str, job_title: str, status: str
         bot = Bot(token)
         await bot.send_message(chat_id=telegram_id, text=message)
 
+_instance = None
+
 async def start_bot():
     """Initialize and start the Telegram bot"""
     token = os.environ.get("TELEGRAM_TOKEN")
+    global _instance
     if not token:
         logger.error("TELEGRAM_TOKEN not found in environment variables")
         return
-
-    application = ApplicationBuilder().token(token).build()
-    
-    # Add conversation handler for registration
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("register", register)],
-        states={
-            FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
-            PHONE_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_phone_number)],
-            LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
-            RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
-    
-    # Add handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(conv_handler)
-    application.add_handler(CommandHandler("search", handle_job_search))
-    application.add_handler(CommandHandler("apply", handle_application))
-    
-    async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logger.error(f"Update {update} caused error {context.error}")
-        if update and update.message:
-            await update.message.reply_text(
-                "Sorry, something went wrong. Please try again later."
-            )
-    
-    application.add_error_handler(error_handler)
-    
-    return application
+    if _instance is None:
+        _instance = ApplicationBuilder().token(token).build()
+        
+        # Add conversation handler for registration
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler("register", register)],
+            states={
+                FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
+                PHONE_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_phone_number)],
+                LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
+                RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
+            },
+            fallbacks=[CommandHandler("cancel", cancel)],
+        )
+        
+        # Add handlers
+        _instance.add_handler(CommandHandler("start", start))
+        _instance.add_handler(conv_handler)
+        _instance.add_handler(CommandHandler("search", handle_job_search))
+        _instance.add_handler(CommandHandler("apply", handle_application))
+        
+        async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            logger.error(f"Update {update} caused error {context.error}")
+            if update and update.message:
+                await update.message.reply_text(
+                    "Sorry, something went wrong. Please try again later."
+                )
+        
+        _instance.add_error_handler(error_handler)
+    return _instance
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""

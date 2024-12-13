@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 from app import create_app, db  # Added db import
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
@@ -49,8 +50,15 @@ async def run_telegram_bot():
     application = await start_bot()
     if application:
         await application.initialize()
-        await application.start()
-        await application.updater.start_polling()
+        try:
+            await application.start()
+            await application.updater.start_polling()
+        except asyncio.CancelledError:
+            logger.info("Telegram bot gracefully shutting down.")
+        except Exception as e:
+            logger.error(f"Telegram bot error: {e}")
+        finally:
+            await application.stop() # Ensure bot is stopped
 
 
 async def main():
@@ -65,6 +73,16 @@ async def main():
         logger.info("Starting application...")
         telegram_task = asyncio.create_task(run_telegram_bot())
         web_task = asyncio.create_task(run_web_server())
+
+        def signal_handler(sig, frame):
+            logger.info(f"Received signal {sig}. Shutting down gracefully.")
+            telegram_task.cancel()
+            web_task.cancel()
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+
         await asyncio.gather(telegram_task, web_task)
     except KeyboardInterrupt:
         logger.info("Shutdown requested")
