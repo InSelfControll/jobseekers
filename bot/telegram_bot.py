@@ -12,8 +12,8 @@ from telegram.ext import (
     ContextTypes
 )
 from bot.handlers import (
-    start, register, handle_full_name, handle_location, handle_resume,
-    handle_job_search, handle_application, cancel
+    start, register, handle_full_name, handle_phone_number, handle_location, 
+    handle_resume, handle_job_search, handle_application, cancel
 )
 
 # Configure logging
