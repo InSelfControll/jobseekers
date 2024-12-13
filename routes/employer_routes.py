@@ -67,17 +67,22 @@ def update_application(app_id):
         application.status = status
         db.session.commit()
         
-        # Get job seeker and send notification asynchronously
+        # Get job seeker and send notification
         job_seeker = application.job_seeker
         if job_seeker and job_seeker.telegram_id:
             from bot.telegram_bot import send_status_notification
             import asyncio
             try:
-                asyncio.create_task(send_status_notification(
+                # Create new event loop for async operation
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                # Run the notification
+                loop.run_until_complete(send_status_notification(
                     job_seeker.telegram_id,
                     application.job.title,
                     status
                 ))
+                loop.close()
             except Exception as e:
                 print(f"Failed to send notification: {e}")
         
