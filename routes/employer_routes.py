@@ -1,3 +1,4 @@
+
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from models import Job, Application, Message
@@ -60,37 +61,6 @@ def update_application(app_id):
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('employer.applications'))
-
-@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
-@login_required
-def edit_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    job.title = request.form['title']
-    job.description = request.form['description']
-    job.location = request.form['location']
-    job.latitude = float(request.form['latitude'])
-    job.longitude = float(request.form['longitude'])
-    
-    db.session.commit()
-    flash('Job updated successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
-
-@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
-@login_required
-def delete_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    db.session.delete(job)
-    db.session.commit()
-    flash('Job deleted successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
     
     status = request.form.get('status')
     if status in ['accepted', 'rejected', 'pending']:
@@ -138,37 +108,6 @@ def send_message(app_id):
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('employer.applications'))
-
-@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
-@login_required
-def edit_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    job.title = request.form['title']
-    job.description = request.form['description']
-    job.location = request.form['location']
-    job.latitude = float(request.form['latitude'])
-    job.longitude = float(request.form['longitude'])
-    
-    db.session.commit()
-    flash('Job updated successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
-
-@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
-@login_required
-def delete_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    db.session.delete(job)
-    db.session.commit()
-    flash('Job deleted successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
     
     message = Message(
         application_id=app_id,
@@ -180,34 +119,3 @@ def delete_job(job_id):
     flash('Message sent', 'success')
     
     return redirect(url_for('employer.applications'))
-
-@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
-@login_required
-def edit_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    job.title = request.form['title']
-    job.description = request.form['description']
-    job.location = request.form['location']
-    job.latitude = float(request.form['latitude'])
-    job.longitude = float(request.form['longitude'])
-    
-    db.session.commit()
-    flash('Job updated successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
-
-@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
-@login_required
-def delete_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.employer_id != current_user.id:
-        flash('Unauthorized access', 'error')
-        return redirect(url_for('employer.jobs'))
-    
-    db.session.delete(job)
-    db.session.commit()
-    flash('Job deleted successfully!', 'success')
-    return redirect(url_for('employer.jobs'))
