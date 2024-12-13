@@ -56,7 +56,7 @@ def applications():
 
 @employer_bp.route('/application/<int:app_id>', methods=['POST'])
 @login_required
-def update_application(app_id):
+async def update_application(app_id):
     application = Application.query.get_or_404(app_id)
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
@@ -66,6 +66,17 @@ def update_application(app_id):
     if status in ['accepted', 'rejected', 'pending']:
         application.status = status
         db.session.commit()
+        
+        # Get job seeker and send notification
+        job_seeker = application.job_seeker
+        if job_seeker and job_seeker.telegram_id:
+            from bot.telegram_bot import send_status_notification
+            await send_status_notification(
+                job_seeker.telegram_id,
+                application.job.title,
+                status
+            )
+        
         flash('Application status updated', 'success')
     
     return redirect(url_for('employer.applications'))

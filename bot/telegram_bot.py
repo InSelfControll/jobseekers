@@ -20,6 +20,24 @@ from bot.handlers import (
 logger = logging.getLogger(__name__)
 FULL_NAME, LOCATION, RESUME = range(3)
 
+async def send_status_notification(telegram_id: str, job_title: str, status: str):
+    """Send application status notification to user"""
+    token = os.environ.get("TELEGRAM_TOKEN")
+    if not token:
+        return
+        
+    status_messages = {
+        'accepted': f'🎉 Congratulations! Your application for "{job_title}" has been accepted!',
+        'rejected': f'📝 Update on your application for "{job_title}": Unfortunately, the employer has decided not to proceed.',
+        'pending': f'⏳ Your application for "{job_title}" is now under review.'
+    }
+    
+    message = status_messages.get(status)
+    if message:
+        from telegram import Bot
+        bot = Bot(token)
+        await bot.send_message(chat_id=telegram_id, text=message)
+
 async def start_bot():
     """Initialize and start the Telegram bot"""
     token = os.environ.get("TELEGRAM_TOKEN")
