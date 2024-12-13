@@ -92,3 +92,39 @@ async function verifyDomain(provider) {
         alert('Error verifying domain');
     }
 }
+async function saveDomain(provider) {
+    const domain = document.getElementById('sso_domain').value.trim();
+    if (!domain) {
+        alert('Please enter a domain');
+        return;
+    }
+
+    try {
+        const response = await fetch('/admin/save-domain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ domain, provider })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            const statusDiv = document.getElementById('domain-status');
+            statusDiv.innerHTML = `
+                <span class="badge bg-warning">Pending Verification</span>
+                <small class="text-muted ms-2">Shadow SSO Interface: ${data.shadow_url}</small>
+            `;
+            
+            const dnsRecords = document.getElementById('dns-records');
+            dnsRecords.innerHTML = `${data.cname_record}\n${data.txt_record}`;
+            document.getElementById('domain-records').style.display = 'block';
+        } else {
+            alert(data.error || 'Failed to save domain');
+        }
+    } catch (error) {
+        alert('Error saving domain');
+        console.error(error);
+    }
+}

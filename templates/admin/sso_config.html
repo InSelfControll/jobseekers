@@ -49,8 +49,26 @@
                 <label class="form-label">Domain Configuration</label>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <meta name="csrf-token" content="{{ csrf_token() }}">
-                <input type="text" class="form-control" id="sso_domain" name="github_domain" value="{{ github_domain }}{% if current_user.domain_verified %} (Verified){% endif %}" placeholder="e.g. login.yourdomain.com" required {% if current_user.domain_verified %}readonly{% endif %}>
-                <button class="btn btn-primary" onclick="saveDomain('github')" type="button">Save Domain</button>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="sso_domain" 
+                           name="domain" 
+                           value="{{ current_user.sso_domain or '' }}" 
+                           placeholder="e.g. login.yourdomain.com" 
+                           required>
+                    <button class="btn btn-primary" onclick="saveDomain('github')" type="button">
+                        {{ 'Update Domain' if current_user.sso_domain else 'Save Domain' }}
+                    </button>
+                </div>
+                <div id="domain-status" class="mt-2">
+                    {% if current_user.sso_domain %}
+                    <span class="badge {{ 'bg-success' if current_user.domain_verified else 'bg-warning' }}">
+                        {{ 'Verified' if current_user.domain_verified else 'Pending Verification' }}
+                    </span>
+                    <small class="text-muted ms-2">
+                        Shadow SSO Interface: https://{{ current_user.sso_domain }}/login
+                    </small>
+                    {% endif %}
+                </div>
                 <span id="verification-status" class="ms-2 {% if current_user.domain_verified %}text-success{% else %}text-danger{% endif %}">
                     {% if current_user.domain_verified %}
                     <i class="fas fa-check-circle"></i> Verified
