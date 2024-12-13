@@ -161,7 +161,7 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"🏢 *{job.title}*\n"
                     f"🏗 _{employer_name}_\n"
                     f"📍 {job.location} ({job.distance:.1f}km away)\n"
-                    f"💼 {job.description[:150]}...\n\n"
+                    f"💼 Description:\n{job.description}\n\n"
                     f"📝 To apply, use /apply {job.id}",
                     parse_mode='Markdown'
                 )
