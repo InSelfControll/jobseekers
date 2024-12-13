@@ -108,12 +108,32 @@ def github_callback():
         authorization_response=request.url
     )
     
-    # Generate SSO domain after successful authentication
-    domain, cname, txt = generate_sso_domain(employer, "GITHUB")
-    flash(f"Configure your DNS with:\n{cname}\n{txt}", "info")
-    
     resp = github.get(GITHUB_USER_INFO_URL)
     user_info = resp.json()
+    
+    resp = github.get(GITHUB_USER_EMAIL_URL)
+    emails = resp.json()
+    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
+    
+    employer = Employer.query.filter_by(email=email).first()
+    if not employer:
+        domain, cname_record, txt_record = generate_sso_domain(None, "GITHUB")
+        employer = Employer(
+            email=email,
+            company_name=user_info.get('company') or user_info.get('login'),
+            password_hash=generate_password_hash(os.urandom(24).hex()),
+            sso_domain=domain,
+            sso_provider="GITHUB"
+        )
+        db.session.add(employer)
+        db.session.commit()
+        flash(f"Configure your DNS with:\n{cname_record}\n{txt_record}", "info")
+    elif not employer.sso_domain:
+        domain, cname_record, txt_record = generate_sso_domain(None, "GITHUB")
+        employer.sso_domain = domain
+        employer.sso_provider = "GITHUB"
+        db.session.commit()
+        flash(f"Configure your DNS with:\n{cname_record}\n{txt_record}", "info")
     
     resp = github.get(GITHUB_USER_EMAIL_URL)
     emails = resp.json()
