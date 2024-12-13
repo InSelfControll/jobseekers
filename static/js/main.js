@@ -78,15 +78,18 @@ async function saveDomain(provider) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
             body: `domain=${encodeURIComponent(domain)}&provider=${encodeURIComponent(provider)}`
         });
         
         const data = await response.json();
         if (data.success) {
-            document.getElementById('dns-records').textContent = 
-                `${data.cname_record}\n${data.txt_record}`;
+            const dnsRecords = document.getElementById('dns-records');
+            dnsRecords.textContent = `${data.cname_record}\n${data.txt_record}`;
             document.getElementById('domain-records').style.display = 'block';
+        } else {
+            alert('Failed to save domain configuration');
         }
     } catch (error) {
         console.error('Error saving domain:', error);
