@@ -1,3 +1,4 @@
+
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -69,6 +70,7 @@ def register():
         
         flash('Registration successful!', 'success')
         return redirect(url_for('auth.login'))
+    return render_template('auth/register.html')
 
 @auth_bp.route('/github/login')
 def github_login():
@@ -86,11 +88,9 @@ def github_callback():
         authorization_response=request.url
     )
     
-    # Get user info
     resp = github.get(GITHUB_USER_INFO_URL)
     user_info = resp.json()
     
-    # Get user email
     resp = github.get(GITHUB_USER_EMAIL_URL)
     emails = resp.json()
     email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
@@ -107,14 +107,12 @@ def github_callback():
     
     login_user(employer)
     return redirect(url_for('employer.dashboard'))
-    
-    return render_template('auth/register.html')
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-
+    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/saml/login')
 def saml_login():
@@ -143,87 +141,9 @@ def saml_callback():
     flash('SAML Authentication failed', 'error')
     return redirect(url_for('auth.login'))
 
-@auth_bp.route('/github/login')
-def github_login():
-    github = OAuth2Session(GITHUB_CLIENT_ID)
-    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
-    session['oauth_state'] = state
-    return redirect(authorization_url)
-
-@auth_bp.route('/github/callback')
-def github_callback():
-    github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
-    token = github.fetch_token(
-        GITHUB_TOKEN_URL,
-        client_secret=GITHUB_CLIENT_SECRET,
-        authorization_response=request.url
-    )
-    
-    # Get user info
-    resp = github.get(GITHUB_USER_INFO_URL)
-    user_info = resp.json()
-    
-    # Get user email
-    resp = github.get(GITHUB_USER_EMAIL_URL)
-    emails = resp.json()
-    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
-    
-    employer = Employer.query.filter_by(email=email).first()
-    if not employer:
-        employer = Employer(
-            email=email,
-            company_name=user_info.get('company') or user_info.get('login'),
-            password_hash=generate_password_hash(os.urandom(24).hex())
-        )
-        db.session.add(employer)
-        db.session.commit()
-    
-    login_user(employer)
-    return redirect(url_for('employer.dashboard'))
-
 @auth_bp.route('/saml/logout')
 @login_required
 def saml_logout():
     req = prepare_flask_request(request)
     auth = init_saml_auth(req)
     return redirect(auth.logout())
-
-    return redirect(url_for('auth.login'))
-
-@auth_bp.route('/github/login')
-def github_login():
-    github = OAuth2Session(GITHUB_CLIENT_ID)
-    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
-    session['oauth_state'] = state
-    return redirect(authorization_url)
-
-@auth_bp.route('/github/callback')
-def github_callback():
-    github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
-    token = github.fetch_token(
-        GITHUB_TOKEN_URL,
-        client_secret=GITHUB_CLIENT_SECRET,
-        authorization_response=request.url
-    )
-    
-    # Get user info
-    resp = github.get(GITHUB_USER_INFO_URL)
-    user_info = resp.json()
-    
-    # Get user email
-    resp = github.get(GITHUB_USER_EMAIL_URL)
-    emails = resp.json()
-    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
-    
-    employer = Employer.query.filter_by(email=email).first()
-    if not employer:
-        employer = Employer(
-            email=email,
-            company_name=user_info.get('company') or user_info.get('login'),
-            password_hash=generate_password_hash(os.urandom(24).hex())
-        )
-        db.session.add(employer)
-        db.session.commit()
-    
-    login_user(employer)
-    return redirect(url_for('employer.dashboard'))
