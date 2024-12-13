@@ -39,15 +39,25 @@ async def send_status_notification(telegram_id: str, job_title: str, status: str
 
 _instance = None
 
+_lock = asyncio.Lock()
+
 async def start_bot():
     """Initialize and start the Telegram bot"""
     token = os.environ.get("TELEGRAM_TOKEN")
     global _instance
+    
     if not token:
         logger.error("TELEGRAM_TOKEN not found in environment variables")
         return
-    if _instance is None:
-        _instance = ApplicationBuilder().token(token).build()
+        
+    async with _lock:
+        if _instance is None:
+            _instance = (
+                ApplicationBuilder()
+                .token(token)
+                .concurrent_updates(False)
+                .build()
+            )
         
         # Add conversation handler for registration
         conv_handler = ConversationHandler(

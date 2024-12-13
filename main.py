@@ -47,18 +47,23 @@ async def run_web_server():
 
 async def run_telegram_bot():
     """Run the Telegram bot"""
-    application = await start_bot()
-    if application:
-        await application.initialize()
-        try:
+    try:
+        application = await start_bot()
+        if application:
+            await application.initialize()
             await application.start()
-            await application.updater.start_polling()
-        except asyncio.CancelledError:
-            logger.info("Telegram bot gracefully shutting down.")
-        except Exception as e:
-            logger.error(f"Telegram bot error: {e}")
-        finally:
-            await application.stop() # Ensure bot is stopped
+            await application.updater.start_polling(drop_pending_updates=True)
+            
+            while True:
+                await asyncio.sleep(1)
+                
+    except asyncio.CancelledError:
+        logger.info("Telegram bot gracefully shutting down.")
+    except Exception as e:
+        logger.error(f"Telegram bot error: {e}")
+    finally:
+        if application:
+            await application.stop()
 
 
 async def main():
