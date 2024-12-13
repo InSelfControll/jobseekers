@@ -54,7 +54,13 @@ def register():
         email = request.form.get('email')
         company_name = request.form.get('company_name')
         password = request.form.get('password')
+        domain = email.split('@')[1]
         
+        existing_domain = Employer.query.filter_by(company_domain=domain).first()
+        if existing_domain:
+            flash('Another user from your company is already registered', 'error')
+            return redirect(url_for('auth.register'))
+            
         if Employer.query.filter_by(email=email).first():
             flash('Email already registered', 'error')
             return redirect(url_for('auth.register'))
@@ -134,7 +140,15 @@ def saml_callback():
             
             if email:
                 employer = Employer.query.filter_by(email=email).first()
+                admin_groups = os.environ.get('SAML_ADMIN_GROUPS', '').split(',')
+                user_groups = attributes.get('groups', [])
+                
+                is_admin = any(group in admin_groups for group in user_groups)
+                
                 if employer:
+                    if is_admin:
+                        employer.is_admin = True
+                        db.session.commit()
                     login_user(employer)
                     return redirect(url_for('employer.dashboard'))
                     

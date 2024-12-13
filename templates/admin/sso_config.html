@@ -3,8 +3,44 @@
 
 {% block content %}
 <div class="container">
-    <h2>SSO Configuration</h2>
+    <h2>Job Hunter Admin Panel</h2>
     
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>User Management</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Email</th>
+                        <th>Admin Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.company_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ "Admin" if user.is_admin else "User" }}</td>
+                        <td>
+                            {% if current_user.is_owner %}
+                            <form method="POST" action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-{{ 'danger' if user.is_admin else 'success' }}">
+                                    {{ "Remove Admin" if user.is_admin else "Make Admin" }}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="card mb-4">
         <div class="card-header">
             <h4>GitHub OAuth Settings</h4>
@@ -41,6 +77,11 @@
                 <div class="mb-3">
                     <label class="form-label">IDP Certificate</label>
                     <textarea class="form-control" name="idp_cert" rows="5">{{ saml_idp_cert }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Admin Groups (comma-separated)</label>
+                    <input type="text" class="form-control" name="admin_groups" value="{{ admin_groups }}">
+                    <small class="text-muted">Azure AD/SAML group names that should have admin access</small>
                 </div>
                 <button type="submit" class="btn btn-primary">Save SAML Settings</button>
             </form>

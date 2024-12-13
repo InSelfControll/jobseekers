@@ -20,12 +20,28 @@ def admin_required(f):
 @login_required
 @admin_required
 def sso_config():
+    users = Employer.query.all()
     return render_template('admin/sso_config.html',
+                         users=users,
                          github_client_id=os.environ.get('GITHUB_CLIENT_ID', ''),
                          github_client_secret=os.environ.get('GITHUB_CLIENT_SECRET', ''),
                          saml_entity_id=os.environ.get('SAML_IDP_ENTITY_ID', ''),
                          saml_sso_url=os.environ.get('SAML_SSO_URL', ''),
-                         saml_idp_cert=os.environ.get('SAML_IDP_CERT', ''))
+                         saml_idp_cert=os.environ.get('SAML_IDP_CERT', ''),
+                         admin_groups=os.environ.get('SAML_ADMIN_GROUPS', ''))
+
+@admin_bp.route('/toggle-admin/<int:user_id>', methods=['POST'])
+@login_required
+def toggle_admin(user_id):
+    if not current_user.is_owner:
+        flash('Only owners can modify admin status', 'error')
+        return redirect(url_for('admin.sso_config'))
+        
+    user = Employer.query.get_or_404(user_id)
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    flash(f"Admin status updated for {user.email}", 'success')
+    return redirect(url_for('admin.sso_config'))
 
 @admin_bp.route('/update-github-config', methods=['POST'])
 @login_required
