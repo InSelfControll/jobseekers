@@ -23,12 +23,17 @@ class Job(db.Model):
     longitude = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='active')
+    has_test = db.Column(db.Boolean, default=False)
+    test_content = db.Column(db.Text)
+    test_duration = db.Column(db.Integer) # in minutes
     applications = db.relationship('Application', backref='job', lazy='select')
 
 class JobSeeker(db.Model):
     __tablename__ = 'job_seeker'
     id = db.Column(db.Integer, primary_key=True)
     telegram_id = db.Column(db.String(128), unique=True, nullable=False)
+    whatsapp_number = db.Column(db.String(20))
+    telegram_username = db.Column(db.String(128))
     full_name = db.Column(db.String(128), nullable=False)
     resume_path = db.Column(db.String(256))
     skills = db.Column(JSON)
