@@ -30,6 +30,7 @@ class JobSeeker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     telegram_id = db.Column(db.String(128), unique=True, nullable=False)
     full_name = db.Column(db.String(128), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
     resume_path = db.Column(db.String(256))
     skills = db.Column(JSON)
     location = db.Column(db.String(128))

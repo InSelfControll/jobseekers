@@ -8,7 +8,7 @@ from services.file_service import save_resume
 from extensions import db
 import logging
 
-FULL_NAME, LOCATION, RESUME = range(3)
+FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
@@ -27,6 +27,21 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the full name input"""
     context.user_data['full_name'] = update.message.text
+    await update.message.reply_text(
+        "Please share your phone number in the format +1234567890 📱"
+    )
+    return PHONE_NUMBER
+
+async def handle_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle the phone number input"""
+    phone = update.message.text
+    if not phone.startswith('+') or not phone[1:].isdigit():
+        await update.message.reply_text(
+            "Please enter a valid phone number starting with + (e.g., +1234567890)"
+        )
+        return PHONE_NUMBER
+    
+    context.user_data['phone_number'] = phone
     location_keyboard = ReplyKeyboardMarkup(
         [[KeyboardButton('Share Location 📍', request_location=True)]],
         one_time_keyboard=True,
@@ -82,6 +97,7 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             job_seeker = JobSeeker(
                 telegram_id=str(update.effective_user.id),
                 full_name=context.user_data['full_name'],
+                phone_number=context.user_data['phone_number'],
                 resume_path=resume_path,
                 skills=skills,
                 latitude=context.user_data['latitude'],
