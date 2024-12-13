@@ -15,7 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
+    
+    // Initialize provider settings visibility
+    toggleProviderSettings();
 });
+
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    const githubSettings = document.getElementById('github-settings');
+    
+    if (provider === 'GITHUB') {
+        githubSettings.style.display = 'block';
+    } else {
+        githubSettings.style.display = 'none';
+    }
+}
 
 async function saveDomain(provider) {
     const domainId = provider === 'azure' ? 'azure_domain' : 'sso_domain';

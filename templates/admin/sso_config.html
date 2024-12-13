@@ -49,29 +49,30 @@
             <form id="ssoForm">
                 <div class="mb-3">
                     <label class="form-label">Domain</label>
-                    <input type="text" class="form-control" name="domain" required>
+                    <input type="text" class="form-control" name="domain" value="{{ current_user.sso_domain }}" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Provider</label>
-                    <select class="form-control" id="provider" name="provider">
-                        <option value="GITHUB">GitHub</option>
-                        <option value="SAML">SAML</option>
+                    <select class="form-control" id="provider" name="provider" onchange="toggleProviderSettings()">
+                        <option value="GITHUB" {% if current_user.sso_provider == 'GITHUB' %}selected{% endif %}>GitHub</option>
+                        <option value="SAML" {% if current_user.sso_provider == 'SAML' %}selected{% endif %}>SAML</option>
                     </select>
                 </div>
-                <div id="github-settings" class="mb-3">
+                <div id="github-settings" class="mb-3" {% if current_user.sso_provider != 'GITHUB' %}style="display: none;"{% endif %}>
                     <label class="form-label">GitHub Client ID</label>
-                    <input type="text" class="form-control" name="github_client_id" value="{{ employer.github_client_id if employer }}">
+                    <input type="text" class="form-control" name="github_client_id" value="{{ current_user.github_client_id }}">
                     <label class="form-label mt-2">GitHub Client Secret</label>
                     <input type="password" class="form-control" name="github_client_secret">
                 </div>
-                <button type="submit" class="btn btn-primary">Save Configuration</button>
-                {% if dns_records %}
-                <div class="mt-4">
-                    <h5>DNS Records to Configure:</h5>
-                    <pre>{{ dns_records.cname }}
-{{ dns_records.txt }}</pre>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-primary" onclick="saveDomain()">Save Domain</button>
+                    <button type="button" class="btn btn-secondary ms-2" onclick="verifyDomain()">Verify Domain</button>
                 </div>
-                {% endif %}
+                <div id="domain-records" class="mt-4" style="display: none;">
+                    <h5>DNS Records to Configure:</h5>
+                    <pre id="dns-records"></pre>
+                    <div id="verification-status"></div>
+                </div>
             </form>
         </div>
     </div>
