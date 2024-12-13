@@ -12,10 +12,18 @@ def create_app():
 def run_migrations():
     app = create_app()
     with app.app_context():
-        # Drop all tables and recreate
-        db.drop_all()
-        db.create_all()
-        print("All database tables created successfully!")
-        
+        # Add test columns to Job table
+        connection = db.engine.connect()
+        with connection.begin():
+            try:
+                connection.execute(db.text('ALTER TABLE job ADD COLUMN has_test BOOLEAN DEFAULT FALSE'))
+                connection.execute(db.text('ALTER TABLE job ADD COLUMN test_content TEXT'))
+                connection.execute(db.text('ALTER TABLE job ADD COLUMN test_duration INTEGER'))
+                print("Test columns added successfully!")
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                # If columns already exist, ignore the error
+                pass
+
 if __name__ == '__main__':
     run_migrations()
