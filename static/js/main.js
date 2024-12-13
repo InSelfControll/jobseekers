@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function saveDomain(provider) {
-    const domain = document.getElementById('sso_domain').value;
+    const domainId = provider === 'azure' ? 'azure_domain' : 'sso_domain';
+    const domain = document.getElementById(domainId).value;
     if (!domain) {
         alert('Please enter a domain');
         return;
@@ -44,7 +45,10 @@ async function saveDomain(provider) {
         if (data.success) {
             const dnsRecords = document.getElementById('dns-records');
             dnsRecords.textContent = `${data.cname_record}\n${data.txt_record}`;
-            document.getElementById('domain-records').style.display = 'block';
+            const recordsElement = provider === 'azure' ? 'azure-domain-records' : 'domain-records';
+            const dnsRecordsElement = provider === 'azure' ? 'azure-dns-records' : 'dns-records';
+            document.getElementById(recordsElement).style.display = 'block';
+            document.getElementById(dnsRecordsElement).textContent = `${data.cname_record}\n${data.txt_record}`;
             
             // Verify domain after saving
             await verifyDomain(provider);
@@ -58,7 +62,8 @@ async function saveDomain(provider) {
 }
 
 async function verifyDomain(provider) {
-    const domain = document.getElementById('sso_domain').value;
+    const domainId = provider === 'azure' ? 'azure_domain' : 'sso_domain';
+    const domain = document.getElementById(domainId).value;
     if (!domain) {
         alert('Please enter a domain');
         return;
