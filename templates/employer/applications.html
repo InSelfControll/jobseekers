@@ -38,7 +38,7 @@
                         View Details
                     </button>
                     {% if application.job_seeker.resume_path %}
-                    <a href="{{ url_for('static', filename=application.job_seeker.resume_path) }}" 
+                    <a href="{{ url_for('static', filename='uploads/' + application.job_seeker.resume_path) }}" 
                        class="btn btn-sm btn-info" target="_blank">
                         View CV
                     </a>

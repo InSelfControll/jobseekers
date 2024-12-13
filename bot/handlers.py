@@ -88,7 +88,7 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         with app.app_context():
             file = await update.message.document.get_file()
-            resume_path = await save_resume(file)
+            resume_path = await save_resume(file, update.effective_user.id)
             
             # Extract skills using AI
             skills = extract_skills(resume_path)
