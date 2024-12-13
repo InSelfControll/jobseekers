@@ -18,7 +18,7 @@ from bot.handlers import (
 
 # Configure logging
 logger = logging.getLogger(__name__)
-FULL_NAME, LOCATION, RESUME = range(3)
+FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
 async def send_status_notification(telegram_id: str, job_title: str, status: str):
     """Send application status notification to user"""
