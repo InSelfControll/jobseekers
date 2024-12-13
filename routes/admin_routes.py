@@ -9,10 +9,23 @@ from models import Employer
 
 def verify_domain_records(domain, provider):
     try:
-        # Check CNAME record
+        # Check CNAME record or A record
         try:
-            cname_answers = dns.resolver.resolve(domain, 'CNAME')
-            cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in cname_answers)
+            # Try CNAME first
+            try:
+                cname_answers = dns.resolver.resolve(domain, 'CNAME')
+                cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in cname_answers)
+            except:
+                cname_valid = False
+                
+            # Try A record if CNAME fails
+            if not cname_valid:
+                try:
+                    expected_ip = dns.resolver.resolve(f"auth.{request.host}", 'A')[0].address
+                    a_answers = dns.resolver.resolve(domain, 'A')
+                    cname_valid = any(str(rdata.address) == expected_ip for rdata in a_answers)
+                except:
+                    pass
         except:
             cname_valid = False
             
