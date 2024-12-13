@@ -60,8 +60,9 @@
                 </span>
                 <button class="btn btn-secondary ms-2" onclick="verifyDomain('github')" type="button">Re-verify Domain</button>
                 <div id="domain-records" class="mt-3" style="display: none;">
-                    <h5>DNS Records:</h5>
+                    <h5>DNS Records (Configure at least one):</h5>
                     <pre id="dns-records"></pre>
+                    <small class="text-muted">Add either the CNAME or TXT record to your DNS and click "Re-verify Domain" when ready</small>
                 </div>
                 <small class="text-muted">Enter the domain where your GitHub SSO will be hosted</small>
             </div>
@@ -100,8 +101,9 @@
                 </span>
                 <button class="btn btn-secondary ms-2" onclick="verifyDomain('azure')" type="button">Re-verify Domain</button>
                 <div id="azure-domain-records" class="mt-3" style="display: none;">
-                    <h5>DNS Records:</h5>
+                    <h5>DNS Records (Configure at least one):</h5>
                     <pre id="azure-dns-records"></pre>
+                    <small class="text-muted">Add either the CNAME or TXT record to your DNS and click "Re-verify Domain" when ready</small>
                 </div>
                 <small class="text-muted">Enter the domain where your Azure SSO will be hosted</small>
             </div>

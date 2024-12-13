@@ -1,4 +1,3 @@
-
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from extensions import db
@@ -10,17 +9,24 @@ from models import Employer
 
 def verify_domain_records(domain, provider):
     try:
-        # Verify CNAME
-        answers = dns.resolver.resolve(domain, 'CNAME')
-        cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in answers)
-        
-        # Verify TXT
-        domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
-        expected_txt = f"v=sso provider={provider} verify={domain_hash}"
-        answers = dns.resolver.resolve(domain, 'TXT')
-        txt_valid = any(str(rdata).strip('"') == expected_txt for rdata in answers)
-        
-        return cname_valid and txt_valid
+        # Check CNAME record
+        try:
+            cname_answers = dns.resolver.resolve(domain, 'CNAME')
+            cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in cname_answers)
+        except:
+            cname_valid = False
+            
+        # Check TXT record
+        try:
+            domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
+            expected_txt = f"v=sso provider={provider} verify={domain_hash}"
+            txt_answers = dns.resolver.resolve(domain, 'TXT')
+            txt_valid = any(str(rdata).strip('"') == expected_txt for rdata in txt_answers)
+        except:
+            txt_valid = False
+            
+        # Return True if either record is valid
+        return cname_valid or txt_valid
     except:
         return False
 
