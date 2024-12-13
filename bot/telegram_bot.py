@@ -52,6 +52,7 @@ async def start_bot():
         entry_points=[CommandHandler("register", register)],
         states={
             FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
+            PHONE_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_phone_number)],
             LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
             RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
         },
