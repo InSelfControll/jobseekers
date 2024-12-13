@@ -49,7 +49,20 @@ async def start_bot():
     if not token:
         logger.error("TELEGRAM_TOKEN not found in environment variables")
         return
-        
+
+    # Kill other Python processes that might be running the bot
+    import psutil
+    current_pid = os.getpid()
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if proc.info['name'] == 'python' and proc.pid != current_pid:
+                cmdline = proc.info.get('cmdline', [])
+                if any('telegram' in cmd.lower() for cmd in cmdline if cmd):
+                    proc.kill()
+                    logger.info(f"Killed duplicate bot process: {proc.pid}")
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+            
     async with _lock:
         if _instance is None:
             _instance = (

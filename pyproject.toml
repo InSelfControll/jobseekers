@@ -3,10 +3,11 @@
 name = "jobseekrbot"
 version = "0.1.0"
 description = "Job Hunter Bot with AI-powered features"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Ofir Hamami admin@hostme.co.il"]
 
 [tool.poetry.dependencies]
 python = ">=3.11"
+psutil = "*"
 flask = "^3.0.0"
 flask-login = "^0.6.3"
 flask-sqlalchemy = "^3.1.1"
