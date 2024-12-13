@@ -3,6 +3,15 @@ from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Employer
 from extensions import db
+from requests_oauthlib import OAuth2Session
+import os
+
+GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
+GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'
+GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+GITHUB_USER_INFO_URL = 'https://api.github.com/user'
+GITHUB_USER_EMAIL_URL = 'https://api.github.com/user/emails'
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from config.saml import SAML_SETTINGS
@@ -60,6 +69,44 @@ def register():
         
         flash('Registration successful!', 'success')
         return redirect(url_for('auth.login'))
+
+@auth_bp.route('/github/login')
+def github_login():
+    github = OAuth2Session(GITHUB_CLIENT_ID)
+    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
+    session['oauth_state'] = state
+    return redirect(authorization_url)
+
+@auth_bp.route('/github/callback')
+def github_callback():
+    github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
+    token = github.fetch_token(
+        GITHUB_TOKEN_URL,
+        client_secret=GITHUB_CLIENT_SECRET,
+        authorization_response=request.url
+    )
+    
+    # Get user info
+    resp = github.get(GITHUB_USER_INFO_URL)
+    user_info = resp.json()
+    
+    # Get user email
+    resp = github.get(GITHUB_USER_EMAIL_URL)
+    emails = resp.json()
+    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
+    
+    employer = Employer.query.filter_by(email=email).first()
+    if not employer:
+        employer = Employer(
+            email=email,
+            company_name=user_info.get('company') or user_info.get('login'),
+            password_hash=generate_password_hash(os.urandom(24).hex())
+        )
+        db.session.add(employer)
+        db.session.commit()
+    
+    login_user(employer)
+    return redirect(url_for('employer.dashboard'))
     
     return render_template('auth/register.html')
 
@@ -96,6 +143,44 @@ def saml_callback():
     flash('SAML Authentication failed', 'error')
     return redirect(url_for('auth.login'))
 
+@auth_bp.route('/github/login')
+def github_login():
+    github = OAuth2Session(GITHUB_CLIENT_ID)
+    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
+    session['oauth_state'] = state
+    return redirect(authorization_url)
+
+@auth_bp.route('/github/callback')
+def github_callback():
+    github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
+    token = github.fetch_token(
+        GITHUB_TOKEN_URL,
+        client_secret=GITHUB_CLIENT_SECRET,
+        authorization_response=request.url
+    )
+    
+    # Get user info
+    resp = github.get(GITHUB_USER_INFO_URL)
+    user_info = resp.json()
+    
+    # Get user email
+    resp = github.get(GITHUB_USER_EMAIL_URL)
+    emails = resp.json()
+    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
+    
+    employer = Employer.query.filter_by(email=email).first()
+    if not employer:
+        employer = Employer(
+            email=email,
+            company_name=user_info.get('company') or user_info.get('login'),
+            password_hash=generate_password_hash(os.urandom(24).hex())
+        )
+        db.session.add(employer)
+        db.session.commit()
+    
+    login_user(employer)
+    return redirect(url_for('employer.dashboard'))
+
 @auth_bp.route('/saml/logout')
 @login_required
 def saml_logout():
@@ -104,3 +189,41 @@ def saml_logout():
     return redirect(auth.logout())
 
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/github/login')
+def github_login():
+    github = OAuth2Session(GITHUB_CLIENT_ID)
+    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
+    session['oauth_state'] = state
+    return redirect(authorization_url)
+
+@auth_bp.route('/github/callback')
+def github_callback():
+    github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
+    token = github.fetch_token(
+        GITHUB_TOKEN_URL,
+        client_secret=GITHUB_CLIENT_SECRET,
+        authorization_response=request.url
+    )
+    
+    # Get user info
+    resp = github.get(GITHUB_USER_INFO_URL)
+    user_info = resp.json()
+    
+    # Get user email
+    resp = github.get(GITHUB_USER_EMAIL_URL)
+    emails = resp.json()
+    email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
+    
+    employer = Employer.query.filter_by(email=email).first()
+    if not employer:
+        employer = Employer(
+            email=email,
+            company_name=user_info.get('company') or user_info.get('login'),
+            password_hash=generate_password_hash(os.urandom(24).hex())
+        )
+        db.session.add(employer)
+        db.session.commit()
+    
+    login_user(employer)
+    return redirect(url_for('employer.dashboard'))
