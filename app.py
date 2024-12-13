@@ -30,14 +30,16 @@ def create_app():
         raise RuntimeError(f"Application initialization failed: {str(e)}")
     
     # Register blueprints
+    from routes.auth_routes import auth_bp
     from routes.employer_routes import employer_bp
     from routes.job_routes import job_bp
-    from routes.auth_routes import auth_bp
+    from routes.admin_routes import admin_bp
     from flask import redirect, url_for
 
+    app.register_blueprint(auth_bp)
     app.register_blueprint(employer_bp)
     app.register_blueprint(job_bp)
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
 
     # Add root route
     @app.route('/')
