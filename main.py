@@ -1,7 +1,6 @@
-
 import asyncio
 import logging
-from app import create_app
+from app import create_app, db # Added db import
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
@@ -32,6 +31,11 @@ async def run_telegram_bot():
 async def main():
     """Main entry point for the application"""
     try:
+        with app.app_context():
+            db.drop_all()  # This will delete all data - make sure this is okay
+            db.create_all()
+            logger.info("Database tables recreated successfully")
+
         logger.info("Starting application...")
         telegram_task = asyncio.create_task(run_telegram_bot())
         web_task = asyncio.create_task(run_web_server())
