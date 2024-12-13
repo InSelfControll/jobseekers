@@ -41,7 +41,7 @@ app = create_app()
 async def run_web_server():
     """Run the web server"""
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = ["0.0.0.0:80"]
     config.use_reloader = False
     await serve(app, config)
 
