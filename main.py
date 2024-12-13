@@ -3,6 +3,39 @@ import logging
 from app import create_app, db # Added db import
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
+
+def install_missing_modules():
+    """Install any missing Python modules"""
+    import subprocess
+    import sys
+    required_modules = [
+        "flask",
+        "flask-login",
+        "flask-sqlalchemy",
+        "openai",
+        "sqlalchemy",
+        "flask-wtf",
+        "psycopg2-binary", 
+        "email-validator",
+        "geopy",
+        "nest-asyncio",
+        "quart",
+        "hypercorn",
+        "asyncpg",
+        "aiohttp",
+        "sqlalchemy-utils",
+        "python-telegram-bot==20.7",
+        "python3-saml",
+        "requests-oauthlib"
+    ]
+    
+    for module in required_modules:
+        try:
+            __import__(module.replace('-', '_').split('==')[0])
+        except ImportError:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", module])
+            logger.info(f"Installed {module}")
+
 from hypercorn.asyncio import serve
 from telegram import Update
 
@@ -31,6 +64,7 @@ async def run_telegram_bot():
 async def main():
     """Main entry point for the application"""
     try:
+        install_missing_modules()
         with app.app_context():
             db.drop_all()  # This will delete all data - make sure this is okay
             db.create_all()
