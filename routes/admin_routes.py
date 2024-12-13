@@ -64,6 +64,8 @@ def save_domain():
         
     provider = data.get('provider')
     domain = data.get('domain')
+    github_client_id = data.get('github_client_id')
+    github_client_secret = data.get('github_client_secret')
     
     if not domain:
         return jsonify({'success': False, 'error': 'Domain is required'}), 400
@@ -80,6 +82,11 @@ def save_domain():
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
     employer.sso_provider = provider.upper()
+    if provider.upper() == 'GITHUB' and github_client_id:
+        employer.github_client_id = github_client_id
+        if github_client_secret:
+            employer.github_client_secret = github_client_secret
+    employer.is_admin = True  # Ensure admin status
     db.session.commit()
     
     # Generate verification records

@@ -53,12 +53,25 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Provider</label>
-                    <select class="form-control" name="provider">
+                    <select class="form-control" id="provider" name="provider">
                         <option value="GITHUB">GitHub</option>
                         <option value="SAML">SAML</option>
                     </select>
                 </div>
+                <div id="github-settings" class="mb-3">
+                    <label class="form-label">GitHub Client ID</label>
+                    <input type="text" class="form-control" name="github_client_id" value="{{ employer.github_client_id if employer }}">
+                    <label class="form-label mt-2">GitHub Client Secret</label>
+                    <input type="password" class="form-control" name="github_client_secret">
+                </div>
                 <button type="submit" class="btn btn-primary">Save Configuration</button>
+                {% if dns_records %}
+                <div class="mt-4">
+                    <h5>DNS Records to Configure:</h5>
+                    <pre>{{ dns_records.cname }}
+{{ dns_records.txt }}</pre>
+                </div>
+                {% endif %}
             </form>
         </div>
     </div>
