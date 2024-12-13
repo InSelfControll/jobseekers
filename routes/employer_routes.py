@@ -60,6 +60,37 @@ def update_application(app_id):
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('employer.applications'))
+
+@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
+@login_required
+def edit_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    job.title = request.form['title']
+    job.description = request.form['description']
+    job.location = request.form['location']
+    job.latitude = float(request.form['latitude'])
+    job.longitude = float(request.form['longitude'])
+    
+    db.session.commit()
+    flash('Job updated successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
+
+@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
+@login_required
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job deleted successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
     
     status = request.form.get('status')
     if status in ['accepted', 'rejected', 'pending']:
@@ -69,6 +100,37 @@ def update_application(app_id):
     
     return redirect(url_for('employer.applications'))
 
+@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
+@login_required
+def edit_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    job.title = request.form['title']
+    job.description = request.form['description']
+    job.location = request.form['location']
+    job.latitude = float(request.form['latitude'])
+    job.longitude = float(request.form['longitude'])
+    
+    db.session.commit()
+    flash('Job updated successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
+
+@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
+@login_required
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job deleted successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
+
 @employer_bp.route('/message/<int:app_id>', methods=['POST'])
 @login_required
 def send_message(app_id):
@@ -76,6 +138,37 @@ def send_message(app_id):
     if application.job.employer_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('employer.applications'))
+
+@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
+@login_required
+def edit_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    job.title = request.form['title']
+    job.description = request.form['description']
+    job.location = request.form['location']
+    job.latitude = float(request.form['latitude'])
+    job.longitude = float(request.form['longitude'])
+    
+    db.session.commit()
+    flash('Job updated successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
+
+@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
+@login_required
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job deleted successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
     
     message = Message(
         application_id=app_id,
@@ -87,3 +180,34 @@ def send_message(app_id):
     flash('Message sent', 'success')
     
     return redirect(url_for('employer.applications'))
+
+@employer_bp.route('/jobs/<int:job_id>/edit', methods=['POST'])
+@login_required
+def edit_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    job.title = request.form['title']
+    job.description = request.form['description']
+    job.location = request.form['location']
+    job.latitude = float(request.form['latitude'])
+    job.longitude = float(request.form['longitude'])
+    
+    db.session.commit()
+    flash('Job updated successfully!', 'success')
+    return redirect(url_for('employer.jobs'))
+
+@employer_bp.route('/jobs/<int:job_id>/delete', methods=['POST'])
+@login_required
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.employer_id != current_user.id:
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('employer.jobs'))
+    
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job deleted successfully!', 'success')
+    return redirect(url_for('employer.jobs'))

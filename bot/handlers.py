@@ -111,6 +111,12 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from app import create_app
     app = create_app()
     
+    # Get search radius from command arguments
+    try:
+        radius = float(context.args[0]) if context.args else 15
+    except (ValueError, IndexError):
+        radius = 15
+    
     try:
         with app.app_context():
             job_seeker = JobSeeker.query.filter_by(
@@ -133,13 +139,14 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text("🔍 Searching for jobs in your area...")
         
-        nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude)
+        nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, radius)
         
         if not nearby_jobs:
             await update.message.reply_text(
-                "😔 No jobs found in your area currently.\n"
+                f"😔 No jobs found within {radius}km of your location.\n"
                 "We'll notify you when new positions become available!\n\n"
-                "💡 Tip: Try expanding your search radius using /search 25"
+                "💡 Tip: Try expanding your search radius using /search <radius>\n"
+                "Example: /search 25 to search within 25km"
             )
             return
         
