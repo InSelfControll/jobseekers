@@ -100,8 +100,9 @@ def update_saml_config():
 @login_required
 @admin_required
 def save_domain():
-    provider = request.form.get('provider')
-    domain = request.form.get('domain')
+    data = request.get_json()
+    provider = data.get('provider')
+    domain = data.get('domain')
     
     if not domain:
         flash('Domain is required', 'error')
