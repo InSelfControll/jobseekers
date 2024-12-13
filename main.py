@@ -92,8 +92,11 @@ async def main():
             logger.info("Database tables recreated successfully")
 
         logger.info("Starting application...")
-        telegram_task = asyncio.create_task(run_telegram_bot())
+        # Start web server first
         web_task = asyncio.create_task(run_web_server())
+        # Wait a moment before starting bot
+        await asyncio.sleep(2)
+        telegram_task = asyncio.create_task(run_telegram_bot())
 
         def signal_handler(sig, frame):
             logger.info(f"Received signal {sig}. Shutting down gracefully.")
