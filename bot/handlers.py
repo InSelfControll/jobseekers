@@ -140,24 +140,15 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("🔍 Searching for jobs in your area...")
             
             nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, radius)
-        
-        if not job_seeker:
-            await update.message.reply_text(
-                "⚠️ Please register first using /register command.\n"
-                "This will help us find jobs near you!"
-            )
-            return
-        
-        if not job_seeker.latitude or not job_seeker.longitude:
-            await update.message.reply_text(
-                "📍 Please share your location to find nearby jobs.\n"
-                "Use /register to update your location."
-            )
-            return
-        
-        await update.message.reply_text("🔍 Searching for jobs in your area...")
-        
-        nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, radius)
+            
+            if not nearby_jobs:
+                await update.message.reply_text(
+                    f"😔 No jobs found within {radius}km of your location.\n"
+                    "We'll notify you when new positions become available!\n\n"
+                    "💡 Tip: Try expanding your search radius using /search <radius>\n"
+                    "Example: /search 25 to search within 25km"
+                )
+                return
         
         if not nearby_jobs:
             await update.message.reply_text(
