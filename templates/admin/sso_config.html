@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -42,61 +43,22 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h4>GitHub SSO Configuration</h4>
+            <h4>SSO Configuration</h4>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label">Domain Configuration</label>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <meta name="csrf-token" content="{{ csrf_token() }}">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="sso_domain" 
-                           name="domain" 
-                           value="{{ current_user.sso_domain or '' }}" 
-                           placeholder="e.g. login.yourdomain.com" 
-                           required>
-                    <button class="btn btn-primary" onclick="saveDomain('github')" type="button">
-                        {{ 'Update Domain' if current_user.sso_domain else 'Save Domain' }}
-                    </button>
-                </div>
-                <div id="domain-status" class="mt-2">
-                    {% if current_user.sso_domain %}
-                    <span class="badge {{ 'bg-success' if current_user.domain_verified else 'bg-warning' }}">
-                        {{ 'Verified' if current_user.domain_verified else 'Pending Verification' }}
-                    </span>
-                    <small class="text-muted ms-2">
-                        Shadow SSO Interface: https://{{ current_user.sso_domain }}/login
-                    </small>
-                    {% endif %}
-                </div>
-                <span id="verification-status" class="ms-2 {% if current_user.domain_verified %}text-success{% else %}text-danger{% endif %}">
-                    {% if current_user.domain_verified %}
-                    <i class="fas fa-check-circle"></i> Verified
-                    {% else %}
-                    <i class="fas fa-times-circle"></i> Not Verified
-                    {% endif %}
-                </span>
-                <button class="btn btn-secondary ms-2" onclick="verifyDomain('github')" type="button">Re-verify Domain</button>
-                <div id="domain-records" class="mt-3" style="display: none;">
-                    <h5>DNS Records (Configure at least one):</h5>
-                    <pre id="dns-records"></pre>
-                    <small class="text-muted">Add either the CNAME or TXT record to your DNS and click "Re-verify Domain" when ready</small>
-                </div>
-                <small class="text-muted">Enter the domain where your GitHub SSO will be hosted</small>
-            </div>
-            <form method="POST" action="{{ url_for('admin.update_github_config') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form id="ssoForm">
                 <div class="mb-3">
-                    <label class="form-label">Client ID</label>
-                    <input type="password" class="form-control" name="github_client_id" value="{{ github_client_id }}" autocomplete="off">
-                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
+                    <label class="form-label">Domain</label>
+                    <input type="text" class="form-control" name="domain" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Client Secret</label>
-                    <input type="password" class="form-control" name="github_client_secret" value="{{ github_client_secret }}" autocomplete="off">
-                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
+                    <label class="form-label">Provider</label>
+                    <select class="form-control" name="provider">
+                        <option value="GITHUB">GitHub</option>
+                        <option value="SAML">SAML</option>
+                    </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Save GitHub Settings</button>
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
             </form>
         </div>
     </div>
@@ -147,31 +109,6 @@
                     <small class="text-muted">Azure AD/SAML group names that should have admin access</small>
                 </div>
                 <button type="submit" class="btn btn-primary">Save SAML Settings</button>
-            </form>
-        </div>
-    </div>
-</div>
-{% endblock %}
-{% extends "base.html" %}
-
-{% block content %}
-<div class="container mt-4">
-    <h2>SSO Configuration</h2>
-    <div class="card">
-        <div class="card-body">
-            <form id="ssoForm">
-                <div class="mb-3">
-                    <label class="form-label">Domain</label>
-                    <input type="text" class="form-control" name="domain" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Provider</label>
-                    <select class="form-control" name="provider">
-                        <option value="GITHUB">GitHub</option>
-                        <option value="SAML">SAML</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Save Configuration</button>
             </form>
         </div>
     </div>
