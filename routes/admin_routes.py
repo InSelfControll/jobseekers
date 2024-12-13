@@ -96,3 +96,28 @@ def update_saml_config():
     os.environ['SAML_IDP_CERT'] = request.form.get('idp_cert', '')
     flash('SAML settings updated successfully', 'success')
     return redirect(url_for('admin.sso_config'))
+@admin_bp.route('/save-domain', methods=['POST'])
+@login_required
+@admin_required
+def save_domain():
+    provider = request.form.get('provider')
+    domain = request.form.get('domain')
+    
+    if not domain:
+        flash('Domain is required', 'error')
+        return redirect(url_for('admin.sso_config'))
+        
+    employer = Employer.query.get(current_user.id)
+    employer.sso_domain = domain
+    db.session.commit()
+    
+    # Generate verification records
+    domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
+    cname_record = f"CNAME {domain} auth.{request.host}"
+    txt_record = f"TXT {domain} \"v=sso provider={provider} verify={domain_hash}\""
+    
+    return jsonify({
+        'success': True,
+        'cname_record': cname_record,
+        'txt_record': txt_record
+    })

@@ -66,3 +66,30 @@ forms.forEach(form => {
         form.classList.add('was-validated');
     });
 });
+async function saveDomain(provider) {
+    const domain = document.getElementById('sso_domain').value;
+    if (!domain) {
+        alert('Please enter a domain');
+        return;
+    }
+
+    try {
+        const response = await fetch('/admin/save-domain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `domain=${encodeURIComponent(domain)}&provider=${encodeURIComponent(provider)}`
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('dns-records').textContent = 
+                `${data.cname_record}\n${data.txt_record}`;
+            document.getElementById('domain-records').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error saving domain:', error);
+        alert('Error saving domain configuration');
+    }
+}
