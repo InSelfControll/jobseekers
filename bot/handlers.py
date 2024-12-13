@@ -174,13 +174,13 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
             
         await update.message.reply_text(
-                f"😔 No jobs found within {radius}km of your location.\n"
-                "We'll notify you when new positions become available!\n\n"
-                "💡 Tip: Try expanding your search radius using /search <radius>\n"
-                "Example: /search 25 to search within 25km"
-            )
-            return
-        
+            f"😔 No jobs found within {radius}km of your location.\n"
+            "We'll notify you when new positions become available!\n\n"
+            "💡 Tip: Try expanding your search radius using /search <radius>\n"
+            "Example: /search 25 to search within 25km"
+        )
+        return
+
         await update.message.reply_text(
             f"🎉 Found {len(nearby_jobs)} jobs near you!"
         )
