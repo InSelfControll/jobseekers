@@ -118,3 +118,29 @@ def update_domain():
     db.session.commit()
     
     return jsonify({'success': True})
+
+
+
+@admin_bp.route('/update-saml-config', methods=['POST'])
+@login_required
+@admin_required
+def update_saml_config():
+    entity_id = request.form.get('entity_id')
+    sso_url = request.form.get('sso_url') 
+    idp_cert = request.form.get('idp_cert')
+    admin_groups = request.form.get('admin_groups')
+
+    employer = Employer.query.get(current_user.id)
+    if entity_id:
+        employer.saml_entity_id = entity_id
+    if sso_url:
+        employer.saml_sso_url = sso_url
+    if idp_cert:
+        employer.saml_idp_cert = idp_cert
+    if admin_groups:
+        employer.admin_groups = admin_groups
+
+    db.session.commit()
+    flash('SAML configuration updated successfully', 'success')
+    return redirect(url_for('admin.sso_config'))
+
