@@ -9,6 +9,15 @@ import os
 import hashlib
 import dns.resolver
 from models import Employer
+from flask import abort
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
 
 def verify_domain_records(domain, provider):
     try:
