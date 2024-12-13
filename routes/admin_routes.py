@@ -101,8 +101,12 @@ def update_saml_config():
 @admin_required
 def save_domain():
     data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
     provider = data.get('provider')
     domain = data.get('domain')
+    csrf_token = data.get('csrf_token')
     
     if not domain:
         flash('Domain is required', 'error')

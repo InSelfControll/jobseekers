@@ -30,11 +30,13 @@ async function saveDomain(provider) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
+                'X-Content-Type-Options': 'nosniff',
+                'X-CSRF-TOKEN': csrfToken
             },
             body: JSON.stringify({
                 domain: domain,
-                provider: provider
+                provider: provider,
+                csrf_token: csrfToken
             })
         });
         
