@@ -1,10 +1,28 @@
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from extensions import db
 from functools import wraps
 import os
+import hashlib
+import dns.resolver
 from models import Employer
+
+def verify_domain_records(domain, provider):
+    try:
+        # Verify CNAME
+        answers = dns.resolver.resolve(domain, 'CNAME')
+        cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in answers)
+        
+        # Verify TXT
+        domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
+        expected_txt = f"v=sso provider={provider} verify={domain_hash}"
+        answers = dns.resolver.resolve(domain, 'TXT')
+        txt_valid = any(str(rdata).strip('"') == expected_txt for rdata in answers)
+        
+        return cname_valid and txt_valid
+    except:
+        return False
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -37,12 +55,44 @@ def toggle_admin(user_id):
     if not current_user.is_owner:
         flash('Only owners can modify admin status', 'error')
         return redirect(url_for('admin.sso_config'))
+
+@admin_bp.route('/verify-domain/<provider>')
+@login_required
+@admin_required
+def verify_domain(provider):
+    domain = request.args.get('domain')
+    if not domain:
+        return jsonify({'verified': False, 'error': 'No domain provided'})
+    
+    verified = verify_domain_records(domain, provider.lower())
+    if verified:
+        employer = Employer.query.get(current_user.id)
+        employer.domain_verified = True
+        db.session.commit()
+    
+    return jsonify({'verified': verified})
         
     user = Employer.query.get_or_404(user_id)
     user.is_admin = not user.is_admin
     db.session.commit()
     flash(f"Admin status updated for {user.email}", 'success')
     return redirect(url_for('admin.sso_config'))
+
+@admin_bp.route('/verify-domain/<provider>')
+@login_required
+@admin_required
+def verify_domain(provider):
+    domain = request.args.get('domain')
+    if not domain:
+        return jsonify({'verified': False, 'error': 'No domain provided'})
+    
+    verified = verify_domain_records(domain, provider.lower())
+    if verified:
+        employer = Employer.query.get(current_user.id)
+        employer.domain_verified = True
+        db.session.commit()
+    
+    return jsonify({'verified': verified})
 
 @admin_bp.route('/update-github-config', methods=['POST'])
 @login_required
@@ -53,6 +103,22 @@ def update_github_config():
     flash('GitHub settings updated successfully', 'success')
     return redirect(url_for('admin.sso_config'))
 
+@admin_bp.route('/verify-domain/<provider>')
+@login_required
+@admin_required
+def verify_domain(provider):
+    domain = request.args.get('domain')
+    if not domain:
+        return jsonify({'verified': False, 'error': 'No domain provided'})
+    
+    verified = verify_domain_records(domain, provider.lower())
+    if verified:
+        employer = Employer.query.get(current_user.id)
+        employer.domain_verified = True
+        db.session.commit()
+    
+    return jsonify({'verified': verified})
+
 @admin_bp.route('/update-saml-config', methods=['POST'])
 @login_required
 @admin_required
@@ -62,3 +128,19 @@ def update_saml_config():
     os.environ['SAML_IDP_CERT'] = request.form.get('idp_cert', '')
     flash('SAML settings updated successfully', 'success')
     return redirect(url_for('admin.sso_config'))
+
+@admin_bp.route('/verify-domain/<provider>')
+@login_required
+@admin_required
+def verify_domain(provider):
+    domain = request.args.get('domain')
+    if not domain:
+        return jsonify({'verified': False, 'error': 'No domain provided'})
+    
+    verified = verify_domain_records(domain, provider.lower())
+    if verified:
+        employer = Employer.query.get(current_user.id)
+        employer.domain_verified = True
+        db.session.commit()
+    
+    return jsonify({'verified': verified})
