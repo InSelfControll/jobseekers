@@ -15,32 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
-}
-
-async function verifyDomain(provider) {
-    const domain = document.getElementById('sso_domain').value;
-    if (!domain) {
-        alert('Please enter a domain');
-        return;
-    }
-
-    try {
-        const verifyResponse = await fetch(`/admin/verify-domain/${provider}?domain=${domain}`);
-        const verifyData = await verifyResponse.json();
-        
-        const statusSpan = document.getElementById('verification-status');
-        if (verifyData.verified) {
-            statusSpan.className = 'ms-2 text-success';
-            statusSpan.innerHTML = '<i class="fas fa-check-circle"></i> Verified';
-        } else {
-            statusSpan.className = 'ms-2 text-danger';
-            statusSpan.innerHTML = '<i class="fas fa-times-circle"></i> Not Verified';
-            alert('Domain verification failed. Please check your DNS records and try again.');
-        }
-    } catch (error) {
-        console.error('Error verifying domain:', error);
-        alert('Error verifying domain');
-    }
 });
 
 async function saveDomain(provider) {
@@ -73,15 +47,7 @@ async function saveDomain(provider) {
             document.getElementById('domain-records').style.display = 'block';
             
             // Verify domain after saving
-            const verifyResponse = await fetch(`/admin/verify-domain/${provider}?domain=${domain}`);
-            const verifyData = await verifyResponse.json();
-            
-            if (verifyData.verified) {
-                const domainInput = document.getElementById('sso_domain');
-                domainInput.classList.add('is-valid');
-                domainInput.setAttribute('readonly', 'true');
-                domainInput.value = `${domain} (Verified)`;
-            }
+            await verifyDomain(provider);
         } else {
             alert(data.error || 'Failed to save domain configuration');
         }
@@ -106,6 +72,11 @@ async function verifyDomain(provider) {
         if (verifyData.verified) {
             statusSpan.className = 'ms-2 text-success';
             statusSpan.innerHTML = '<i class="fas fa-check-circle"></i> Verified';
+            
+            const domainInput = document.getElementById('sso_domain');
+            domainInput.classList.add('is-valid');
+            domainInput.setAttribute('readonly', 'true');
+            domainInput.value = `${domain} (Verified)`;
         } else {
             statusSpan.className = 'ms-2 text-danger';
             statusSpan.innerHTML = '<i class="fas fa-times-circle"></i> Not Verified';
