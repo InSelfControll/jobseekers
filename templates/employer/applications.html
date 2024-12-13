@@ -9,6 +9,7 @@
             <tr>
                 <th>Job Title</th>
                 <th>Applicant</th>
+                <th>Phone Number</th>
                 <th>Status</th>
                 <th>Application Date</th>
                 <th>Actions</th>
@@ -19,6 +20,7 @@
             <tr>
                 <td>{{ application.job.title }}</td>
                 <td>{{ application.job_seeker.full_name }}</td>
+                <td>{{ application.job_seeker.phone_number }}</td>
                 <td>
                     <form method="POST" action="{{ url_for('employer.update_application', app_id=application.id) }}"
                           class="d-inline">
@@ -35,6 +37,12 @@
                             data-bs-target="#viewModal{{ application.id }}">
                         View Details
                     </button>
+                    {% if application.job_seeker.resume_path %}
+                    <a href="{{ url_for('static', filename=application.job_seeker.resume_path) }}" 
+                       class="btn btn-sm btn-info" target="_blank">
+                        View CV
+                    </a>
+                    {% endif %}
                     <a href="https://t.me/{{ application.job_seeker.telegram_id }}?text=Hello, I'm from {{ application.job.employer.company_name }}!" 
                        class="btn btn-sm btn-success" target="_blank">
                         Message on Telegram
