@@ -13,6 +13,9 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">Job Hunter</a>
             {% if current_user.is_authenticated %}
+            <button onclick="toggleDarkMode()" class="btn btn-outline-light me-2">
+                <i data-feather="moon"></i>
+            </button>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>

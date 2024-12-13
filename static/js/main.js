@@ -1,3 +1,16 @@
+
+// Dark mode toggle
+function toggleDarkMode() {
+    const isDark = document.body.getAttribute('data-theme') === 'dark';
+    document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+// Set initial theme
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+
 // Initialize Feather icons
 document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
