@@ -91,6 +91,14 @@ def github_login():
     session['oauth_state'] = state
     return redirect(authorization_url)
 
+def generate_sso_domain(employer, provider):
+    import uuid
+    domain_prefix = str(uuid.uuid4())[:8]
+    domain = f"{domain_prefix}-{provider.lower()}.{request.host}"
+    cname_record = f"CNAME {domain} {request.host}"
+    txt_record = f"TXT {domain} \"v=sso1 provider={provider}\""
+    return domain, cname_record, txt_record
+
 @auth_bp.route('/github/callback')
 def github_callback():
     github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
@@ -99,6 +107,10 @@ def github_callback():
         client_secret=GITHUB_CLIENT_SECRET,
         authorization_response=request.url
     )
+    
+    # Generate SSO domain after successful authentication
+    domain, cname, txt = generate_sso_domain(employer, "GITHUB")
+    flash(f"Configure your DNS with:\n{cname}\n{txt}", "info")
     
     resp = github.get(GITHUB_USER_INFO_URL)
     user_info = resp.json()
@@ -138,6 +150,11 @@ def saml_callback():
     auth = init_saml_auth(req)
     auth.process_response()
     errors = auth.get_errors()
+    
+    if not errors and auth.is_authenticated():
+        # Generate SSO domain after successful authentication
+        domain, cname, txt = generate_sso_domain(employer, "SAML")
+        flash(f"Configure your DNS with:\n{cname}\n{txt}", "info")
     
     if not errors:
         if auth.is_authenticated():
