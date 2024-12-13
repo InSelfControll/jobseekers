@@ -13,8 +13,8 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Company</th>
                         <th>Email</th>
+                        <th>Company</th>
                         <th>Admin Status</th>
                         <th>Actions</th>
                     </tr>
@@ -22,8 +22,8 @@
                 <tbody>
                     {% for user in users %}
                     <tr>
-                        <td>{{ user.company_name }}</td>
                         <td>{{ user.email }}</td>
+                        <td>{{ user.company_name }}</td>
                         <td>{{ "Admin" if user.is_admin else "User" }}</td>
                         <td>
                             {% if current_user.is_owner %}
@@ -43,7 +43,7 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h4>GitHub OAuth Settings</h4>
+            <h4>GitHub SSO Configuration</h4>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.update_github_config') }}">
@@ -60,9 +60,9 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-header">
-            <h4>SAML/Azure AD Settings</h4>
+            <h4>Microsoft/Azure AD SSO Configuration</h4>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.update_saml_config') }}">
@@ -71,7 +71,7 @@
                     <input type="text" class="form-control" name="entity_id" value="{{ saml_entity_id }}">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">IDP SSO URL</label>
+                    <label class="form-label">SSO URL</label>
                     <input type="text" class="form-control" name="sso_url" value="{{ saml_sso_url }}">
                 </div>
                 <div class="mb-3">
