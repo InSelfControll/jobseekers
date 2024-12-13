@@ -1,6 +1,6 @@
 
 from extensions import db
-from models import Job, JobSeeker
+from models import Job, JobSeeker, Employer, Application, Message
 from flask import Flask
 
 def create_app():
@@ -12,10 +12,9 @@ def create_app():
 def run_migrations():
     app = create_app()
     with app.app_context():
-        # Drop existing tables
         db.drop_all()
-        # Create all tables fresh
         db.create_all()
+        print("All tables created successfully!")
         
 if __name__ == '__main__':
     run_migrations()
