@@ -226,6 +226,58 @@ async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE)
             job_seeker = JobSeeker.query.filter_by(
                 telegram_id=str(update.effective_user.id)
             ).first()
+            
+            if not job_seeker:
+                await update.message.reply_text(
+                    "⚠️ Please register first using /register command.\n"
+                    "This will help us create your profile!"
+                )
+                return
+            
+            job = Job.query.get(job_id)
+            if not job:
+                await update.message.reply_text(
+                    "❌ Job not found. Please check the job ID and try again.\n"
+                    "Use /search to see available jobs."
+                )
+                return
+                
+            # Check if already applied
+            existing_application = Application.query.filter_by(
+                job_id=job.id,
+                job_seeker_id=job_seeker.id
+            ).first()
+            
+            if existing_application:
+                await update.message.reply_text(
+                    "📝 You have already applied for this position!\n"
+                    f"Current status: {existing_application.status}"
+                )
+                return
+            
+            await update.message.reply_text(
+                "🤖 Generating your personalized cover letter..."
+            )
+            
+            # Generate cover letter using AI
+            cover_letter = generate_cover_letter(job_seeker.skills, job.description)
+            
+            # Create application
+            application = Application(
+                job_id=job.id,
+                job_seeker_id=job_seeker.id,
+                cover_letter=cover_letter
+            )
+            
+            db.session.add(application)
+            db.session.commit()
+            
+            await update.message.reply_text(
+                f"✅ Application submitted successfully for:\n"
+                f"🏢 {job.title} at {job.employer.company_name}\n\n"
+                f"Your cover letter has been generated based on your skills.\n"
+                "We'll notify you of any updates from the employer!"
+            )
         
         if not job_seeker:
             await update.message.reply_text(
