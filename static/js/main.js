@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
     
     // Initialize location picker for job posting
-    const locationInput = document.querySelector('input[name="location"]');
-    if (locationInput) {
-        locationInput.addEventListener('change', async (e) => {
+    const locationInputs = document.querySelectorAll('input[name="location"]');
+    locationInputs.forEach(input => {
+        input.addEventListener('blur', async (e) => {
             try {
                 const response = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.target.value)}`
@@ -13,14 +13,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (data.length > 0) {
-                    document.getElementById('latitude').value = data[0].lat;
-                    document.getElementById('longitude').value = data[0].lon;
+                    const form = e.target.closest('form');
+                    const latInput = form.querySelector('input[name="latitude"]');
+                    const lngInput = form.querySelector('input[name="longitude"]');
+                    
+                    latInput.value = data[0].lat;
+                    lngInput.value = data[0].lon;
                 }
             } catch (error) {
                 console.error('Error getting coordinates:', error);
+                alert('Error getting location coordinates. Please try again.');
             }
         });
-    }
+    });
     
     // Auto-submit status changes
     const statusSelects = document.querySelectorAll('select[name="status"]');
