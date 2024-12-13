@@ -37,6 +37,8 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    domain = request.headers.get('Host')
+    employer = Employer.query.filter_by(sso_domain=domain).first()
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -47,7 +49,7 @@ def login():
             return redirect(url_for('employer.dashboard'))
         
         flash('Invalid email or password', 'error')
-    return render_template('auth/login.html')
+    return render_template('auth/login.html', employer=employer)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -87,10 +89,15 @@ def register():
 
 @auth_bp.route('/github/login')
 def github_login():
-    github = OAuth2Session(GITHUB_CLIENT_ID)
-    authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
-    session['oauth_state'] = state
-    return redirect(authorization_url)
+    domain = request.headers.get('Host')
+    employer = Employer.query.filter_by(sso_domain=domain).first()
+    if employer and employer.sso_provider == 'GITHUB':
+        github = OAuth2Session(GITHUB_CLIENT_ID)
+        authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
+        session['oauth_state'] = state
+        return redirect(authorization_url)
+    flash('Invalid SSO configuration', 'error')
+    return redirect(url_for('auth.login'))
 
 def generate_sso_domain(employer, provider):
     import uuid
@@ -152,9 +159,14 @@ def logout():
 
 @auth_bp.route('/saml/login')
 def saml_login():
-    req = prepare_flask_request(request)
-    auth = init_saml_auth(req)
-    return redirect(auth.login())
+    domain = request.headers.get('Host')
+    employer = Employer.query.filter_by(sso_domain=domain).first()
+    if employer and employer.sso_provider == 'SAML':
+        req = prepare_flask_request(request)
+        auth = init_saml_auth(req)
+        return redirect(auth.login())
+    flash('Invalid SSO configuration', 'error')
+    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/saml/callback', methods=['POST'])
 def saml_callback():
