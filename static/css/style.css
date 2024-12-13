@@ -30,18 +30,28 @@ body {
 }
 
 .navbar-brand {
-    font-size: 1.2rem;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
     padding: 0.5rem 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 150px;
+    max-width: min(150px, 40vw);
+    margin-right: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 @media (min-width: 768px) {
     .navbar-brand {
-        max-width: 200px;
-        font-size: 1.4rem;
+        max-width: min(200px, 30vw);
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 1024px) {
+    .navbar-brand {
+        max-width: min(250px, 25vw);
     }
 }
 
