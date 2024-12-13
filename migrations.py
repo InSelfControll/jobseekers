@@ -12,9 +12,10 @@ def create_app():
 def run_migrations():
     app = create_app()
     with app.app_context():
+        # Drop all tables and recreate
         db.drop_all()
         db.create_all()
-        print("All tables created successfully!")
+        print("All database tables created successfully!")
         
 if __name__ == '__main__':
     run_migrations()
