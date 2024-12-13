@@ -49,11 +49,13 @@
             <form method="POST" action="{{ url_for('admin.update_github_config') }}">
                 <div class="mb-3">
                     <label class="form-label">Client ID</label>
-                    <input type="text" class="form-control" name="github_client_id" value="{{ github_client_id }}">
+                    <input type="password" class="form-control" name="github_client_id" value="{{ github_client_id }}" autocomplete="off">
+                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Client Secret</label>
-                    <input type="password" class="form-control" name="github_client_secret" value="{{ github_client_secret }}">
+                    <input type="password" class="form-control" name="github_client_secret" value="{{ github_client_secret }}" autocomplete="off">
+                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
                 </div>
                 <button type="submit" class="btn btn-primary">Save GitHub Settings</button>
             </form>
@@ -68,15 +70,18 @@
             <form method="POST" action="{{ url_for('admin.update_saml_config') }}">
                 <div class="mb-3">
                     <label class="form-label">Entity ID</label>
-                    <input type="text" class="form-control" name="entity_id" value="{{ saml_entity_id }}">
+                    <input type="password" class="form-control" name="entity_id" value="{{ saml_entity_id }}" autocomplete="off">
+                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">SSO URL</label>
-                    <input type="text" class="form-control" name="sso_url" value="{{ saml_sso_url }}">
+                    <input type="password" class="form-control" name="sso_url" value="{{ saml_sso_url }}" autocomplete="off">
+                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">IDP Certificate</label>
-                    <textarea class="form-control" name="idp_cert" rows="5">{{ saml_idp_cert }}</textarea>
+                    <textarea class="form-control" name="idp_cert" rows="5" placeholder="Enter new certificate to update">{{ '********' if saml_idp_cert else '' }}</textarea>
+                    <small class="text-muted">Hidden for security. Enter new value to update.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Admin Groups (comma-separated)</label>
