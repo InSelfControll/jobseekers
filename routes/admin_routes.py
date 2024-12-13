@@ -55,23 +55,7 @@ def toggle_admin(user_id):
     if not current_user.is_owner:
         flash('Only owners can modify admin status', 'error')
         return redirect(url_for('admin.sso_config'))
-
-@admin_bp.route('/verify-domain/<provider>')
-@login_required
-@admin_required
-def verify_domain(provider):
-    domain = request.args.get('domain')
-    if not domain:
-        return jsonify({'verified': False, 'error': 'No domain provided'})
     
-    verified = verify_domain_records(domain, provider.lower())
-    if verified:
-        employer = Employer.query.get(current_user.id)
-        employer.domain_verified = True
-        db.session.commit()
-    
-    return jsonify({'verified': verified})
-        
     user = Employer.query.get_or_404(user_id)
     user.is_admin = not user.is_admin
     db.session.commit()
@@ -103,22 +87,6 @@ def update_github_config():
     flash('GitHub settings updated successfully', 'success')
     return redirect(url_for('admin.sso_config'))
 
-@admin_bp.route('/verify-domain/<provider>')
-@login_required
-@admin_required
-def verify_domain(provider):
-    domain = request.args.get('domain')
-    if not domain:
-        return jsonify({'verified': False, 'error': 'No domain provided'})
-    
-    verified = verify_domain_records(domain, provider.lower())
-    if verified:
-        employer = Employer.query.get(current_user.id)
-        employer.domain_verified = True
-        db.session.commit()
-    
-    return jsonify({'verified': verified})
-
 @admin_bp.route('/update-saml-config', methods=['POST'])
 @login_required
 @admin_required
@@ -128,19 +96,3 @@ def update_saml_config():
     os.environ['SAML_IDP_CERT'] = request.form.get('idp_cert', '')
     flash('SAML settings updated successfully', 'success')
     return redirect(url_for('admin.sso_config'))
-
-@admin_bp.route('/verify-domain/<provider>')
-@login_required
-@admin_required
-def verify_domain(provider):
-    domain = request.args.get('domain')
-    if not domain:
-        return jsonify({'verified': False, 'error': 'No domain provided'})
-    
-    verified = verify_domain_records(domain, provider.lower())
-    if verified:
-        employer = Employer.query.get(current_user.id)
-        employer.domain_verified = True
-        db.session.commit()
-    
-    return jsonify({'verified': verified})
