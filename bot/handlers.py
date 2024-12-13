@@ -108,10 +108,14 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle job search command"""
+    from app import create_app
+    app = create_app()
+    
     try:
-        job_seeker = JobSeeker.query.filter_by(
-            telegram_id=str(update.effective_user.id)
-        ).first()
+        with app.app_context():
+            job_seeker = JobSeeker.query.filter_by(
+                telegram_id=str(update.effective_user.id)
+            ).first()
         
         if not job_seeker:
             await update.message.reply_text(
