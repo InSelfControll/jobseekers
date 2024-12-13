@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import signal
 from app import create_app, db  # Added db import
 from bot.telegram_bot import start_bot
