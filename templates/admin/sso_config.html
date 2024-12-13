@@ -58,6 +58,7 @@
                 <small class="text-muted">Enter the domain where your GitHub SSO will be hosted</small>
             </div>
             <form method="POST" action="{{ url_for('admin.update_github_config') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label class="form-label">Client ID</label>
                     <input type="password" class="form-control" name="github_client_id" value="{{ github_client_id }}" autocomplete="off">
