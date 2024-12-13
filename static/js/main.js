@@ -45,6 +45,17 @@ async function saveDomain(provider) {
             const dnsRecords = document.getElementById('dns-records');
             dnsRecords.textContent = `${data.cname_record}\n${data.txt_record}`;
             document.getElementById('domain-records').style.display = 'block';
+            
+            // Verify domain after saving
+            const verifyResponse = await fetch(`/admin/verify-domain/${provider}?domain=${domain}`);
+            const verifyData = await verifyResponse.json();
+            
+            if (verifyData.verified) {
+                const domainInput = document.getElementById('sso_domain');
+                domainInput.classList.add('is-valid');
+                domainInput.setAttribute('readonly', 'true');
+                domainInput.value = `${domain} (Verified)`;
+            }
         } else {
             alert(data.error || 'Failed to save domain configuration');
         }
