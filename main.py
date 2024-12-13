@@ -48,11 +48,24 @@ async def run_web_server():
 async def run_telegram_bot():
     """Run the Telegram bot"""
     try:
+        # Kill any existing Python processes running the bot
+        import psutil
+        current_pid = os.getpid()
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                if proc.info['name'] == 'python' and proc.pid != current_pid:
+                    cmdline = proc.info.get('cmdline', [])
+                    if any('telegram' in cmd.lower() for cmd in cmdline if cmd):
+                        proc.kill()
+                        logger.info(f"Killed duplicate bot process: {proc.pid}")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+
         application = await start_bot()
         if application:
             await application.initialize()
             await application.start()
-            await application.updater.start_polling(drop_pending_updates=True)
+            await application.updater.start_polling(drop_pending_updates=True, allowed_updates=['message'])
             
             while True:
                 await asyncio.sleep(1)
@@ -62,8 +75,9 @@ async def run_telegram_bot():
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
     finally:
-        if application:
+        if 'application' in locals() and application:
             await application.stop()
+            await application.shutdown()
 
 
 async def main():
