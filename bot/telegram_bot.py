@@ -2,6 +2,7 @@ import os
 import logging
 import asyncio
 from telegram._update import Update
+from telegram._chat import Chat
 from telegram.ext import (
     Application,
     ApplicationBuilder,
