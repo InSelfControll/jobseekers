@@ -1,38 +1,16 @@
+
 import os
 import logging
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect
-from extensions import db, init_db, login_manager, logger
-from services.email_service import mail
-from itsdangerous import URLSafeTimedSerializer
-
-csrf = CSRFProtect()
+from extensions import db, login_manager, init_db, logger
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     app.config['WTF_CSRF_ENABLED'] = True
-    
-    # Email configuration
-    email_provider = os.environ.get('EMAIL_PROVIDER', 'smtp')
-    
-    if email_provider == 'sendgrid':
-        app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = os.environ.get('SENDGRID_API_KEY')
-        app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@yourdomain.com')
-    else:
-        app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.yourserver.com')
-        app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
-        app.config['MAIL_USE_TLS'] = os.environ.get('SMTP_USE_TLS', 'True').lower() == 'true'
-        app.config['MAIL_USERNAME'] = os.environ.get('SMTP_USERNAME')
-        app.config['MAIL_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
-        app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SMTP_FROM_EMAIL', 'noreply@yourdomain.com')
-    
-    app.ts = URLSafeTimedSerializer(app.secret_key)
-    mail.init_app(app)
+
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
@@ -49,7 +27,7 @@ def create_app():
         # Initialize login manager
         login_manager.init_app(app)
         login_manager.login_view = 'auth.login'
-        csrf.init_app(app)
+        
         logger.info("Application initialized successfully")
         
     except Exception as e:

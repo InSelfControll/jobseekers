@@ -1,7 +1,6 @@
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import login_user, logout_user, login_required
-from services.email_service import send_verification_email
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Employer
@@ -46,50 +45,27 @@ def login():
         
         employer = Employer.query.filter_by(email=email).first()
         if employer and check_password_hash(employer.password_hash, password):
-            employer.login_count += 1
-            db.session.commit()
             login_user(employer)
-            
-            if employer.is_admin and employer.login_count > 1 and not employer.sso_domain:
-                return redirect(url_for('admin.sso_config'))
             return redirect(url_for('employer.dashboard'))
         
         flash('Invalid email or password', 'error')
     return render_template('auth/login.html', employer=employer)
 
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField
-from wtforms.validators import DataRequired, Email
-
-class RegistrationForm(FlaskForm):
-    company_name = StringField('Company Name', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegistrationForm()
     if request.method == 'POST':
         email = request.form.get('email')
         company_name = request.form.get('company_name')
         password = request.form.get('password')
+        domain = email.split('@')[1]
         
-        if not all([email, company_name, password]):
-            return jsonify({'error': 'All fields are required'}), 400
+        existing_domain = Employer.query.filter_by(company_domain=domain).first()
+        if existing_domain:
+            flash('Another user from your company is already registered', 'error')
+            return redirect(url_for('auth.register'))
             
-        try:
-            employer = Employer.query.filter_by(email=email).first()
-            if employer:
-                return jsonify({'error': 'Email already registered'}), 400
-            domain = email.split('@')[1]
-            
-            existing_domain = Employer.query.filter_by(company_domain=domain).first()
-            if existing_domain:
-                flash('Another user from your company is already registered', 'error')
-                return redirect(url_for('auth.register'))
-                
-        except Exception as e:
-            flash('Error checking registration details', 'error')
+        if Employer.query.filter_by(email=email).first():
+            flash('Email already registered', 'error')
             return redirect(url_for('auth.register'))
         
         domain = email.split('@')[1]
@@ -107,15 +83,9 @@ def register():
         db.session.add(employer)
         db.session.commit()
         
-        send_verification_email(email)
-        login_user(employer)
-        
-        flash('Registration successful! Please check your email to verify your account.', 'success')
-            return jsonify({'success': True, 'redirect': url_for('admin.sso_config')}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Registration failed. Please try again.'}), 500
-    return render_template('auth/register.html', form=form)
+        flash('Registration successful!', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/register.html')
 
 @auth_bp.route('/github/login')
 def github_login():
@@ -180,21 +150,6 @@ def github_callback():
     
     login_user(employer)
     return redirect(url_for('employer.dashboard'))
-
-@auth_bp.route('/verify-email/<token>')
-def verify_email(token):
-    try:
-        email = current_app.ts.loads(token, salt='email-verify-key', max_age=86400)
-        employer = Employer.query.filter_by(email=email).first()
-        if employer:
-            employer.email_verified = True
-            db.session.commit()
-            flash('Email verified successfully!', 'success')
-        else:
-            flash('Invalid verification link', 'error')
-    except:
-        flash('Invalid or expired verification link', 'error')
-    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/logout')
 @login_required

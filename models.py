@@ -4,21 +4,17 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON
 
 class Employer(UserMixin, db.Model):
+    __tablename__ = 'employer'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    email_verified = db.Column(db.Boolean, default=False)
     company_name = db.Column(db.String(120), nullable=False)
     sso_domain = db.Column(db.String(255), unique=True)
     sso_provider = db.Column(db.String(50))
     company_domain = db.Column(db.String(120))
-    github_client_id = db.Column(db.String(100))
-    github_client_secret = db.Column(db.String(100))
-    domain_verified = db.Column(db.Boolean, default=False)
     password_hash = db.Column(db.String(256))
     is_admin = db.Column(db.Boolean, default=False)
     is_owner = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    login_count = db.Column(db.Integer, default=0)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
 class Job(db.Model):
