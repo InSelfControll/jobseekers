@@ -76,11 +76,6 @@ def register():
         
         if not all([email, company_name, password]):
             return jsonify({'error': 'All fields are required'}), 400
-            
-        try:
-            employer = Employer.query.filter_by(email=email).first()
-            if employer:
-                return jsonify({'error': 'Email already registered'}), 400
         domain = email.split('@')[1]
         
         existing_domain = Employer.query.filter_by(company_domain=domain).first()
@@ -111,10 +106,7 @@ def register():
         login_user(employer)
         
         flash('Registration successful! Please check your email to verify your account.', 'success')
-            return jsonify({'success': True, 'redirect': url_for('admin.sso_config')}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': 'Registration failed. Please try again.'}), 500
+        return redirect(url_for('admin.sso_config'))
     return render_template('auth/register.html', form=form)
 
 @auth_bp.route('/github/login')
