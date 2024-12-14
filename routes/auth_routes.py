@@ -87,9 +87,9 @@ def register():
             if existing_domain:
                 flash('Another user from your company is already registered', 'error')
                 return redirect(url_for('auth.register'))
-            
-        if Employer.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
+                
+        except Exception as e:
+            flash('Error checking registration details', 'error')
             return redirect(url_for('auth.register'))
         
         domain = email.split('@')[1]
