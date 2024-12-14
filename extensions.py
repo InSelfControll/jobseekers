@@ -20,8 +20,7 @@ def init_db(app):
             'pool_size': 5,
             'pool_timeout': 30,
             'pool_recycle': 1800,
-            'pool_pre_ping': True,
-            'pool_class': QueuePool
+            'pool_pre_ping': True
         }
         db.init_app(app)
         logger.info("Database initialized successfully")
