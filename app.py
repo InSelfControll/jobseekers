@@ -15,11 +15,11 @@ def create_app():
     app.config['WTF_CSRF_ENABLED'] = True
     
     # Email configuration
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+    app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.yourserver.com')
+    app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.environ.get('SMTP_USE_TLS', 'True').lower() == 'true'
+    app.config['MAIL_USERNAME'] = os.environ.get('SMTP_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
     app.ts = URLSafeTimedSerializer(app.secret_key)
     
     mail.init_app(app)
