@@ -147,8 +147,6 @@ def github_callback():
         db.session.commit()
         flash(f"Configure your DNS with:\nCNAME Record: {cname_record}\nTXT Record: {txt_record}", "success")
     login_user(employer)
-    
-    login_user(employer)
     return redirect(url_for('employer.dashboard'))
 
 @auth_bp.route('/logout')
