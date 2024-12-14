@@ -38,8 +38,9 @@ function toggleProviderSettings() {
     
     githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
     azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    document.getElementById('saml-settings').style.display = provider === 'SAML' ? 'block' : 'none';
     
-    if (provider === 'AZURE_AD') {
+    if (provider === 'AZURE_AD' || provider === 'SAML') {
         const metadataInput = document.getElementById('saml-metadata');
         metadataInput.addEventListener('change', handleSamlMetadataUpload);
     }
@@ -152,8 +153,9 @@ function toggleProviderSettings() {
     
     githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
     azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    document.getElementById('saml-settings').style.display = provider === 'SAML' ? 'block' : 'none';
     
-    if (provider === 'AZURE_AD') {
+    if (provider === 'AZURE_AD' || provider === 'SAML') {
         const metadataInput = document.getElementById('saml-metadata');
         metadataInput.addEventListener('change', handleSamlMetadataUpload);
     }
