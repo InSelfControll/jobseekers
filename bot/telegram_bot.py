@@ -10,7 +10,8 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
-from telegram import Update, Chat
+from telegram.ext._update import Update
+from telegram.ext._chat import Chat
 from bot.handlers import (
     start, register, handle_full_name, handle_phone_number, handle_location, 
     handle_resume, handle_job_search, handle_application, cancel
