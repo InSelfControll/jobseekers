@@ -112,9 +112,9 @@ def register():
         
         flash('Registration successful! Please check your email to verify your account.', 'success')
             return jsonify({'success': True, 'redirect': url_for('admin.sso_config')}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': 'Registration failed. Please try again.'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Registration failed. Please try again.'}), 500
     return render_template('auth/register.html', form=form)
 
 @auth_bp.route('/github/login')
