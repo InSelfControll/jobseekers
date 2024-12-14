@@ -1,16 +1,16 @@
-
 import os
 import logging
 from flask import Flask
-from extensions import db, login_manager, init_db, logger
+from flask_wtf.csrf import CSRFProtect
+from extensions import db, init_db, login_manager, logger
+
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     app.config['WTF_CSRF_ENABLED'] = True
 
-    from flask_wtf.csrf import CSRFProtect
-    csrf = CSRFProtect(app)
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
@@ -27,7 +27,7 @@ def create_app():
         # Initialize login manager
         login_manager.init_app(app)
         login_manager.login_view = 'auth.login'
-        
+        csrf.init_app(app)
         logger.info("Application initialized successfully")
         
     except Exception as e:

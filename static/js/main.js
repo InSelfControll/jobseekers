@@ -25,16 +25,79 @@ async function handleSamlMetadataUpload(event) {
 
 async function saveDomain() {
     const provider = document.getElementById('provider').value;
-    const domain = document.getElementById('sso_domain').value.trim();
-    if (!domain) {
+    const sso_domain = document.getElementById('sso_domain').value.trim();
+    const dnsRecordsDiv = document.getElementById('domain-records');
+    const dnsRecordsPre = document.getElementById('dns-records');
+    
+    if (!sso_domain) {
         alert('Please enter a domain');
         return;
     }
 
     const formData = {
-        domain,
-        provider,
+        domain: sso_domain,
+        provider: provider,
     };
+
+    if (provider === 'GITHUB') {
+        formData.github_client_id = document.getElementById('github_client_id')?.value;
+        formData.github_client_secret = document.getElementById('github_client_secret')?.value;
+    }
+
+    try {
+        const response = await fetch('/admin/save-domain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            dnsRecordsDiv.style.display = 'block';
+            dnsRecordsPre.textContent = `${data.cname_record}\n${data.txt_record}`;
+            alert('Domain saved successfully!');
+        } else {
+            alert(data.error || 'Failed to save domain');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving domain');
+    }
+}
+
+async function verifyDomain() {
+    const domain = document.getElementById('sso_domain').value.trim();
+    const provider = document.getElementById('provider').value;
+    
+    if (!domain) {
+        alert('Please enter a domain');
+        return;
+    }
+
+    try {
+        const response = await fetch('/admin/verify-domain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ domain, provider })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            alert('Domain verified successfully!');
+        } else {
+            alert(data.error || 'Domain verification failed');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error verifying domain');
+    }
+}
 
     if (provider === 'GITHUB') {
         formData.github_client_id = document.getElementById('github_client_id')?.value;
