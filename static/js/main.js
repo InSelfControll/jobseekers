@@ -38,6 +38,36 @@ function toggleProviderSettings() {
     
     githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
     azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    
+    if (provider === 'AZURE_AD') {
+        const metadataInput = document.getElementById('saml-metadata');
+        metadataInput.addEventListener('change', handleSamlMetadataUpload);
+    }
+}
+
+async function handleSamlMetadataUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+        
+        // Extract SSO URL
+        const ssoElement = xmlDoc.querySelector('SingleSignOnService[Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]');
+        if (ssoElement) {
+            document.getElementById('sso_url').value = ssoElement.getAttribute('Location');
+        }
+        
+        // Extract certificate
+        const certElement = xmlDoc.querySelector('X509Certificate');
+        if (certElement) {
+            const cert = certElement.textContent.trim();
+            document.getElementById('idp_cert').value = `-----BEGIN CERTIFICATE-----\n${cert}\n-----END CERTIFICATE-----`;
+        }
+    };
+    reader.readAsText(file);
 }
 
 async function saveDomain(provider) {
@@ -122,6 +152,36 @@ function toggleProviderSettings() {
     
     githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
     azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    
+    if (provider === 'AZURE_AD') {
+        const metadataInput = document.getElementById('saml-metadata');
+        metadataInput.addEventListener('change', handleSamlMetadataUpload);
+    }
+}
+
+async function handleSamlMetadataUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+        
+        // Extract SSO URL
+        const ssoElement = xmlDoc.querySelector('SingleSignOnService[Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"]');
+        if (ssoElement) {
+            document.getElementById('sso_url').value = ssoElement.getAttribute('Location');
+        }
+        
+        // Extract certificate
+        const certElement = xmlDoc.querySelector('X509Certificate');
+        if (certElement) {
+            const cert = certElement.textContent.trim();
+            document.getElementById('idp_cert').value = `-----BEGIN CERTIFICATE-----\n${cert}\n-----END CERTIFICATE-----`;
+        }
+    };
+    reader.readAsText(file);
 }
 
 async function saveDomain(provider) {
