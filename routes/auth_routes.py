@@ -154,28 +154,15 @@ def github_callback():
     email = next((e['email'] for e in emails if e['primary']), emails[0]['email'])
     
     employer = Employer.query.filter_by(email=email).first()
-    domain = request.form.get('domain') or f"{user_info.get('login').lower()}.{request.host}"
     if not employer:
-        cname_record = f"CNAME {domain} login.{request.host}"
-        txt_record = f"TXT {domain} \"v=sso1 provider=GITHUB user={user_info.get('login')}\""
         employer = Employer(
             email=email,
             company_name=user_info.get('company') or user_info.get('login'),
             password_hash=generate_password_hash(os.urandom(24).hex()),
-            sso_domain=domain,
             sso_provider="GITHUB"
         )
         db.session.add(employer)
         db.session.commit()
-        flash(f"Configure your DNS with:\nCNAME Record: {cname_record}\nTXT Record: {txt_record}", "success")
-        session['sso_domain'] = domain
-        session['sso_records'] = {'cname': cname_record, 'txt': txt_record}
-    elif not employer.sso_domain:
-        domain, cname_record, txt_record = generate_sso_domain(None, "GITHUB")
-        employer.sso_domain = domain
-        employer.sso_provider = "GITHUB"
-        db.session.commit()
-        flash(f"Configure your DNS with:\nCNAME Record: {cname_record}\nTXT Record: {txt_record}", "success")
     login_user(employer)
     
     login_user(employer)
