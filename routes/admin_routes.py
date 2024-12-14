@@ -175,10 +175,17 @@ def verify_domain():
 @login_required
 @admin_required
 def update_saml_config():
-    entity_id = request.form.get('entity_id')
-    sso_url = request.form.get('sso_url') 
-    idp_cert = request.form.get('idp_cert')
-    admin_groups = request.form.get('admin_groups')
+    if request.is_json:
+        data = request.get_json()
+        entity_id = data.get('entity_id')
+        sso_url = data.get('sso_url')
+        idp_cert = data.get('idp_cert')
+        admin_groups = data.get('admin_groups')
+    else:
+        entity_id = request.form.get('entity_id')
+        sso_url = request.form.get('sso_url')
+        idp_cert = request.form.get('idp_cert')
+        admin_groups = request.form.get('admin_groups')
 
     employer = Employer.query.get(current_user.id)
     if entity_id:

@@ -71,6 +71,7 @@ async function saveDomain() {
 async function verifyDomain() {
     const domain = document.getElementById('sso_domain').value.trim();
     const provider = document.getElementById('provider').value;
+    const verificationStatus = document.getElementById('verification-status');
     
     if (!domain) {
         alert('Please enter a domain');
@@ -89,8 +90,10 @@ async function verifyDomain() {
 
         const data = await response.json();
         if (data.success) {
+            verificationStatus.innerHTML = '<span class="badge bg-success">Verified</span>';
             alert('Domain verified successfully!');
         } else {
+            verificationStatus.innerHTML = '<span class="badge bg-danger">Unverified</span>';
             alert(data.error || 'Domain verification failed');
         }
     } catch (error) {
@@ -98,6 +101,41 @@ async function verifyDomain() {
         alert('Error verifying domain');
     }
 }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const provider = document.getElementById('provider');
+    if (provider) {
+        provider.addEventListener('change', toggleProviderSettings);
+    }
+});
+
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    const githubSettings = document.getElementById('github-settings');
+    const azureSettings = document.getElementById('azure-settings');
+    const samlSettings = document.getElementById('saml-settings');
+    
+    if (githubSettings) githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
+    if (azureSettings) azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    if (samlSettings) samlSettings.style.display = provider === 'SAML' ? 'block' : 'none';
+}
+
+async function saveDomain() {
+    const provider = document.getElementById('provider').value;
+    const domain = document.getElementById('sso_domain').value.trim();
+    const dnsRecordsDiv = document.getElementById('domain-records');
+    const dnsRecordsPre = document.getElementById('dns-records');
+    const verificationStatus = document.getElementById('verification-status');
+    
+    if (!domain) {
+        alert('Please enter a domain');
+        return;
+    }
+
+    const formData = {
+        domain: domain,
+        provider: provider
+    };
 
     if (provider === 'GITHUB') {
         formData.github_client_id = document.getElementById('github_client_id')?.value;
