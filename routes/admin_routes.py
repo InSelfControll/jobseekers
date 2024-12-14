@@ -152,7 +152,24 @@ def update_domain():
 @login_required
 @admin_required
 def verify_domain():
-    return jsonify({'success': True})
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+    domain = data.get('domain')
+    provider = data.get('provider')
+    
+    if not domain or not provider:
+        return jsonify({'success': False, 'error': 'Domain and provider are required'}), 400
+        
+    is_verified = verify_domain_records(domain, provider)
+    if is_verified:
+        employer = Employer.query.get(current_user.id)
+        employer.domain_verified = True
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    return jsonify({'success': False, 'error': 'Domain verification failed'})
 
 @admin_bp.route('/update-saml-config', methods=['POST'])
 @login_required
