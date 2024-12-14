@@ -205,7 +205,67 @@ function toggleProviderSettings() {
 }
 
 // Initialize theme on page load
+// Register form handling
+function handleRegisterForm() {
+    const form = document.getElementById('registerForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = document.getElementById('registerButton');
+        const errorDiv = document.getElementById('registerError');
+        
+        // Basic validation
+        const inputs = form.querySelectorAll('input');
+        let isValid = true;
+        
+        inputs.forEach(input => {
+            if (!input.checkValidity()) {
+                input.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            errorDiv.textContent = 'Please fix the errors above';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        try {
+            button.disabled = true;
+            const formData = new FormData(form);
+            
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                const data = await response.json();
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            errorDiv.textContent = 'An error occurred. Please try again.';
+            errorDiv.style.display = 'block';
+        } finally {
+            button.disabled = false;
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    handleRegisterForm();
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.body.setAttribute('data-theme', savedTheme);
     const icon = document.getElementById('themeIcon');
