@@ -8,7 +8,7 @@
     --background-color: #1a202c;
     --text-color: #f7fafc;
     --card-bg: #2d3748;
-    --container-bg: #2d3748;
+   /* --container-bg: #2d3748;*/
     --navbar-bg: rgba(0, 0, 0, 0.95);
     --navbar-text: rgba(255, 255, 255, 0.7);
     --navbar-text-hover: white;
@@ -18,12 +18,15 @@
     --primary-color: #4299e1;
     --secondary-color: #718096;
     --success-color: #48bb78;
-    --background-color: #f7fafc;
-    --text-color: #2d3748;
-    --card-bg: #ffffff;
-    --container-bg: #ffffff;
     --warning-color: #ecc94b;
     --danger-color: #f56565;
+    --background-color: grey;
+    --text-color: black;
+    --card-bg: darkgray;
+    /*--container-bg: #2d3748;*/
+    --navbar-bg: darkgoldenrod;
+    --navbar-text: rgba(255, 255, 255, 0.7);
+    --navbar-text-hover: white;
 }
 
 body {
@@ -175,6 +178,26 @@ body {
     padding: 0.75rem 1rem;
     font-weight: 500;
     border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.login-btn {
+    width: 100%;
+    background-color: var(--primary-color);
+    border: none;
+    color: white;
+    font-size: 1rem;
+    margin-top: 1rem;
+}
+
+.login-btn:hover {
+    background-color: #3182ce;
+    transform: translateY(-1px);
+}
+
+.login-btn:active {
+    transform: translateY(0);
 }
 
 @media (max-width: 768px) {
