@@ -158,7 +158,7 @@ function toggleTheme() {
     }
     
     // Keep container styles consistent
-    const containers = document.querySelectorAll('.card, .container');
+    const containers = document.querySelectorAll('.card, .container, .card-title, h1, h2, h3, h4, h5, h6, p, label, .form-label');
     containers.forEach(container => {
         container.style.backgroundColor = 'var(--container-bg)';
         container.style.color = 'var(--text-color)';
