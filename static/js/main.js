@@ -163,6 +163,12 @@ function toggleTheme() {
         container.style.backgroundColor = 'var(--container-bg)';
         container.style.color = 'var(--text-color)';
     });
+    
+    // Update navbar styles
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        navbar.style.backgroundColor = 'var(--navbar-bg)';
+    }
 }
 
 // Provider Settings Toggle Function
