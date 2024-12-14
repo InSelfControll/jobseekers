@@ -215,25 +215,6 @@ function handleRegisterForm() {
         const button = document.getElementById('registerButton');
         const errorDiv = document.getElementById('registerError');
         
-        // Basic validation
-        const inputs = form.querySelectorAll('input');
-        let isValid = true;
-        
-        inputs.forEach(input => {
-            if (!input.checkValidity()) {
-                input.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                input.classList.remove('is-invalid');
-            }
-        });
-
-        if (!isValid) {
-            errorDiv.textContent = 'Please fix the errors above';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
         try {
             button.disabled = true;
             const formData = new FormData(form);
@@ -241,10 +222,28 @@ function handleRegisterForm() {
             const response = await fetch(form.action, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                }
+                credentials: 'same-origin'
             });
+
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                errorDiv.textContent = data.error;
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            errorDiv.textContent = 'An error occurred during registration. Please try again.';
+            errorDiv.style.display = 'block';
+        } finally {
+            button.disabled = false;
+        }
+    });
+}
 
             if (response.redirected) {
                 window.location.href = response.url;
