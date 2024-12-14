@@ -7,12 +7,18 @@
     --danger-color: #f56565;
     --background-color: #1a202c;
     --text-color: #f7fafc;
+    --card-bg: #2d3748;
+    --container-bg: #2d3748;
 }
 
 [data-theme="light"] {
     --primary-color: #4299e1;
     --secondary-color: #718096;
     --success-color: #48bb78;
+    --background-color: #f7fafc;
+    --text-color: #2d3748;
+    --card-bg: #ffffff;
+    --container-bg: #ffffff;
     --warning-color: #ecc94b;
     --danger-color: #f56565;
     --background-color: #1a202c;
@@ -187,10 +193,12 @@ body {
 
 .card {
     border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: transform 0.2s ease-in-out;
     margin-bottom: 1rem;
     width: 100%;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 .card:hover {

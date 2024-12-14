@@ -31,13 +31,15 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin.sso_config') }}">Admin Panel</a>
                     </li>
+                    <li class="nav-item">
+                        <button onclick="toggleTheme()" class="btn btn-icon nav-link">
+                            <i data-feather="moon" id="themeIcon"></i>
+                        </button>
+                    </li>
                     {% endif %}
                 </ul>
             </div>
             <div class="navbar-nav">
-                <button onclick="toggleTheme()" class="btn btn-icon me-2">
-                    <i data-feather="moon" id="themeIcon"></i>
-                </button>
                 <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
             </div>
             {% endif %}
