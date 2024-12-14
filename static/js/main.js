@@ -119,7 +119,21 @@ async function verifyDomain() {
 // SSO Settings Save Function
 async function saveSSOSettings() {
     const form = document.getElementById('ssoForm');
-    const formData = new FormData(form);
+    const provider = document.getElementById('provider').value;
+    const formData = new FormData();
+
+    // Add common fields
+    formData.append('provider', provider);
+    formData.append('domain', document.getElementById('sso_domain').value);
+
+    if (provider === 'SAML' || provider === 'AZURE_AD') {
+        formData.append('entity_id', document.getElementById('entity_id').value);
+        formData.append('sso_url', document.getElementById('sso_url').value);
+        formData.append('idp_cert', document.getElementById('idp_cert').value);
+    } else if (provider === 'GITHUB') {
+        formData.append('github_client_id', document.getElementById('github_client_id').value);
+        formData.append('github_client_secret', document.getElementById('github_client_secret').value);
+    }
     
     try {
         const response = await fetch('/admin/update-saml-config', {
@@ -130,11 +144,12 @@ async function saveSSOSettings() {
             }
         });
         
-        const data = await response.json();
-        if (data.success) {
+        const result = await response.json();
+        if (result.success) {
             alert('SSO settings saved successfully');
+            location.reload();
         } else {
-            alert(data.error || 'Failed to save SSO settings');
+            alert(result.error || 'Failed to save SSO settings');
         }
     } catch (error) {
         console.error('Error:', error);
