@@ -1,15 +1,15 @@
 
 :root {
-    --primary-color: #2b6cb0;
-    --secondary-color: #4a5568;
-    --success-color: #38a169;
-    --warning-color: #d69e2e;
-    --danger-color: #e53e3e;
-    --background-color: #f7fafc;
-    --text-color: #2d3748;
+    --primary-color: #4299e1;
+    --secondary-color: #718096;
+    --success-color: #48bb78;
+    --warning-color: #ecc94b;
+    --danger-color: #f56565;
+    --background-color: #1a202c;
+    --text-color: #f7fafc;
 }
 
-[data-theme="dark"] {
+[data-theme="light"] {
     --primary-color: #4299e1;
     --secondary-color: #718096;
     --success-color: #48bb78;

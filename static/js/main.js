@@ -110,13 +110,31 @@ async function saveDomain() {
     }
 }
 
-function toggleDarkMode() {
+function toggleTheme() {
     const body = document.body;
-    const currentTheme = body.getAttribute('data-theme');
+    const icon = document.getElementById('themeIcon');
+    const currentTheme = body.getAttribute('data-theme') || 'dark';
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
     body.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    
+    if (icon) {
+        icon.setAttribute('data-feather', newTheme === 'dark' ? 'moon' : 'sun');
+        feather.replace();
+    }
 }
+
+// Set initial theme
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.setAttribute('data-feather', savedTheme === 'dark' ? 'moon' : 'sun');
+        feather.replace();
+    }
+});
 
 function saveSSOSettings() {
     const form = document.getElementById('ssoForm');
