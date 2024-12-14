@@ -1,7 +1,6 @@
 import os
 import logging
 import asyncio
-from telegram import Update, Chat
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -11,6 +10,7 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
+from telegram import Update, Chat
 from bot.handlers import (
     start, register, handle_full_name, handle_phone_number, handle_location, 
     handle_resume, handle_job_search, handle_application, cancel
