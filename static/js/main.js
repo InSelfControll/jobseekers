@@ -118,29 +118,35 @@ async function verifyDomain() {
 
 // SSO Settings Save Function
 async function saveSSOSettings() {
-    const form = document.getElementById('ssoForm');
-    const provider = document.getElementById('provider').value;
-    const formData = new FormData();
+    const provider = document.getElementById('provider')?.value;
+    const sso_domain = document.getElementById('sso_domain')?.value;
+    
+    if (!provider || !sso_domain) {
+        alert('Please fill in all required fields');
+        return;
+    }
 
-    // Add common fields
-    formData.append('provider', provider);
-    formData.append('domain', document.getElementById('sso_domain').value);
+    const formData = {
+        provider: provider,
+        domain: sso_domain
+    };
 
     if (provider === 'SAML' || provider === 'AZURE_AD') {
-        formData.append('entity_id', document.getElementById('entity_id').value);
-        formData.append('sso_url', document.getElementById('sso_url').value);
-        formData.append('idp_cert', document.getElementById('idp_cert').value);
+        formData.entity_id = document.getElementById('entity_id')?.value;
+        formData.sso_url = document.getElementById('sso_url')?.value;
+        formData.idp_cert = document.getElementById('idp_cert')?.value;
     } else if (provider === 'GITHUB') {
-        formData.append('github_client_id', document.getElementById('github_client_id').value);
-        formData.append('github_client_secret', document.getElementById('github_client_secret').value);
+        formData.github_client_id = document.getElementById('github_client_id')?.value;
+        formData.github_client_secret = document.getElementById('github_client_secret')?.value;
     }
     
     try {
         const response = await fetch('/admin/update-saml-config', {
             method: 'POST',
-            body: formData,
+            body: JSON.stringify(formData),
             headers: {
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content
             }
         });
         
