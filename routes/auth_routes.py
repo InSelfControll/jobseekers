@@ -73,6 +73,9 @@ def register():
         email = request.form.get('email')
         company_name = request.form.get('company_name')
         password = request.form.get('password')
+        
+        if not all([email, company_name, password]):
+            return jsonify({'error': 'All fields are required'}), 400
         domain = email.split('@')[1]
         
         existing_domain = Employer.query.filter_by(company_domain=domain).first()
