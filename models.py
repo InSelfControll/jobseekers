@@ -4,9 +4,9 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON
 
 class Employer(UserMixin, db.Model):
-    __tablename__ = 'employer'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    email_verified = db.Column(db.Boolean, default=False)
     company_name = db.Column(db.String(120), nullable=False)
     sso_domain = db.Column(db.String(255), unique=True)
     sso_provider = db.Column(db.String(50))

@@ -160,6 +160,21 @@ def github_callback():
     login_user(employer)
     return redirect(url_for('employer.dashboard'))
 
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    try:
+        email = current_app.ts.loads(token, salt='email-verify-key', max_age=86400)
+        employer = Employer.query.filter_by(email=email).first()
+        if employer:
+            employer.email_verified = True
+            db.session.commit()
+            flash('Email verified successfully!', 'success')
+        else:
+            flash('Invalid verification link', 'error')
+    except:
+        flash('Invalid or expired verification link', 'error')
+    return redirect(url_for('auth.login'))
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
