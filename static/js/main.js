@@ -156,6 +156,13 @@ function toggleTheme() {
         icon.setAttribute('data-feather', newTheme === 'dark' ? 'moon' : 'sun');
         feather.replace();
     }
+    
+    // Keep container styles consistent
+    const containers = document.querySelectorAll('.card, .container');
+    containers.forEach(container => {
+        container.style.backgroundColor = 'var(--container-bg)';
+        container.style.color = 'var(--text-color)';
+    });
 }
 
 // Provider Settings Toggle Function
