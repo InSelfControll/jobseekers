@@ -110,6 +110,39 @@ async function saveDomain() {
     }
 }
 
+function toggleDarkMode() {
+    const body = document.body;
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
+function saveSSOSettings() {
+    const form = document.getElementById('ssoForm');
+    const formData = new FormData(form);
+    
+    fetch('/admin/update-saml-config', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSO settings saved successfully');
+        } else {
+            alert(data.error || 'Failed to save SSO settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving SSO settings');
+    });
+}
+
 function toggleProviderSettings() {
     const provider = document.getElementById('provider')?.value;
     const githubSettings = document.getElementById('github-settings');
