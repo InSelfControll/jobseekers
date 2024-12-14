@@ -3,6 +3,7 @@ import logging
 import asyncio
 from telegram import Update
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
