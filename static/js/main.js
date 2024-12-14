@@ -225,3 +225,92 @@ document.addEventListener('DOMContentLoaded', () => {
         samlMetadataInput.addEventListener('change', handleSamlMetadataUpload);
     }
 });
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    document.getElementById('github-settings').style.display = provider === 'GITHUB' ? 'block' : 'none';
+    document.getElementById('saml-settings').style.display = provider === 'SAML' ? 'block' : 'none';
+    document.getElementById('azure-settings').style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+}
+
+function saveDomain() {
+    const domain = document.getElementById('sso_domain').value;
+    const provider = document.getElementById('provider').value;
+    const githubClientId = document.getElementById('github-settings').querySelector('input[name="github_client_id"]').value;
+    const githubClientSecret = document.getElementById('github-settings').querySelector('input[name="github_client_secret"]').value;
+
+    fetch('/admin/save-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            domain,
+            provider,
+            github_client_id: githubClientId,
+            github_client_secret: githubClientSecret
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('dns-records').textContent = `${data.cname_record}\n${data.txt_record}`;
+            document.getElementById('domain-records').style.display = 'block';
+        } else {
+            alert(data.error);
+        }
+    });
+}
+
+function verifyDomain() {
+    const domain = document.getElementById('sso_domain').value;
+    const provider = document.getElementById('provider').value;
+
+    fetch('/admin/verify-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            domain,
+            provider
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const status = document.getElementById('verification-status');
+        if (data.success) {
+            status.textContent = 'Domain verified successfully!';
+            status.className = 'alert alert-success';
+        } else {
+            status.textContent = data.error || 'Domain verification failed';
+            status.className = 'alert alert-danger';
+        }
+    });
+}
+
+function saveSSOSettings() {
+    const provider = document.getElementById('provider').value;
+    const formData = {};
+
+    if (provider === 'SAML' || provider === 'AZURE_AD') {
+        formData.entity_id = document.getElementById('entity_id').value;
+        formData.sso_url = document.getElementById('sso_url').value;
+        formData.idp_cert = document.getElementById('idp_cert').value;
+    }
+
+    fetch('/admin/update-saml-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSO settings saved successfully');
+        } else {
+            alert(data.error || 'Failed to save SSO settings');
+        }
+    });
+}
