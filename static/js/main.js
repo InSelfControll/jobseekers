@@ -217,15 +217,12 @@ function handleRegisterForm() {
         
         try {
             button.disabled = true;
-            errorDiv.style.display = 'none';
+            if (errorDiv) errorDiv.style.display = 'none';
             const formData = new FormData(form);
             
             const response = await fetch(form.action, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                },
                 credentials: 'same-origin'
             });
 
