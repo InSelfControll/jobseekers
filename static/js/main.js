@@ -23,11 +23,26 @@ async function handleSamlMetadataUpload(event) {
     reader.readAsText(file);
 }
 
-async function saveDomain(provider) {
-    const domainInput = document.getElementById(provider === 'azure' ? 'azure_domain' : 'sso_domain');
-    if (!domainInput) {
-        console.error('Domain input element not found');
+async function saveDomain() {
+    const provider = document.getElementById('provider').value;
+    const domain = document.getElementById('sso_domain').value.trim();
+    if (!domain) {
+        alert('Please enter a domain');
         return;
+    }
+
+    const formData = {
+        domain,
+        provider,
+    };
+
+    if (provider === 'GITHUB') {
+        formData.github_client_id = document.getElementById('github_client_id')?.value;
+        formData.github_client_secret = document.getElementById('github_client_secret')?.value;
+    } else if (provider === 'AZURE_AD' || provider === 'SAML') {
+        formData.entity_id = document.getElementById('entity_id')?.value;
+        formData.sso_url = document.getElementById('sso_url')?.value;
+        formData.idp_cert = document.getElementById('idp_cert')?.value;
     }
 
     const domain = domainInput.value.trim();
@@ -48,8 +63,23 @@ async function saveDomain(provider) {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfMeta.content
             },
-            body: JSON.stringify({ domain, provider })
+            body: JSON.stringify(formData)
         });
+
+        if (provider === 'AZURE_AD' || provider === 'SAML') {
+            await fetch('/admin/update-saml-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfMeta.content
+                },
+                body: JSON.stringify({
+                    entity_id: formData.entity_id,
+                    sso_url: formData.sso_url,
+                    idp_cert: formData.idp_cert
+                })
+            });
+        }
 
         const data = await response.json();
         if (data.success) {
