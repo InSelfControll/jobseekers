@@ -3,8 +3,21 @@ import logging
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from extensions import db, init_db, login_manager, logger
+from services.email_service import mail
+from itsdangerous import URLSafeTimedSerializer
 
 csrf = CSRFProtect()
+
+def create_app():
+    app = Flask(__name__)
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+    app.ts = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    
+    mail.init_app(app)
 
 def create_app():
     app = Flask(__name__)

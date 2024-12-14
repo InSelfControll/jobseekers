@@ -88,8 +88,11 @@ def register():
         db.session.add(employer)
         db.session.commit()
         
-        flash('Registration successful!', 'success')
-        return redirect(url_for('auth.login'))
+        send_verification_email(email)
+        login_user(employer)
+        
+        flash('Registration successful! Please check your email to verify your account.', 'success')
+        return redirect(url_for('admin.sso_config'))
     return render_template('auth/register.html')
 
 @auth_bp.route('/github/login')
