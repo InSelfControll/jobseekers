@@ -81,7 +81,7 @@ def register():
             employer = Employer.query.filter_by(email=email).first()
             if employer:
                 return jsonify({'error': 'Email already registered'}), 400
-        domain = email.split('@')[1]
+            domain = email.split('@')[1]
         
         existing_domain = Employer.query.filter_by(company_domain=domain).first()
         if existing_domain:
