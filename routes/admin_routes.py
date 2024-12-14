@@ -198,6 +198,5 @@ def update_saml_config():
         employer.admin_groups = admin_groups
 
     db.session.commit()
-    flash('SAML configuration updated successfully', 'success')
-    return redirect(url_for('admin.sso_config'))
+    return jsonify({'success': True, 'message': 'SAML configuration updated successfully'})
 
