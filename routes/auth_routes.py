@@ -82,11 +82,11 @@ def register():
             if employer:
                 return jsonify({'error': 'Email already registered'}), 400
             domain = email.split('@')[1]
-        
-        existing_domain = Employer.query.filter_by(company_domain=domain).first()
-        if existing_domain:
-            flash('Another user from your company is already registered', 'error')
-            return redirect(url_for('auth.register'))
+            
+            existing_domain = Employer.query.filter_by(company_domain=domain).first()
+            if existing_domain:
+                flash('Another user from your company is already registered', 'error')
+                return redirect(url_for('auth.register'))
             
         if Employer.query.filter_by(email=email).first():
             flash('Email already registered', 'error')
