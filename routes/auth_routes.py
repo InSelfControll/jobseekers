@@ -57,8 +57,18 @@ def login():
         flash('Invalid email or password', 'error')
     return render_template('auth/login.html', employer=employer)
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField
+from wtforms.validators import DataRequired, Email
+
+class RegistrationForm(FlaskForm):
+    company_name = StringField('Company Name', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    form = RegistrationForm()
     if request.method == 'POST':
         email = request.form.get('email')
         company_name = request.form.get('company_name')
@@ -94,7 +104,7 @@ def register():
         
         flash('Registration successful! Please check your email to verify your account.', 'success')
         return redirect(url_for('admin.sso_config'))
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', form=form)
 
 @auth_bp.route('/github/login')
 def github_login():
