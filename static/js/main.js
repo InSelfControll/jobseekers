@@ -1,5 +1,6 @@
 
-async function handleSamlMetadataUpload(event) {
+// SAML Metadata Upload Handler
+function handleSamlMetadataUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -23,11 +24,13 @@ async function handleSamlMetadataUpload(event) {
     reader.readAsText(file);
 }
 
+// Domain Save Function
 async function saveDomain() {
     const provider = document.getElementById('provider').value;
     const sso_domain = document.getElementById('sso_domain').value.trim();
     const dnsRecordsDiv = document.getElementById('domain-records');
     const dnsRecordsPre = document.getElementById('dns-records');
+    const verificationStatus = document.getElementById('verification-status');
     
     if (!sso_domain) {
         alert('Please enter a domain');
@@ -42,14 +45,23 @@ async function saveDomain() {
     if (provider === 'GITHUB') {
         formData.github_client_id = document.getElementById('github_client_id')?.value;
         formData.github_client_secret = document.getElementById('github_client_secret')?.value;
+    } else if (provider === 'AZURE_AD' || provider === 'SAML') {
+        formData.entity_id = document.getElementById('entity_id')?.value;
+        formData.sso_url = document.getElementById('sso_url')?.value;
+        formData.idp_cert = document.getElementById('idp_cert')?.value;
     }
 
     try {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfMeta) {
+            throw new Error('CSRF token not found');
+        }
+
         const response = await fetch('/admin/save-domain', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRFToken': csrfMeta.content
             },
             body: JSON.stringify(formData)
         });
@@ -58,6 +70,7 @@ async function saveDomain() {
         if (data.success) {
             dnsRecordsDiv.style.display = 'block';
             dnsRecordsPre.textContent = `${data.cname_record}\n${data.txt_record}`;
+            verificationStatus.innerHTML = '<span class="badge bg-warning">Pending Verification</span>';
             alert('Domain saved successfully!');
         } else {
             alert(data.error || 'Failed to save domain');
@@ -68,6 +81,7 @@ async function saveDomain() {
     }
 }
 
+// Domain Verification Function
 async function verifyDomain() {
     const domain = document.getElementById('sso_domain').value.trim();
     const provider = document.getElementById('provider').value;
@@ -102,115 +116,33 @@ async function verifyDomain() {
     }
 }
 
-    document.addEventListener('DOMContentLoaded', function() {
-    const provider = document.getElementById('provider');
-    if (provider) {
-        provider.addEventListener('change', toggleProviderSettings);
-    }
-});
-
-function toggleProviderSettings() {
-    const provider = document.getElementById('provider').value;
-    const githubSettings = document.getElementById('github-settings');
-    const azureSettings = document.getElementById('azure-settings');
-    const samlSettings = document.getElementById('saml-settings');
+// SSO Settings Save Function
+async function saveSSOSettings() {
+    const form = document.getElementById('ssoForm');
+    const formData = new FormData(form);
     
-    if (githubSettings) githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
-    if (azureSettings) azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
-    if (samlSettings) samlSettings.style.display = provider === 'SAML' ? 'block' : 'none';
-}
-
-async function saveDomain() {
-    const provider = document.getElementById('provider').value;
-    const domain = document.getElementById('sso_domain').value.trim();
-    const dnsRecordsDiv = document.getElementById('domain-records');
-    const dnsRecordsPre = document.getElementById('dns-records');
-    const verificationStatus = document.getElementById('verification-status');
-    
-    if (!domain) {
-        alert('Please enter a domain');
-        return;
-    }
-
-    const formData = {
-        domain: domain,
-        provider: provider
-    };
-
-    if (provider === 'GITHUB') {
-        formData.github_client_id = document.getElementById('github_client_id')?.value;
-        formData.github_client_secret = document.getElementById('github_client_secret')?.value;
-    } else if (provider === 'AZURE_AD' || provider === 'SAML') {
-        formData.entity_id = document.getElementById('entity_id')?.value;
-        formData.sso_url = document.getElementById('sso_url')?.value;
-        formData.idp_cert = document.getElementById('idp_cert')?.value;
-    }
-
-    const domain = domainInput.value.trim();
-    if (!domain) {
-        alert('Please enter a domain');
-        return;
-    }
-
     try {
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        if (!csrfMeta) {
-            throw new Error('CSRF token not found');
-        }
-
-        const response = await fetch('/admin/save-domain', {
+        const response = await fetch('/admin/update-saml-config', {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfMeta.content
-            },
-            body: JSON.stringify(formData)
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
         });
-
-        if (provider === 'AZURE_AD' || provider === 'SAML') {
-            await fetch('/admin/update-saml-config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfMeta.content
-                },
-                body: JSON.stringify({
-                    entity_id: formData.entity_id,
-                    sso_url: formData.sso_url,
-                    idp_cert: formData.idp_cert
-                })
-            });
-        }
-
+        
         const data = await response.json();
         if (data.success) {
-            const statusDiv = document.getElementById('domain-status');
-            const dnsRecords = document.getElementById('dns-records');
-            const domainRecords = document.getElementById('domain-records');
-            
-            if (statusDiv) {
-                statusDiv.innerHTML = `
-                    <span class="badge bg-warning">Pending Verification</span>
-                    <small class="text-muted ms-2">Shadow SSO Interface: ${data.shadow_url}</small>
-                `;
-            }
-            
-            if (dnsRecords) {
-                dnsRecords.innerHTML = `${data.cname_record}\n${data.txt_record}`;
-            }
-            
-            if (domainRecords) {
-                domainRecords.style.display = 'block';
-            }
+            alert('SSO settings saved successfully');
         } else {
-            alert(data.error || 'Failed to save domain');
+            alert(data.error || 'Failed to save SSO settings');
         }
     } catch (error) {
-        console.error('Error saving domain:', error);
-        alert('Error saving domain: ' + error.message);
+        console.error('Error:', error);
+        alert('Error saving SSO settings');
     }
 }
 
+// Theme Toggle Function
 function toggleTheme() {
     const body = document.body;
     const icon = document.getElementById('themeIcon');
@@ -226,7 +158,19 @@ function toggleTheme() {
     }
 }
 
-// Set initial theme
+// Provider Settings Toggle Function
+function toggleProviderSettings() {
+    const provider = document.getElementById('provider').value;
+    const githubSettings = document.getElementById('github-settings');
+    const azureSettings = document.getElementById('azure-settings');
+    const samlSettings = document.getElementById('saml-settings');
+    
+    if (githubSettings) githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
+    if (azureSettings) azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
+    if (samlSettings) samlSettings.style.display = provider === 'SAML' ? 'block' : 'none';
+}
+
+// Initialize theme on page load
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.body.setAttribute('data-theme', savedTheme);
@@ -235,46 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.setAttribute('data-feather', savedTheme === 'dark' ? 'moon' : 'sun');
         feather.replace();
     }
+    
+    const provider = document.getElementById('provider');
+    if (provider) {
+        provider.addEventListener('change', toggleProviderSettings);
+        toggleProviderSettings();
+    }
+    
+    const samlMetadataInput = document.getElementById('saml-metadata');
+    if (samlMetadataInput) {
+        samlMetadataInput.addEventListener('change', handleSamlMetadataUpload);
+    }
 });
-
-function saveSSOSettings() {
-    const form = document.getElementById('ssoForm');
-    const formData = new FormData(form);
-    
-    fetch('/admin/update-saml-config', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('SSO settings saved successfully');
-        } else {
-            alert(data.error || 'Failed to save SSO settings');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error saving SSO settings');
-    });
-}
-
-function toggleProviderSettings() {
-    const provider = document.getElementById('provider')?.value;
-    const githubSettings = document.getElementById('github-settings');
-    const azureSettings = document.getElementById('azure-settings');
-    const samlSettings = document.getElementById('saml-settings');
-    
-    if (githubSettings) {
-        githubSettings.style.display = provider === 'GITHUB' ? 'block' : 'none';
-    }
-    if (azureSettings) {
-        azureSettings.style.display = provider === 'AZURE_AD' ? 'block' : 'none';
-    }
-    if (samlSettings) {
-        samlSettings.style.display = provider === 'SAML' ? 'block' : 'none';
-    }
-}

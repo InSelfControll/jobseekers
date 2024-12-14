@@ -29,11 +29,9 @@
                         <a class="nav-link" href="{{ url_for('employer.applications') }}">Applications</a>
                     </li>
                     {% if current_user.is_admin %}
-                    <li class="nav-item">
+                    <li class="nav-item d-flex align-items-center">
                         <a class="nav-link" href="{{ url_for('admin.sso_config') }}">Admin Panel</a>
-                    </li>
-                    <li class="nav-item">
-                        <button onclick="toggleTheme()" class="btn btn-icon nav-link">
+                        <button onclick="toggleTheme()" class="btn btn-icon nav-link ms-2">
                             <i data-feather="moon" id="themeIcon"></i>
                         </button>
                     </li>
