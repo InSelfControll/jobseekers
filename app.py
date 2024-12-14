@@ -1,3 +1,4 @@
+
 import os
 import logging
 from flask import Flask
@@ -42,19 +43,13 @@ def create_app():
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    try:
-        # Initialize database
-        init_db(app)
-        
-        # Initialize login manager
-        login_manager.init_app(app)
-        login_manager.login_view = 'auth.login'
-        csrf.init_app(app)
-        logger.info("Application initialized successfully")
-        
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {e}")
-        raise RuntimeError(f"Application initialization failed: {str(e)}")
+    # Initialize database
+    init_db(app)
+    
+    # Initialize login manager
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    csrf.init_app(app)
     
     # Register blueprints
     from routes.auth_routes import auth_bp
@@ -91,3 +86,6 @@ def load_user(user_id):
     except Exception as e:
         logger.error(f"Error loading user: {e}")
         return None
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=3000)
