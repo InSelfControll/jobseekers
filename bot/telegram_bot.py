@@ -1,16 +1,8 @@
 import os
 import logging
 import asyncio
-from telegram import Update, Bot
-from telegram.ext import Application
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ConversationHandler,
-    filters,
-    ContextTypes
-)
+from telegram import Update
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes
 from bot.handlers import (
     start, register, handle_full_name, handle_phone_number, handle_location, 
     handle_resume, handle_job_search, handle_application, cancel
