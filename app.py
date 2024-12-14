@@ -14,22 +14,12 @@ def create_app():
     app.config['WTF_CSRF_ENABLED'] = True
     
     # Email configuration
-    email_provider = os.environ.get('EMAIL_PROVIDER', 'smtp')
-    
-    if email_provider == 'sendgrid':
-        app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = os.environ.get('SENDGRID_API_KEY')
-        app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@yourdomain.com')
-    else:
-        app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.yourserver.com')
-        app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
-        app.config['MAIL_USE_TLS'] = os.environ.get('SMTP_USE_TLS', 'True').lower() == 'true'
-        app.config['MAIL_USERNAME'] = os.environ.get('SMTP_USERNAME')
-        app.config['MAIL_PASSWORD'] = os.environ.get('SMTP_PASSWORD')
-        app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SMTP_FROM_EMAIL', 'noreply@yourdomain.com')
+    app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'apikey'
+    app.config['MAIL_PASSWORD'] = os.environ.get('SENDGRID_API_KEY')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SENDGRID_FROM_EMAIL', 'noreply@yourdomain.com')
     
     app.ts = URLSafeTimedSerializer(app.secret_key)
     mail.init_app(app)
