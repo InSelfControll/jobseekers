@@ -322,46 +322,62 @@ function saveSSOSettings() {
     };
     
     if (provider === 'GITHUB') {
-        data.client_id = document.getElementById('client_id').value;
-        data.client_secret = document.getElementById('client_secret').value;
-    } else if (provider === 'AZURE') {
-        const manifestFile = document.getElementById('manifest_file').files[0];
-        if (manifestFile) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                data.manifest_content = e.target.result;
-                sendRequest(data);
-            };
-            reader.readAsText(manifestFile);
+        const clientId = document.getElementById('client_id').value;
+        const clientSecret = document.getElementById('client_secret').value;
+        
+        if (!clientId || !clientSecret) {
+            alert('Please fill in all GitHub SSO fields');
             return;
         }
+        
+        data.client_id = clientId;
+        data.client_secret = clientSecret;
+    } else if (provider === 'AZURE') {
+        const manifestFile = document.getElementById('manifest_file').files[0];
+        if (!manifestFile) {
+            alert('Please select a manifest file');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            data.manifest_content = e.target.result;
+            sendSSORequest(data);
+        };
+        reader.readAsText(manifestFile);
+        return;
     }
     
-    sendRequest(data);
+    sendSSORequest(data);
+}
 
-    function sendRequest(data) {
-        fetch('/admin/save-sso-settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('SSO settings saved successfully!');
-                location.reload();
-            } else {
-                alert('Error: ' + (data.error || 'Failed to save SSO settings'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to save SSO settings');
-        });
-    }
+function sendSSORequest(data) {
+    fetch('/admin/save-sso-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('SSO settings saved successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to save SSO settings'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save SSO settings: ' + error.message);
+    });
 }
 
 function removeAdmin(adminId) {
