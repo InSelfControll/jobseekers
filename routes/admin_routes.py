@@ -66,6 +66,9 @@ def verify_domain_records(domain, provider):
             print(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
             print(f"Expected host: {request.host}")
             cname_valid = any(str(rdata.target).rstrip('.') == request.host for rdata in cname_answers)
+            if cname_valid:
+                print("CNAME verification successful")
+                return True
         except Exception as e:
             print(f"CNAME lookup failed: {str(e)}")
             cname_valid = False
@@ -78,28 +81,13 @@ def verify_domain_records(domain, provider):
                 a_answers = dns.resolver.resolve(domain, 'A')
                 print(f"A records found: {[str(rdata) for rdata in a_answers]}")
                 a_valid = any(str(rdata).rstrip('.') == expected_ip for rdata in a_answers)
-                cname_valid = a_valid
+                if a_valid:
+                    print("A record verification successful")
+                    return True
             except Exception as e:
                 print(f"A record lookup failed: {str(e)}")
-                a_valid = False
-                cname_valid = False
+                return False
         
-        if not cname_valid:
-            return False
-            
-        # Verify TXT record
-        try:
-            domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
-            expected_txt = f"v=sso provider={provider} verify={domain_hash}"
-            txt_answers = dns.resolver.resolve(domain, 'TXT')
-            for rdata in txt_answers:
-                txt_record = str(rdata).strip('"').strip()
-                if txt_record == expected_txt:
-                    return True
-        except Exception as e:
-            print(f"TXT verification error: {str(e)}")
-            pass
-            
         return False
     except Exception as e:
         print(f"Domain verification error: {str(e)}")
