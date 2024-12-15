@@ -10,6 +10,11 @@ def create_app():
     app.config['WTF_CSRF_ENABLED'] = True
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour token expiry
     app.config['WTF_CSRF_SSL_STRICT'] = True
+    
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     from flask_wtf.csrf import CSRFProtect
     csrf = CSRFProtect(app)
