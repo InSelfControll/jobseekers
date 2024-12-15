@@ -45,10 +45,21 @@ class SSLService:
                 '--config-dir', self.cert_dir,
                 '--work-dir', os.path.join(self.cert_dir, 'work'),
                 '--logs-dir', os.path.join(self.cert_dir, 'logs'),
-                '--force-interactive'
+                '--manual-public-ip-logging-ok',
+                '--force-renewal'
             ]
             
-            process = subprocess.run(cmd, capture_output=True, text=True)
+            process = subprocess.Popen(cmd, 
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    universal_newlines=True)
+            
+            stdout, stderr = process.communicate()
+            
+            if process.returncode != 0:
+                logging.error(f"Certificate generation failed: {stderr}")
+                return False, f"Certificate generation failed: {stderr}"
             if process.returncode != 0:
                 return False, f"Certificate generation failed: {process.stderr}"
             
