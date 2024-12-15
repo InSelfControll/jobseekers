@@ -44,7 +44,9 @@ class SSLService:
                 '-d', self.domain,
                 '--config-dir', '/home/runner/letsencrypt/',
                 '--work-dir', '/home/runner/letsencrypt/',
-                '--logs-dir', '/home/runner/letsencrypt/'
+                '--logs-dir', '/home/runner/letsencrypt/',
+                '--http-01-port', '80',
+                '--https-port', '443'
             ]
 
             process = subprocess.Popen(cmd,
