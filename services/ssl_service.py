@@ -69,9 +69,12 @@ class SSLService:
 
             process = subprocess.run(cmd,
                                    capture_output=True,
-                                   text=True)
+                                   text=True,
+                                   check=False)
 
-            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                logging.error(f"Certificate generation failed: {process.stderr}")
+                return False, f"Certificate generation failed: {process.stderr}"
 
             if process.returncode != 0:
                 logging.error(f"Certificate generation failed: {stderr}")
@@ -80,8 +83,9 @@ class SSLService:
                 return False, f"Certificate generation failed: {process.stderr}"
 
             # Update certificate paths in database
-            employer = Employer.query.filter_by(sso_domain=self.domain).first()
-            if employer:
+            try:
+                employer = Employer.query.filter_by(sso_domain=self.domain).first()
+                if employer:
                 cert_path = os.path.join(self.cert_dir, 'live', self.domain,
                                          'fullchain.pem')
                 key_path = os.path.join(self.cert_dir, 'live', self.domain,
@@ -102,7 +106,10 @@ class SSLService:
                 else:
                     return False, "Certificate files not found"
 
-            return False, "Employer not found"
+                return False, "Employer not found"
+            except Exception as e:
+                logging.error(f"Database error: {str(e)}")
+                return False, "Database error occurred"
 
         except Exception as e:
             logging.error(f"Certificate generation failed: {str(e)}")
