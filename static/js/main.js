@@ -116,7 +116,7 @@ function sendSSOSettings(data) {
 
 // Initialize dark mode on page load
 document.addEventListener('DOMContentLoaded', () => {
-    const prefersDark = localStorage.getItem('darkMode') !== 'false';
+    const prefersDark = localStorage.getItem('darkMode') === 'true';
     document.body.classList.toggle('dark-mode', prefersDark);
     updateThemeIcon();
     feather.replace();
