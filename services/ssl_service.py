@@ -17,6 +17,11 @@ class SSLService:
         self.webroot_path = os.path.join(base_path, 'static')
         self.acme_path = os.path.join(self.webroot_path, '.well-known', 'acme-challenge')
         
+        # Ensure challenge directory exists with correct permissions
+        os.makedirs(self.acme_path, exist_ok=True)
+        os.chmod(self.acme_path, 0o755)
+        os.chmod(self.webroot_path, 0o755)
+        
         # Create directories with proper permissions
         for path in [self.cert_dir, self.webroot_path, 
                     os.path.join(self.webroot_path, '.well-known'),
