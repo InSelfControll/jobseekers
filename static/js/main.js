@@ -1,7 +1,10 @@
 
 function generateSSLCertificate() {
     const statusDiv = document.getElementById('sslStatus');
+    if (!statusDiv) return;
+    
     const alertDiv = statusDiv.querySelector('.alert');
+    if (!alertDiv) return;
     
     statusDiv.style.display = 'block';
     alertDiv.className = 'alert alert-info';
@@ -10,11 +13,23 @@ function generateSSLCertificate() {
     fetch('/admin/generate-ssl', {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || '',
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        return response.text().then(text => {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('JSON Parse Error:', e);
+                throw new Error('Invalid JSON response');
+            }
+        });
+    })
     .then(data => {
         if (data.success) {
             alertDiv.className = 'alert alert-success';
