@@ -60,34 +60,52 @@ def remove_admin(admin_id):
 def verify_domain_records(domain, provider):
     try:
         print(f"Verifying domain: {domain} for provider: {provider}")
-        # Check CNAME record
+        expected_host = request.host.lower()
+
+        # Try CNAME first
         try:
             cname_answers = dns.resolver.resolve(domain, 'CNAME')
             print(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
-            print(f"Expected host: {request.host}")
-            cname_valid = any(str(rdata.target).rstrip('.') == request.host for rdata in cname_answers)
-            if cname_valid:
-                print("CNAME verification successful")
-                return True
+            print(f"Expected host: {expected_host}")
+            
+            for rdata in cname_answers:
+                target = str(rdata.target).rstrip('.').lower()
+                if target == expected_host:
+                    print("CNAME verification successful")
+                    return True
+                # Check if target contains the expected host (for wildcard/subdomain cases)
+                if expected_host in target or target in expected_host:
+                    print("CNAME verification successful (partial match)")
+                    return True
         except Exception as e:
             print(f"CNAME lookup failed: {str(e)}")
-            cname_valid = False
         
         # Check A record if CNAME fails
         if not cname_valid:
             try:
-                expected_ip = request.host.split(':')[0]  # Get IP without port
-                print(f"Checking A record. Expected IP: {expected_ip}")
+                import socket
+                # Get all possible IPs for the host
+                expected_ips = []
+                try:
+                    host_info = socket.getaddrinfo(request.host.split(':')[0], None)
+                    expected_ips = [info[4][0] for info in host_info if info[0] == socket.AF_INET]
+                except Exception as e:
+                    print(f"Failed to resolve host IPs: {str(e)}")
+                    expected_ips = [request.host.split(':')[0]]
+
+                print(f"Checking A record. Expected IPs: {expected_ips}")
                 a_answers = dns.resolver.resolve(domain, 'A')
                 print(f"A records found: {[str(rdata) for rdata in a_answers]}")
-                a_valid = any(str(rdata).rstrip('.') == expected_ip for rdata in a_answers)
-                if a_valid:
-                    print("A record verification successful")
-                    return True
+                
+                for rdata in a_answers:
+                    if str(rdata).rstrip('.') in expected_ips:
+                        print("A record verification successful")
+                        return True
+                        
             except Exception as e:
                 print(f"A record lookup failed: {str(e)}")
-                return False
         
+        print("Domain verification failed - no matching records found")
         return False
     except Exception as e:
         print(f"Domain verification error: {str(e)}")
