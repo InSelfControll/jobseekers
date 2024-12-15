@@ -123,7 +123,7 @@ function saveDomain() {
             const dnsRecordsDiv = document.getElementById('dns-records');
             const dnsOutputDiv = document.getElementById('dns-output');
             
-            if (data.records && dnsRecordsDiv && dnsOutputDiv) {
+            if (dnsRecordsDiv && dnsOutputDiv && data.records) {
                 dnsRecordsDiv.style.display = 'block';
                 dnsOutputDiv.innerHTML = `
                     <div class="card">
@@ -154,10 +154,12 @@ function saveDomain() {
                             </table>
                         </div>
                     </div>`;
+            } else {
+                console.error('DNS records data missing:', data);
             }
-                        <div class="card-header">
-                            <h5>Required DNS Configuration</h5>
-                        </div>
+        } else {
+            alert('Error: ' + (data.error || 'Failed to save domain'));
+        }
                         <div class="card-body">
                             <table class="table table-bordered">
                                 <thead>
