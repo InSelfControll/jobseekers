@@ -1,0 +1,19 @@
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>SSL Certificate Configuration</h5>
+    </div>
+    <div class="card-body">
+        <form id="sslForm">
+            <div class="mb-3">
+                <label for="certFile" class="form-label">SSL Certificate File</label>
+                <input type="file" class="form-control" id="certFile" accept=".crt,.pem">
+            </div>
+            <div class="mb-3">
+                <label for="keyFile" class="form-label">Private Key File</label>
+                <input type="file" class="form-control" id="keyFile" accept=".key,.pem">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="uploadSSLCertificate()">Upload SSL Certificate</button>
+        </form>
+    </div>
+</div>
