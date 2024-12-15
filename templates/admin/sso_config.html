@@ -79,7 +79,7 @@
                 </div>
 
                 <div class="mb-4">
-                    <button type="button" onclick="saveSSOSettings()" class="btn btn-primary">Save SSO Settings</button>
+                    <button type="submit" class="btn btn-primary">Save SSO Settings</button>
                 </div>
             </form>
         </div>
@@ -89,10 +89,23 @@
 
 {% block scripts %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ssoForm = document.getElementById('sso-form');
+    if (ssoForm) {
+        ssoForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            saveSSOSettings(event);
+        });
+    }
 function toggleProviderFields() {
-    const provider = document.getElementById('provider').value;
-    document.getElementById('github-fields').style.display = provider === 'GITHUB' ? 'block' : 'none';
-    document.getElementById('azure-fields').style.display = provider === 'AZURE' ? 'block' : 'none';
+    const provider = document.getElementById('provider');
+    const githubFields = document.getElementById('github-fields');
+    const azureFields = document.getElementById('azure-fields');
+    
+    if (provider && githubFields && azureFields) {
+        githubFields.style.display = provider.value === 'GITHUB' ? 'block' : 'none';
+        azureFields.style.display = provider.value === 'AZURE' ? 'block' : 'none';
+    }
 }
 
 function saveDomain() {
