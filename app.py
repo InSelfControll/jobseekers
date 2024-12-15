@@ -16,7 +16,7 @@ def create_app():
         response.headers['X-Content-Type-Options'] = 'nosniff'
         return response
 
-    from flask_wtf.csrf import CSRFProtect
+    from flask_wtf.csrf import CSRFProtect, CSRFError
     csrf = CSRFProtect(app)
     
     # CSRF error handler
