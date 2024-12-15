@@ -56,8 +56,9 @@ with app.app_context():
 def load_user(user_id):
     """Load user for Flask-Login"""
     from models import Employer
+    from extensions import db
     try:
-        return Employer.query.get(int(user_id))
+        return db.session.get(Employer, int(user_id))
     except Exception as e:
         logger.error(f"Error loading user: {e}")
         return None
