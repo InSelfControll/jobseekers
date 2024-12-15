@@ -11,6 +11,12 @@ import dns.resolver
 from models import Employer
 from flask import abort
 
+@admin_bp.route('/sso-config')
+@login_required
+@admin_required
+def sso_config():
+    return render_template('admin/sso_config.html')
+
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
