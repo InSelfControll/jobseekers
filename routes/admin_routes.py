@@ -106,8 +106,17 @@ def generate_ssl():
         ssl_service = SSLService(current_user.sso_domain, current_user.email)
         success, message = ssl_service.generate_certificate()
         
+        if success:
+            # Update UI elements after successful SSL setup
+            return jsonify({
+                'success': True,
+                'message': message,
+                'domain': current_user.sso_domain,
+                'ssl_enabled': True
+            })
+        
         return jsonify({
-            'success': success,
+            'success': False,
             'message': message
         })
     except Exception as e:

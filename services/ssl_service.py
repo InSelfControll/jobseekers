@@ -39,13 +39,25 @@ class SSLService:
             # Update certificate paths in database
             employer = Employer.query.filter_by(sso_domain=self.domain).first()
             if employer:
-                employer.ssl_cert_path = os.path.join(self.cert_dir, 'live', self.domain, 'fullchain.pem')
-                employer.ssl_key_path = os.path.join(self.cert_dir, 'live', self.domain, 'privkey.pem')
-                employer.ssl_enabled = True
-                employer.ssl_expiry = self._get_cert_expiry()
-                db.session.commit()
+                cert_path = os.path.join(self.cert_dir, 'live', self.domain, 'fullchain.pem')
+                key_path = os.path.join(self.cert_dir, 'live', self.domain, 'privkey.pem')
+                
+                if os.path.exists(cert_path) and os.path.exists(key_path):
+                    employer.ssl_cert_path = cert_path
+                    employer.ssl_key_path = key_path
+                    employer.ssl_enabled = True
+                    employer.ssl_expiry = self._get_cert_expiry()
+                    
+                    # Configure the domain with SSL
+                    employer.domain_verified = True
+                    employer.sso_domain = self.domain
+                    db.session.commit()
+                    
+                    return True, "Certificate generated and domain configured successfully"
+                else:
+                    return False, "Certificate files not found"
             
-            return True, "Certificate generated successfully"
+            return False, "Employer not found"
             
         except Exception as e:
             logging.error(f"Certificate generation failed: {str(e)}")

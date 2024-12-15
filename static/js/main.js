@@ -1,4 +1,3 @@
-
 // Dark mode toggle
 function toggleDarkMode() {
     const body = document.body;
@@ -106,10 +105,22 @@ function generateSSLCertificate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('SSL certificate generated successfully!');
+            alert(data.message);
+            // Update UI to show SSL is enabled
+            const sslStatus = document.getElementById('sslStatus');
+            if (sslStatus) {
+                sslStatus.style.display = 'block';
+                sslStatus.innerHTML = `<div class="alert alert-success">
+                    <i class="fas fa-lock"></i> SSL is enabled for ${data.domain}
+                </div>`;
+            }
         } else {
-            alert('Error: ' + (data.error || 'Failed to generate SSL certificate'));
+            alert('Error: ' + (data.message || 'Failed to generate SSL certificate'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to generate SSL certificate');
     });
 }
 
