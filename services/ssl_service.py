@@ -42,8 +42,15 @@ class SSLService:
             os.system('pkill python3')
             os.system('pkill nginx')
             
+            # Load Cloudflare credentials from environment
+            with open('/home/runner/secrets/cloudflare.ini', 'w') as f:
+                f.write(f"dns_cloudflare_email = {os.getenv('CLOUDFLARE_EMAIL')}\n")
+                f.write(f"dns_cloudflare_api_key = {os.getenv('CLOUDFLARE_API_KEY')}\n")
+            os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
+
             cmd = [
-                'certbot', '--nginx', 'certonly', '--non-interactive',
+                'certbot', 'certonly', '--non-interactive',
+                '--dns-cloudflare', '--dns-cloudflare-credentials', '/home/runner/secrets/cloudflare.ini',
                 '--agree-tos', '--email', self.email,
                 '-d', self.domain,
                 '--config-dir', '/home/runner/letsencrypt/',
