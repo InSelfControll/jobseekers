@@ -135,3 +135,25 @@ function updateThemeIcon() {
         feather.replace();
     }
 }
+
+function toggleProviderFields() {
+    const provider = document.getElementById('provider').value;
+    const githubFields = document.getElementById('github-fields');
+    const azureFields = document.getElementById('azure-fields');
+    
+    if (provider === 'GITHUB') {
+        githubFields.style.display = 'block';
+        azureFields.style.display = 'none';
+    } else if (provider === 'AZURE') {
+        githubFields.style.display = 'none';
+        azureFields.style.display = 'block';
+    } else {
+        githubFields.style.display = 'none';
+        azureFields.style.display = 'none';
+    }
+}
+
+// Call toggleProviderFields on page load to set initial state
+document.addEventListener('DOMContentLoaded', () => {
+    toggleProviderFields();
+});
