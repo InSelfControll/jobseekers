@@ -22,6 +22,11 @@ def add_security_headers(response):
         response.headers['Content-Type'] = 'text/css'
     return response
 
+
+@app.route('/.well-known/acme-challenge/<path:path>')
+def acme_challenge(path):
+    return send_from_directory(app.static_folder + '/.well-known/acme-challenge', path)
+
 # CSRF error handler
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
