@@ -39,11 +39,12 @@ class SSLService:
             import subprocess
 
             cmd = [
-                'certbot', 'certonly', '--nginx', '--non-interactive',
-                '--email', self.email, '--agree-tos', '--no-eff-email',
-                '-d', self.domain, '--config-dir', '../letsencrypt/',
-                '--work-dir', '../letsencrypt/',
-                '--logs-dir', '../letsencrypt/'
+                'certbot', 'certonly', '--standalone', '--non-interactive',
+                '--agree-tos', '--email', self.email,
+                '-d', self.domain,
+                '--config-dir', '/home/runner/letsencrypt/',
+                '--work-dir', '/home/runner/letsencrypt/',
+                '--logs-dir', '/home/runner/letsencrypt/'
             ]
 
             process = subprocess.Popen(cmd,
