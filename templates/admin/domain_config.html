@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block content %}
@@ -174,6 +173,7 @@ function verifyDomain() {
         if (data.success) {
             alert('Domain verified successfully!');
             document.getElementById('ssl-section').style.display = 'block';
+            location.reload();
         } else {
             alert('Verification failed: ' + data.error);
         }
