@@ -79,7 +79,7 @@ def register():
         login_user(employer)
         flash('Registration successful!', 'success')
         return redirect(url_for('employer.dashboard'))
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', next=url_for('employer.dashboard'))
 
 @auth_bp.route('/github/login')
 def github_login():
