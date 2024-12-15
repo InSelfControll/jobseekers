@@ -47,12 +47,21 @@ class SSLService:
                 f.write(f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n")
             os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
 
+            # Create config directory
+            os.makedirs('/home/runner/secrets/', exist_ok=True)
+            
+            # Write Cloudflare credentials
+            with open('/home/runner/secrets/cloudflare.ini', 'w') as f:
+                f.write(f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n")
+            os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
+            
             cmd = [
                 'certbot', 'certonly', '--non-interactive',
                 '--dns-cloudflare', '--dns-cloudflare-credentials', '/home/runner/secrets/cloudflare.ini',
                 '--agree-tos', '--email', self.email,
                 '-d', self.domain,
                 '--config-dir', '/home/runner/letsencrypt/',
+                '--preferred-challenges', 'dns-01',
                 '--work-dir', '/home/runner/letsencrypt/',
                 '--logs-dir', '/home/runner/letsencrypt/'
             ]
