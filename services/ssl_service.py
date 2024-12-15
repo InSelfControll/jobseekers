@@ -44,8 +44,7 @@ class SSLService:
             
             # Load Cloudflare credentials from environment
             with open('/home/runner/secrets/cloudflare.ini', 'w') as f:
-                f.write(f"dns_cloudflare_email = {os.getenv('CLOUDFLARE_EMAIL')}\n")
-                f.write(f"dns_cloudflare_api_key = {os.getenv('CLOUDFLARE_API_KEY')}\n")
+                f.write(f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n")
             os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
 
             cmd = [
