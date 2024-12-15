@@ -10,7 +10,7 @@ from hypercorn.config import Config
 def install_missing_modules():
     """Install any missing Python modules using poetry"""
     import os
-    
+
     required_modules = [
         "flask", "flask-login", "flask-sqlalchemy", "openai", "sqlalchemy",
         "flask-wtf", "psycopg2-binary", "email-validator", "geopy",
@@ -41,7 +41,7 @@ app = create_app()
 async def run_web_server():
     """Run the web server"""
     config = Config()
-    config.bind = ["0.0.0.0:80"]
+    config.bind = ["0.0.0.0:5000"]
     config.use_reloader = False
     await serve(app, config)
 
@@ -57,9 +57,8 @@ async def run_telegram_bot():
                 drop_pending_updates=True,
                 allowed_updates=[Update.MESSAGE],
                 read_timeout=30,
-                write_timeout=30
-            )
-            
+                write_timeout=30)
+
             try:
                 while True:
                     await asyncio.sleep(1)
@@ -68,7 +67,7 @@ async def run_telegram_bot():
                 await application.updater.stop()
                 await application.stop()
                 await application.shutdown()
-                
+
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
     finally:
@@ -99,7 +98,6 @@ async def main():
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
-
 
         await asyncio.gather(telegram_task, web_task)
     except KeyboardInterrupt:

@@ -1,0 +1,28 @@
+ERROR:app:Exception on /auth/saml/login [GET]
+Traceback (most recent call last):
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/routes/auth_routes.py", line 75, in saml_login
+    auth = init_saml_auth(req)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/routes/auth_routes.py", line 11, in init_saml_auth
+    auth = OneLogin_Saml2_Auth(req, SAML_SETTINGS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/onelogin/saml2/auth.py", line 57, in __init__
+    self._settings = OneLogin_Saml2_Settings(old_settings, custom_base_path)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/JobSeekrBot/.pythonlibs/lib/python3.11/site-packages/onelogin/saml2/settings.py", line 128, in __init__
+    raise OneLogin_Saml2_Error(
+onelogin.saml2.errors.OneLogin_Saml2_Error: Invalid dict settings: idp_entityId_not_found,idp_sso_not_found,sp_acs_url_invalid,sp_sls_url_invalid
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Server', b'nginx/1.18.0'), (b'Date', b'Fri, 13 Dec 2024 02:09:02 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'23'), (b'Connection', b'keep-alive'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Allow-Methods', b'GET, POST, OPTIONS'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Type,Date,Server,Connection')])
+INFO:httpx:HTTP Request: POST https://api.telegram.org/bot7721020218:AAE-wdlTONN2YPN13zqebNZWppcw59gfyjc/getUpdates "HTTP/1.1 200 OK"
