@@ -8,6 +8,12 @@ from extensions import db, create_app
 import certbot.main
 from flask import current_app
 
+from certbot import main as certbot
+import os
+from flask import current_app
+from models import Employer
+from extensions import db
+
 class SSLService:
     def __init__(self, domain, email):
         self.domain = domain

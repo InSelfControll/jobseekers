@@ -13,21 +13,83 @@
                     <form id="domainForm">
                         <div class="mb-3">
                             <label for="domain" class="form-label">Domain Name</label>
-                            <input type="text" class="form-control" id="domain" name="domain" required>
+                            <input type="text" class="form-control" id="domain" name="domain" value="{{ current_user.sso_domain }}" required>
                         </div>
                         
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-primary" onclick="saveDomain()">Save Domain</button>
-                            <button type="button" class="btn btn-success" onclick="verifyDomain()">Verify Domain</button>
                         </div>
                     </form>
 
-                    <div id="dns-records" class="mt-4" style="display: none;">
-                        {% include 'components/dns_records.html' %}
+                    <div id="dns-records" class="mt-4" style="display: {{ 'block' if current_user.sso_domain else 'none' }}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Required DNS Records</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Name</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dns-records-body">
+                                        {% if current_user.sso_domain %}
+                                        <tr>
+                                            <td>CNAME</td>
+                                            <td>{{ current_user.sso_domain }}</td>
+                                            <td>{{ request.host }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-info" onclick="verifyDomain()">Verify DNS</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="ssl-section" class="mt-4" style="display: none;">
-                        {% include 'components/ssl_config.html' %}
+                    <div id="ssl-section" class="mt-4" style="display: {{ 'block' if current_user.domain_verified else 'none' }}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>SSL Certificate</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="sslOption" id="letsEncrypt" value="letsencrypt" checked>
+                                        <label class="form-check-label" for="letsEncrypt">
+                                            Use Let's Encrypt (Automatic SSL)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="sslOption" id="customCert" value="custom">
+                                        <label class="form-check-label" for="customCert">
+                                            Upload Custom Certificate
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="letsEncryptSection">
+                                    <button type="button" class="btn btn-success" onclick="generateSSL()">Generate SSL Certificate</button>
+                                </div>
+
+                                <div id="customCertSection" style="display: none;">
+                                    <form id="sslForm" class="mb-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Certificate File (CRT)</label>
+                                            <input type="file" class="form-control" id="certFile" accept=".crt,.pem">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Private Key File (KEY)</label>
+                                            <input type="file" class="form-control" id="keyFile" accept=".key">
+                                        </div>
+                                        <button type="button" class="btn btn-primary" onclick="uploadSSLCertificate()">Upload SSL Certificate</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -38,6 +100,37 @@
 
 {% block scripts %}
 <script>
+function toggleSSLSections() {
+    const letsEncryptSection = document.getElementById('letsEncryptSection');
+    const customCertSection = document.getElementById('customCertSection');
+    const selectedOption = document.querySelector('input[name="sslOption"]:checked').value;
+    
+    letsEncryptSection.style.display = selectedOption === 'letsencrypt' ? 'block' : 'none';
+    customCertSection.style.display = selectedOption === 'custom' ? 'block' : 'none';
+}
+
+document.querySelectorAll('input[name="sslOption"]').forEach(radio => {
+    radio.addEventListener('change', toggleSSLSections);
+});
+
+function generateSSL() {
+    fetch('/admin/generate-ssl', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSL certificate generated successfully!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
 function saveDomain() {
     const domain = document.getElementById('domain').value;
     
@@ -53,22 +146,15 @@ function saveDomain() {
     .then(data => {
         if (data.success) {
             document.getElementById('dns-records').style.display = 'block';
-            const dnsRecordsBody = document.getElementById('dns-records-body');
-            dnsRecordsBody.innerHTML = `
+            document.getElementById('dns-records-body').innerHTML = `
                 <tr>
                     <td>CNAME</td>
                     <td>${domain}</td>
                     <td>${data.records[0].value}</td>
-                </tr>
-            `;
-            document.getElementById('ssl-section').style.display = 'block';
+                </tr>`;
         } else {
             alert('Error: ' + (data.error || 'Failed to save domain'));
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to save domain settings');
     });
 }
 
@@ -91,18 +177,19 @@ function verifyDomain() {
         } else {
             alert('Verification failed: ' + data.error);
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to verify domain');
     });
 }
 
 function uploadSSLCertificate() {
     const certFile = document.getElementById('certFile').files[0];
     const keyFile = document.getElementById('keyFile').files[0];
-    const formData = new FormData();
     
+    if (!certFile || !keyFile) {
+        alert('Please select both certificate and key files');
+        return;
+    }
+    
+    const formData = new FormData();
     formData.append('cert_file', certFile);
     formData.append('key_file', keyFile);
     
@@ -120,11 +207,10 @@ function uploadSSLCertificate() {
         } else {
             alert('Error: ' + data.error);
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to upload SSL certificate');
     });
 }
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', toggleSSLSections);
 </script>
 {% endblock %}
