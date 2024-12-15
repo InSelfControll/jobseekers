@@ -31,8 +31,9 @@
                 
                 <div id="saml-fields" style="display: none;">
                     <div class="mb-3">
-                        <label>SAML Manifest</label>
-                        <textarea name="saml_manifest" id="saml_manifest" class="form-control" rows="5"></textarea>
+                        <label>SAML Manifest File</label>
+                        <input type="file" name="saml_manifest" id="saml_manifest" class="form-control" accept=".xml">
+                        <small class="text-muted">Upload your Azure AD Federation Metadata XML file</small>
                     </div>
                 </div>
 
