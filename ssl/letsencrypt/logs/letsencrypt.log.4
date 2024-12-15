@@ -1,0 +1,95 @@
+2024-12-15 20:03:13,700:DEBUG:certbot._internal.main:certbot version: 2.9.0
+2024-12-15 20:03:13,701:DEBUG:certbot._internal.main:Location of certbot entry point: app.py
+2024-12-15 20:03:13,702:DEBUG:certbot._internal.main:Arguments: ['--webroot', '--webroot-path', '/home/runner/JobSeekrBot/static/.well-known', '--email', 'admin@hostme.co.il', '--agree-tos', '--no-eff-email', '-d', 'jobs.hostme.co.il', '--config-dir', '/home/runner/JobSeekrBot/ssl/letsencrypt', '--work-dir', '/home/runner/JobSeekrBot/ssl/letsencrypt/work', '--logs-dir', '/home/runner/JobSeekrBot/ssl/letsencrypt/logs', '--non-interactive']
+2024-12-15 20:03:13,702:DEBUG:certbot._internal.main:Discovered plugins: PluginsRegistry(PluginEntryPoint#manual,PluginEntryPoint#null,PluginEntryPoint#standalone,PluginEntryPoint#webroot)
+2024-12-15 20:03:13,716:DEBUG:certbot._internal.log:Root logging level set at 30
+2024-12-15 20:03:13,717:DEBUG:certbot._internal.plugins.selection:Requested authenticator webroot and installer None
+2024-12-15 20:03:13,717:DEBUG:certbot._internal.plugins.selection:Single candidate plugin: * webroot
+Description: Saves the necessary validation files to a .well-known/acme-challenge/ directory within the nominated webroot path. A seperate HTTP server must be running and serving files from the webroot path. HTTP challenge only (wildcards not supported).
+Interfaces: Authenticator, Plugin
+Entry point: EntryPoint(name='webroot', value='certbot._internal.plugins.webroot:Authenticator', group='certbot.plugins')
+Initialized: <certbot._internal.plugins.webroot.Authenticator object at 0x7fbe059ad210>
+Prep: True
+2024-12-15 20:03:13,718:DEBUG:certbot._internal.plugins.selection:Selected authenticator <certbot._internal.plugins.webroot.Authenticator object at 0x7fbe059ad210> and installer None
+2024-12-15 20:03:13,718:INFO:certbot._internal.plugins.selection:Plugins selected: Authenticator webroot, Installer None
+2024-12-15 20:03:13,781:DEBUG:certbot._internal.main:Picked account: <Account(RegistrationResource(body=Registration(key=None, contact=(), agreement=None, status=None, terms_of_service_agreed=None, only_return_existing=None, external_account_binding=None), uri='https://acme-v02.api.letsencrypt.org/acme/acct/2115047605', new_authzr_uri=None, terms_of_service=None), de8f11d49b456ead263fc25afeacddd7, Meta(creation_dt=datetime.datetime(2024, 12, 15, 19, 53, 51, tzinfo=<UTC>), creation_host='d706af8e75de', register_to_eff=None))>
+2024-12-15 20:03:13,782:DEBUG:acme.client:Sending GET request to https://acme-v02.api.letsencrypt.org/directory.
+2024-12-15 20:03:13,785:DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): acme-v02.api.letsencrypt.org:443
+2024-12-15 20:03:13,970:DEBUG:urllib3.connectionpool:https://acme-v02.api.letsencrypt.org:443 "GET /directory HTTP/1.1" 200 746
+2024-12-15 20:03:13,970:DEBUG:acme.client:Received response:
+HTTP 200
+Server: nginx
+Date: Sun, 15 Dec 2024 20:03:13 GMT
+Content-Type: application/json
+Content-Length: 746
+Connection: keep-alive
+Cache-Control: public, max-age=0, no-cache
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=604800
+
+{
+  "To2CATobkyw": "https://community.letsencrypt.org/t/adding-random-entries-to-the-directory/33417",
+  "keyChange": "https://acme-v02.api.letsencrypt.org/acme/key-change",
+  "meta": {
+    "caaIdentities": [
+      "letsencrypt.org"
+    ],
+    "termsOfService": "https://letsencrypt.org/documents/LE-SA-v1.4-April-3-2024.pdf",
+    "website": "https://letsencrypt.org"
+  },
+  "newAccount": "https://acme-v02.api.letsencrypt.org/acme/new-acct",
+  "newNonce": "https://acme-v02.api.letsencrypt.org/acme/new-nonce",
+  "newOrder": "https://acme-v02.api.letsencrypt.org/acme/new-order",
+  "renewalInfo": "https://acme-v02.api.letsencrypt.org/draft-ietf-acme-ari-03/renewalInfo",
+  "revokeCert": "https://acme-v02.api.letsencrypt.org/acme/revoke-cert"
+}
+2024-12-15 20:03:13,971:DEBUG:certbot._internal.display.obj:Notifying user: Requesting a certificate for jobs.hostme.co.il
+2024-12-15 20:03:13,979:DEBUG:acme.client:Requesting fresh nonce
+2024-12-15 20:03:13,979:DEBUG:acme.client:Sending HEAD request to https://acme-v02.api.letsencrypt.org/acme/new-nonce.
+2024-12-15 20:03:14,021:DEBUG:urllib3.connectionpool:https://acme-v02.api.letsencrypt.org:443 "HEAD /acme/new-nonce HTTP/1.1" 200 0
+2024-12-15 20:03:14,022:DEBUG:acme.client:Received response:
+HTTP 200
+Server: nginx
+Date: Sun, 15 Dec 2024 20:03:13 GMT
+Connection: keep-alive
+Cache-Control: public, max-age=0, no-cache
+Link: <https://acme-v02.api.letsencrypt.org/directory>;rel="index"
+Replay-Nonce: 1QDIi77bNBGAqsO2-SD1lmcW_8yaLV60EziawgRLqUXKNi_I-V8
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=604800
+
+
+2024-12-15 20:03:14,022:DEBUG:acme.client:Storing nonce: 1QDIi77bNBGAqsO2-SD1lmcW_8yaLV60EziawgRLqUXKNi_I-V8
+2024-12-15 20:03:14,023:DEBUG:acme.client:JWS payload:
+b'{\n  "identifiers": [\n    {\n      "type": "dns",\n      "value": "jobs.hostme.co.il"\n    }\n  ]\n}'
+2024-12-15 20:03:14,026:DEBUG:acme.client:Sending POST request to https://acme-v02.api.letsencrypt.org/acme/new-order:
+{
+  "protected": "eyJhbGciOiAiUlMyNTYiLCAia2lkIjogImh0dHBzOi8vYWNtZS12MDIuYXBpLmxldHNlbmNyeXB0Lm9yZy9hY21lL2FjY3QvMjExNTA0NzYwNSIsICJub25jZSI6ICIxUURJaTc3Yk5CR0Fxc08yLVNEMWxtY1dfOHlhTFY2MEV6aWF3Z1JMcVVYS05pX0ktVjgiLCAidXJsIjogImh0dHBzOi8vYWNtZS12MDIuYXBpLmxldHNlbmNyeXB0Lm9yZy9hY21lL25ldy1vcmRlciJ9",
+  "signature": "MXgaQtikZb1LpKbSAPn_NOdoFkvhD6BId-UA0kp6rYHqrRSdeb94KMhNaz4rWHFi3MXxL1z_bx7s25olkl_kKKI14GKT-Pj9n6LSnIQfD8Wy-6qNu1Pkd5L-3Ugp8l8hc84SXdT9KnhTTr1Swtp4h_XG9nFB5Pgt3h6GeGhlaivrlTNPG1ZPYZVE3LA1ZQnhvtGyyN2I3IEKWk7mU_zfp_EA-d-dyB9Gh3ca3i9pHSBqe2stlxJ8WmQIz9jgWNqvtJNV8hbOaMIgwuj2jdBWYKoGk8zvbUyzZ1KsimPmMcJLehPjp-55nCBTHNvDnTOVNQ0epUHgjPv6wyG0Ay8DbA",
+  "payload": "ewogICJpZGVudGlmaWVycyI6IFsKICAgIHsKICAgICAgInR5cGUiOiAiZG5zIiwKICAgICAgInZhbHVlIjogImpvYnMuaG9zdG1lLmNvLmlsIgogICAgfQogIF0KfQ"
+}
+2024-12-15 20:03:14,084:DEBUG:urllib3.connectionpool:https://acme-v02.api.letsencrypt.org:443 "POST /acme/new-order HTTP/1.1" 429 306
+2024-12-15 20:03:14,084:DEBUG:acme.client:Received response:
+HTTP 429
+Server: nginx
+Date: Sun, 15 Dec 2024 20:03:14 GMT
+Content-Type: application/problem+json
+Content-Length: 306
+Connection: keep-alive
+Boulder-Requester: 2115047605
+Cache-Control: public, max-age=0, no-cache
+Link: <https://acme-v02.api.letsencrypt.org/directory>;rel="index", <https://letsencrypt.org/docs/rate-limits>;rel="help"
+Replay-Nonce: LPSR-4-s-YvjHo27KmspDkQlzmKOLrE5hG0onzig_GrK6x6596s
+Retry-After: 54775
+
+{
+  "type": "urn:ietf:params:acme:error:rateLimited",
+  "detail": "too many certificates (5) already issued for this exact set of domains in the last 168h0m0s, retry after 2024-12-16 11:16:08 UTC: see https://letsencrypt.org/docs/rate-limits/#new-certificates-per-exact-set-of-hostnames",
+  "status": 429
+}
+2024-12-15 20:03:14,085:ERROR:root:Certificate generation failed: urn:ietf:params:acme:error:rateLimited :: There were too many requests of a given type :: too many certificates (5) already issued for this exact set of domains in the last 168h0m0s, retry after 2024-12-16 11:16:08 UTC: see https://letsencrypt.org/docs/rate-limits/#new-certificates-per-exact-set-of-hostnames
+2024-12-15 20:03:14,150:INFO:werkzeug:172.31.196.69 - - [15/Dec/2024 20:03:14] "POST /admin/generate-ssl HTTP/1.1" 200 -
+2024-12-15 20:03:26,435:INFO:werkzeug:172.31.196.69 - - [15/Dec/2024 20:03:26] "GET /admin/domain-config HTTP/1.1" 200 -
+2024-12-15 20:03:26,673:INFO:werkzeug:172.31.196.69 - - [15/Dec/2024 20:03:26] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2024-12-15 20:03:26,691:INFO:werkzeug:172.31.196.69 - - [15/Dec/2024 20:03:26] "[36mGET /static/js/csrf.js HTTP/1.1[0m" 304 -
+2024-12-15 20:03:26,702:INFO:werkzeug:172.31.196.69 - - [15/Dec/2024 20:03:26] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
