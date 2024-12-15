@@ -8,21 +8,19 @@
         </div>
     </div>
 
-    <!-- Domain Status -->
     {% if current_user.sso_domain %}
     <div class="alert alert-info">
         <i class="fas fa-info-circle"></i> Domain configured: {{ current_user.sso_domain }}
     </div>
     {% endif %}
 
-    <!-- SSO Configuration -->
     <div class="card mb-4">
         <div class="card-header">
             <h4>SSO Configuration</h4>
         </div>
         <div class="card-body">
             <form id="sso-form" method="POST" action="{{ url_for('admin.save_sso_settings') }}" enctype="multipart/form-data">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label class="form-label">SSO Provider</label>
                     <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
@@ -31,8 +29,7 @@
                     </select>
                 </div>
                 
-                <!-- GitHub Fields -->
-                <div id="github-fields">
+                <div id="github-fields" style="display: none;">
                     <div class="mb-3">
                         <label class="form-label">Client ID</label>
                         <input type="text" name="client_id" class="form-control" 
@@ -45,10 +42,9 @@
                     </div>
                 </div>
                 
-                <!-- Azure Fields -->
-                <div id="azure-fields">
+                <div id="azure-fields" style="display: none;">
                     <div class="mb-3">
-                        <label class="form-label">Manifest File (Federation Metadata XML)</label>
+                        <label class="form-label">Federation Metadata XML</label>
                         <input type="file" name="manifest_file" class="form-control" accept=".xml">
                     </div>
                     {% if current_user.sso_config and current_user.sso_config.get('manifest') %}
