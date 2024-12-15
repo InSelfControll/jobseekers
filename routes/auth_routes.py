@@ -70,8 +70,9 @@ def register():
         db.session.add(employer)
         db.session.commit()
         
+        login_user(employer)
         flash('Registration successful!', 'success')
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('employer.dashboard'))
     return render_template('auth/register.html')
 
 @auth_bp.route('/github/login')

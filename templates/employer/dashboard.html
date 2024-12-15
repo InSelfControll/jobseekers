@@ -6,9 +6,9 @@
     <div class="col-md-12 mb-4">
         <h2>Welcome, {{ current_user.company_name }}!</h2>
         <div class="d-flex gap-3 mb-3">
-            <a href="{{ url_for('employer.jobs') }}" class="btn btn-primary btn-lg flex-1" style="flex: 1">Manage Jobs</a>
-            <a href="{{ url_for('employer.applications') }}" class="btn btn-success btn-lg flex-1" style="flex: 1">View Applications</a>
-            <a href="{{ url_for('employer.jobs', new_job=True) }}" class="btn btn-info btn-lg flex-1" style="flex: 1">Post New Job</a>
+            <a href="{{ url_for('employer.jobs') }}" class="btn btn-primary flex-1" style="flex: 1; padding: 8px 16px">Manage Jobs</a>
+            <a href="{{ url_for('employer.applications') }}" class="btn btn-success flex-1" style="flex: 1; padding: 8px 16px">View Applications</a>
+            <a href="{{ url_for('employer.jobs', new_job=True) }}" class="btn btn-info flex-1" style="flex: 1; padding: 8px 16px">Post New Job</a>
         </div>
     </div>
     
