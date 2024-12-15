@@ -5,20 +5,48 @@
     <h2>SSO Configuration</h2>
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ url_for('admin.save_domain') }}">
+            <form id="sso-form">
                 <div class="mb-3">
                     <label>Domain</label>
-                    <input type="text" name="domain" class="form-control" required>
+                    <input type="text" name="domain" id="domain" class="form-control" required>
                 </div>
                 <div class="mb-3">
                     <label>Provider</label>
-                    <select name="provider" class="form-control">
+                    <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
                         <option value="GITHUB">GitHub</option>
-                        <option value="SAML">SAML</option>
+                        <option value="SAML">Azure AD / Microsoft</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Save</button>
+                
+                <div id="github-fields" style="display: none;">
+                    <div class="mb-3">
+                        <label>Client ID</label>
+                        <input type="text" name="client_id" id="client_id" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label>Client Secret</label>
+                        <input type="password" name="client_secret" id="client_secret" class="form-control">
+                    </div>
+                </div>
+                
+                <div id="saml-fields" style="display: none;">
+                    <div class="mb-3">
+                        <label>SAML Manifest</label>
+                        <textarea name="saml_manifest" id="saml_manifest" class="form-control" rows="5"></textarea>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" onclick="saveDomain()" class="btn btn-primary">Save Domain</button>
+                    <button type="button" onclick="verifyDomain()" class="btn btn-success">Verify Domain</button>
+                    <button type="button" onclick="saveSSOSettings()" class="btn btn-info">Save SSO Settings</button>
+                </div>
             </form>
+            
+            <div id="dns-records" class="mt-4" style="display: none;">
+                <h5>DNS Records to Configure:</h5>
+                <pre id="dns-output"></pre>
+            </div>
         </div>
     </div>
 </div>

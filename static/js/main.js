@@ -3,57 +3,87 @@ function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
 }
 
-async function saveDomain() {
+function toggleProviderFields() {
+    const provider = document.getElementById('provider').value;
+    document.getElementById('github-fields').style.display = provider === 'GITHUB' ? 'block' : 'none';
+    document.getElementById('saml-fields').style.display = provider === 'SAML' ? 'block' : 'none';
+}
+
+function saveDomain() {
     const domain = document.getElementById('domain').value;
     const provider = document.getElementById('provider').value;
     
-    try {
-        const response = await fetch('/admin/save-domain', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ domain, provider })
-        });
-        
-        const data = await response.json();
+    fetch('/admin/save-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain, provider })
+    })
+    .then(response => response.json())
+    .then(data => {
         if (data.success) {
-            alert('Domain settings saved successfully!');
+            document.getElementById('dns-records').style.display = 'block';
+            document.getElementById('dns-output').textContent = 
+                `${data.cname_record}\n${data.txt_record}`;
+            alert('Domain saved successfully!');
         } else {
-            alert(data.error || 'Error saving domain settings');
+            alert('Error: ' + data.error);
         }
-    } catch (error) {
-        alert('Error saving domain settings');
-    }
+    });
 }
 
-async function verifyDomain() {
+function verifyDomain() {
     const domain = document.getElementById('domain').value;
-    if (!domain) {
-        alert('Please enter a domain first');
-        return;
-    }
+    const provider = document.getElementById('provider').value;
     
-    try {
-        const response = await fetch('/admin/verify-domain', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ domain })
-        });
-        
-        const data = await response.json();
-        if (data.success) {
+    fetch('/admin/verify-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain, provider })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.verified) {
             alert('Domain verified successfully!');
         } else {
-            alert(data.error || 'Domain verification failed');
+            alert('Domain verification failed. Please check your DNS records.');
         }
-    } catch (error) {
-        alert('Error verifying domain');
-    }
+    });
 }
 
 function saveSSOSettings() {
-    document.getElementById('sso-form').submit();
+    const provider = document.getElementById('provider').value;
+    const data = {
+        domain: document.getElementById('domain').value,
+        provider: provider
+    };
+    
+    if (provider === 'GITHUB') {
+        data.client_id = document.getElementById('client_id').value;
+        data.client_secret = document.getElementById('client_secret').value;
+    } else if (provider === 'SAML') {
+        data.saml_manifest = document.getElementById('saml_manifest').value;
+    }
+    
+    fetch('/admin/save-sso-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSO settings saved successfully!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
 }
