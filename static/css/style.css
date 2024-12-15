@@ -147,19 +147,21 @@ body {
     transform: translateY(-1px);  
 }  
 
-.btn-remove {  
+.btn-remove, .btn-danger {  
+    display: inline-block;
     background-color: var(--danger-color);  
     border-color: var(--danger-color);  
-    color: #ffffff;  
+    color: #ffffff !important;  
     padding: 0.5rem 1rem;  
     font-size: 0.875rem;  
     font-weight: 500;  
     border-radius: 4px;  
     transition: all 0.2s ease-in-out;  
     width: auto;  
-    min-width: 120px;  
-    max-width: 200px;  
-    margin-bottom: 0.5rem;  
+    min-width: 80px;  
+    margin-bottom: 0;
+    text-decoration: none;
+    cursor: pointer;
 }  
 
 .btn-remove:hover {  
