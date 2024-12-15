@@ -98,23 +98,37 @@ function saveDomain() {
 }
 
 function verifyDomain() {
-    const domain = document.getElementById('domain').value;
+    const domain = document.getElementById('domain')?.value;
+    if (!domain) {
+        alert('Please enter a domain first');
+        return;
+    }
     
     fetch('/admin/verify-domain', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
         body: JSON.stringify({ domain })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Domain verified successfully!');
+            location.reload();
         } else {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error || 'Verification failed'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to verify domain. Please try again.');
     });
 }
 
