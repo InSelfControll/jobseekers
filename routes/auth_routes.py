@@ -58,6 +58,12 @@ def register():
         company_name = request.form.get('company_name')
         password = request.form.get('password')
         
+        # Check if email already exists
+        existing_employer = Employer.query.filter_by(email=email).first()
+        if existing_employer:
+            flash('Email address is already registered', 'error')
+            return render_template('auth/register.html')
+            
         employer = Employer(
             email=email,
             company_name=company_name,
