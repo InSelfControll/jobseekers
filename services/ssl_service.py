@@ -36,9 +36,8 @@ class SSLService:
             
             cmd = [
                 'certbot', 'certonly',
-                '--webroot',
-                '--webroot-path', self.webroot_path,
-                '--preferred-challenges', 'http-01',
+                '--manual',
+                '--preferred-challenges', 'dns',
                 '--email', self.email,
                 '--agree-tos',
                 '--no-eff-email',
@@ -46,7 +45,7 @@ class SSLService:
                 '--config-dir', self.cert_dir,
                 '--work-dir', os.path.join(self.cert_dir, 'work'),
                 '--logs-dir', os.path.join(self.cert_dir, 'logs'),
-                '--non-interactive',
+                '--manual-public-ip-logging-ok',
                 '--debug',
                 '--verbose'
             ]
