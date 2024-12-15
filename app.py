@@ -25,7 +25,8 @@ def add_security_headers(response):
 
 @app.route('/.well-known/acme-challenge/<token>')
 def acme_challenge(token):
-    return send_from_directory(os.path.join(app.root_path, 'static', '.well-known', 'acme-challenge'), token)
+    challenge_path = os.path.join(app.static_folder, '.well-known', 'acme-challenge')
+    return send_from_directory(challenge_path, token, mimetype='text/plain')
 
 # CSRF error handler
 @app.errorhandler(CSRFError)
