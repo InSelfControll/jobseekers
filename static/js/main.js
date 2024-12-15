@@ -73,31 +73,34 @@ function saveDomain() {
 }
 
 function verifyDomain() {
-    const domainInput = document.getElementById('domain');
-    if (!domainInput) return;
-    
-    const domain = domainInput.value;
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const domain = document.getElementById('domain').value;
     
     fetch('/admin/verify-domain', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({ domain })
     })
     .then(response => response.json())
     .then(data => {
-        const sslSection = document.getElementById('ssl-section');
-        if (data.success && sslSection) {
+        if (data.success) {
             alert('Domain verified successfully!');
-            sslSection.style.display = 'block';
-            const verifiedDomainsDiv = document.querySelector('.alert-info, .alert-success');
-            if (verifiedDomainsDiv) {
-                verifiedDomainsDiv.className = 'alert alert-success';
-                verifiedDomainsDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${data.domain}`;
+            document.getElementById('ssl-section').style.display = 'block';
+            
+            // Update verified domains section
+            const verifiedDomainsSection = document.getElementById('verified-domains-section');
+            const noDomainsAlert = document.getElementById('no-domains-alert');
+            if (noDomainsAlert) {
+                noDomainsAlert.remove();
             }
+            
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success';
+            successAlert.innerHTML = `<i class="fas fa-check-circle"></i> ${data.domain}`;
+            verifiedDomainsSection.innerHTML = '';
+            verifiedDomainsSection.appendChild(successAlert);
         } else {
             alert('Verification failed: ' + data.error);
         }

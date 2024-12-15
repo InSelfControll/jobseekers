@@ -8,13 +8,13 @@
                 <div class="card-header">
                     <h4>Verified Domains</h4>
                 </div>
-                <div class="card-body">
+                <div class="card-body" id="verified-domains-section">
                     {% if current_user.sso_domain and current_user.domain_verified %}
                     <div class="alert alert-success">
                         <i class="fas fa-check-circle"></i> {{ current_user.sso_domain }}
                     </div>
                     {% else %}
-                    <div class="alert alert-info">No verified domains yet</div>
+                    <div class="alert alert-info" id="no-domains-alert">No verified domains yet</div>
                     {% endif %}
                 </div>
             </div>
