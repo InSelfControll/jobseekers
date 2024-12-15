@@ -4,6 +4,21 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8 offset-md-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Verified Domains</h4>
+                </div>
+                <div class="card-body">
+                    {% if current_user.sso_domain and current_user.domain_verified %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> {{ current_user.sso_domain }}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No verified domains yet</div>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h4>Domain Configuration</h4>

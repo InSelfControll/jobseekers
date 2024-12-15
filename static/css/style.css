@@ -329,8 +329,16 @@ a {
 }
 
 .dns-records {
-    max-width: 600px;
-    margin: auto;
+    margin-bottom: 1rem;
+}
+
+.dns-records .card-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dns-records table {
+    margin-bottom: 0;
 }
 
 .dns-records .table td {
