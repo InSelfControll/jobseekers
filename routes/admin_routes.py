@@ -213,8 +213,9 @@ def verify_domain():
         if verify_domain_records(data['domain'], current_user.sso_provider):
             employer = Employer.query.get(current_user.id)
             employer.domain_verified = True
+            employer.sso_domain = data['domain']
             db.session.commit()
-            return jsonify({'success': True})
+            return jsonify({'success': True, 'domain': data['domain']})
         return jsonify({'success': False, 'error': 'Domain verification failed'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

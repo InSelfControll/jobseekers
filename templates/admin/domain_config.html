@@ -188,7 +188,11 @@ function verifyDomain() {
         if (data.success) {
             alert('Domain verified successfully!');
             document.getElementById('ssl-section').style.display = 'block';
-            location.reload();
+            const verifiedDomainsDiv = document.querySelector('.alert-info, .alert-success');
+            if (verifiedDomainsDiv) {
+                verifiedDomainsDiv.className = 'alert alert-success';
+                verifiedDomainsDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${data.domain}`;
+            }
         } else {
             alert('Verification failed: ' + data.error);
         }
