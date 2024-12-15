@@ -39,7 +39,7 @@ class SSLService:
             import subprocess
 
             cmd = [
-                'certbot', 'certonly', '--non-interactive',
+                'certbot', 'certonly', '--nginx', '--non-interactive',
                 '--email', self.email, '--agree-tos', '--no-eff-email',
                 '-d', self.domain, '--config-dir', '../letsencrypt/',
                 '--work-dir', '../letsencrypt/',
