@@ -1,0 +1,54 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Company Email Settings</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4>Email Configuration</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.update_email_settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label class="form-label">Company Email Domain</label>
+                    <input type="text" class="form-control" name="email_domain" 
+                           value="{{ current_user.company_domain }}" 
+                           placeholder="e.g. company.com">
+                    <small class="text-muted">Users with this email domain can register automatically</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Email Footer</label>
+                    <textarea class="form-control" name="email_footer" rows="3" 
+                              placeholder="Enter company email footer">{{ email_footer }}</textarea>
+                    <small class="text-muted">This will appear at the bottom of all automated emails</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Notification Settings</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="notify_new_applications" 
+                               id="notify_new_applications" {{ 'checked' if notify_new_applications else '' }}>
+                        <label class="form-check-label" for="notify_new_applications">
+                            Notify on new applications
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="notify_status_changes" 
+                               id="notify_status_changes" {{ 'checked' if notify_status_changes else '' }}>
+                        <label class="form-check-label" for="notify_status_changes">
+                            Notify on application status changes
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save Email Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

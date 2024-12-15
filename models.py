@@ -15,6 +15,9 @@ class Employer(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_owner = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    email_footer = db.Column(db.Text)
+    notify_new_applications = db.Column(db.Boolean, default=True)
+    notify_status_changes = db.Column(db.Boolean, default=True)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
 class Job(db.Model):

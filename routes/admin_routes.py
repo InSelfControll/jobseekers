@@ -77,6 +77,35 @@ def save_domain():
     if existing:
         return jsonify({'success': False, 'error': 'Domain already in use'}), 400
         
+
+
+@admin_bp.route('/email-settings', methods=['GET'])
+@login_required
+@admin_required
+def email_settings():
+    return render_template('admin/email_settings.html',
+                         email_footer=current_user.email_footer,
+                         notify_new_applications=current_user.notify_new_applications,
+                         notify_status_changes=current_user.notify_status_changes)
+
+@admin_bp.route('/update-email-settings', methods=['POST'])
+@login_required
+@admin_required
+def update_email_settings():
+    try:
+        current_user.company_domain = request.form.get('email_domain')
+        current_user.email_footer = request.form.get('email_footer')
+        current_user.notify_new_applications = 'notify_new_applications' in request.form
+        current_user.notify_status_changes = 'notify_status_changes' in request.form
+        
+        db.session.commit()
+        flash('Email settings updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating email settings: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.email_settings'))
+
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
     employer.sso_provider = provider.upper()
