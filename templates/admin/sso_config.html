@@ -122,8 +122,28 @@ function saveDomain() {
     .then(data => {
         if (data.success) {
             document.getElementById('dns-records').style.display = 'block';
-            document.getElementById('dns-output').textContent = 
-                `${data.cname_record}\n${data.txt_record}`;
+            document.getElementById('dns-output').innerHTML = `
+                <div class="mb-3">
+                    <h5>Add these DNS records to verify domain ownership:</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.records.map(record => `
+                                <tr>
+                                    <td>${record.type}</td>
+                                    <td>${record.name}</td>
+                                    <td>${record.value}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
         } else {
             alert('Error: ' + data.error);
         }

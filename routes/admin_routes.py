@@ -116,14 +116,17 @@ def save_domain():
     
     # Generate verification records
     domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
-    cname_record = f"CNAME {domain} auth.{request.host}"
-    txt_record = f"TXT {domain} \"v=sso provider={provider} verify={domain_hash}\""
+    a_record = f"A {domain} {request.host_url.split('://')[1].split(':')[0]}"
+    txt_record = f"TXT {domain} \"v=sso1 provider={provider} verify={domain_hash}\""
     
     return jsonify({
         'success': True,
-        'cname_record': cname_record,
+        'a_record': a_record,
         'txt_record': txt_record,
-        'shadow_url': f"https://{domain}/login"
+        'records': [
+            {'type': 'A', 'name': domain, 'value': request.host_url.split('://')[1].split(':')[0]},
+            {'type': 'TXT', 'name': domain, 'value': f'v=sso1 provider={provider} verify={domain_hash}'}
+        ]
     })
 
 @admin_bp.route('/email-settings', methods=['GET'])
