@@ -39,12 +39,13 @@ class SSLService:
             import subprocess
 
             cmd = [
-                'certbot', 'certonly', '--standalone', '--non-interactive',
+                'certbot', 'certonly', '--non-interactive',
                 '--email', self.email, '--agree-tos', '--no-eff-email',
                 '-d', self.domain, '--config-dir', self.cert_dir,
                 '--work-dir', os.path.join(self.cert_dir, 'work'),
                 '--logs-dir', os.path.join(self.cert_dir, 'logs'),
-                '--force-renewal'
+                '--preferred-challenges', 'http', '--authenticator', 'webroot',
+                '--webroot-path', self.webroot_path
             ]
 
             process = subprocess.Popen(cmd,
