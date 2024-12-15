@@ -118,10 +118,11 @@ function verifyDomain() {
     });
 }
 
-function saveSSOSettings() {
-    const provider = document.getElementById('provider').value;
+function saveSSOSettings(event) {
+    event.preventDefault();
+    const form = event.target;
+    const provider = form.querySelector('#provider')?.value;
     let data = {
-        domain: document.getElementById('domain').value,
         provider: provider
     };
     
@@ -155,7 +156,7 @@ function sendSSOSettings(data) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
         body: JSON.stringify(data)
     })
