@@ -1,5 +1,5 @@
 import os
-from flask import redirect, url_for, jsonify
+from flask import redirect, url_for, jsonify, request
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from extensions import create_app, db, login_manager, logger
 
