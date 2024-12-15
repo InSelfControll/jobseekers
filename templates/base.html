@@ -13,21 +13,8 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <!-- Left side - User profile -->
-            <div class="d-flex align-items-center">
-                {% if current_user.is_authenticated %}
-                <div class="dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px">
-                            {{ current_user.company_name[:1] }}
-                        </div>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
-                    </ul>
-                </div>
-                {% endif %}
-            </div>
+            <!-- Left side - Logo -->
+            <a class="navbar-brand" href="{{ url_for('index') }}">Job Hunter</a>
             
             <!-- Center - Navigation -->
             <div class="navbar-collapse justify-content-center" id="navbarNav">
@@ -49,14 +36,26 @@
                     {% endif %}
                 </ul>
                 {% endif %}
-                <!-- Theme toggle button -->
+            </div>
+            
+            <!-- Right side - User profile and theme toggle -->
+            <div class="d-flex align-items-center">
+                {% if current_user.is_authenticated %}
                 <button onclick="toggleDarkMode()" class="btn btn-outline-light mx-2">
                     <i data-feather="moon"></i>
                 </button>
+                <div class="dropdown">
+                    <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px">
+                            {{ current_user.company_name[:1] }}
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </div>
+                {% endif %}
             </div>
-            
-            <!-- Right side - Logo -->
-            <a class="navbar-brand" href="{{ url_for('index') }}">Job Hunter</a>
         </div>
     </nav>
 
