@@ -1,4 +1,20 @@
 
+// Dark mode toggle
+function toggleDarkMode() {
+    const body = document.body;
+    body.classList.toggle('dark-mode');
+    const isDarkMode = body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDarkMode);
+}
+
+// Initialize dark mode from localStorage
+document.addEventListener('DOMContentLoaded', () => {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+    }
+});
+
 // Domain configuration
 function toggleSSLSections() {
     const letsEncryptSection = document.getElementById('letsEncryptSection');
