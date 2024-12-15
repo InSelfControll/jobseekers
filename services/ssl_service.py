@@ -63,14 +63,13 @@ class SSLService:
                 '--config-dir', '/home/runner/letsencrypt/',
                 '--preferred-challenges', 'dns-01',
                 '--work-dir', '/home/runner/letsencrypt/',
-                '--logs-dir', '/home/runner/letsencrypt/'
+                '--logs-dir', '/home/runner/letsencrypt/',
+                '--quiet'
             ]
 
-            process = subprocess.Popen(cmd,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE,
-                                       universal_newlines=True)
+            process = subprocess.run(cmd,
+                                   capture_output=True,
+                                   text=True)
 
             stdout, stderr = process.communicate()
 
