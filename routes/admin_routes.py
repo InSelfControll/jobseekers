@@ -19,7 +19,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/sso-config')
+@admin_bp.route('/sso-config', methods=['GET'])
 @login_required
 @admin_required
 def sso_config():
