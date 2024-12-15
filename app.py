@@ -39,12 +39,14 @@ def create_app():
     from routes.employer_routes import employer_bp
     from routes.job_routes import job_bp
     from routes.admin_routes import admin_bp
+    from routes.sso_routes import sso_bp
     from flask import redirect, url_for
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(employer_bp)
     app.register_blueprint(job_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(sso_bp)
 
     # Add root route
     @app.route('/')
