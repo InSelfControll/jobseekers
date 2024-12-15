@@ -1,7 +1,7 @@
 
 import os
 import logging
-from flask import Flask
+from flask import Flask, jsonify
 from extensions import db, login_manager, init_db, logger
 
 def create_app():
