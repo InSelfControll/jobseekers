@@ -146,8 +146,7 @@ def save_domain():
     return jsonify({
         'success': True,
         'records': [
-            {'type': 'CNAME', 'name': domain, 'value': request.host},
-            {'type': 'TXT', 'name': domain, 'value': f'v=sso provider={employer.sso_provider or "SSO"} verify={domain_hash}'}
+            {'type': 'CNAME', 'name': domain, 'value': request.host}
         ]
     })
     

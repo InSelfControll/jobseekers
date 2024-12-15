@@ -56,14 +56,9 @@ function saveDomain() {
             const dnsRecordsBody = document.getElementById('dns-records-body');
             dnsRecordsBody.innerHTML = `
                 <tr>
-                    <td>A</td>
+                    <td>CNAME</td>
                     <td>${domain}</td>
                     <td>${data.records[0].value}</td>
-                </tr>
-                <tr>
-                    <td>TXT</td>
-                    <td>${domain}</td>
-                    <td>${data.records[1].value}</td>
                 </tr>
             `;
             document.getElementById('ssl-section').style.display = 'block';
