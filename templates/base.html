@@ -30,8 +30,17 @@
                         <a class="nav-link" href="{{ url_for('employer.applications') }}">Applications</a>
                     </li>
                     {% if current_user.is_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.sso_config') }}">Admin Panel</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            Admin Panel
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.sso_config') }}">SSO Config</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.domain_config') }}">Domain Config</a></li>
+                            {% if current_user.domain_verified %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin.domain_config') }}#ssl-section">SSL Config</a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                     {% endif %}
                 </ul>
