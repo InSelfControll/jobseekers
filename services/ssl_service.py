@@ -38,15 +38,17 @@ class SSLService:
         try:
             import subprocess
 
+            # Kill any processes using ports 80/443
+            os.system('pkill python3')
+            os.system('pkill nginx')
+            
             cmd = [
-                'certbot', 'certonly', '--standalone', '--non-interactive',
+                'certbot', '--nginx', 'certonly', '--non-interactive',
                 '--agree-tos', '--email', self.email,
                 '-d', self.domain,
                 '--config-dir', '/home/runner/letsencrypt/',
                 '--work-dir', '/home/runner/letsencrypt/',
-                '--logs-dir', '/home/runner/letsencrypt/',
-                '--http-01-port', '80',
-                '--https-port', '443'
+                '--logs-dir', '/home/runner/letsencrypt/'
             ]
 
             process = subprocess.Popen(cmd,
