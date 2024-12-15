@@ -59,22 +59,30 @@ def remove_admin(admin_id):
 
 def verify_domain_records(domain, provider):
     try:
+        print(f"Verifying domain: {domain} for provider: {provider}")
         # Check CNAME record
         try:
             cname_answers = dns.resolver.resolve(domain, 'CNAME')
+            print(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
+            print(f"Expected host: {request.host}")
             cname_valid = any(str(rdata.target).rstrip('.') == request.host for rdata in cname_answers)
-        except:
+        except Exception as e:
+            print(f"CNAME lookup failed: {str(e)}")
             cname_valid = False
         
         # Check A record if CNAME fails
         if not cname_valid:
             try:
                 expected_ip = request.host.split(':')[0]  # Get IP without port
+                print(f"Checking A record. Expected IP: {expected_ip}")
                 a_answers = dns.resolver.resolve(domain, 'A')
+                print(f"A records found: {[str(rdata) for rdata in a_answers]}")
                 a_valid = any(str(rdata).rstrip('.') == expected_ip for rdata in a_answers)
-            except:
+                cname_valid = a_valid
+            except Exception as e:
+                print(f"A record lookup failed: {str(e)}")
                 a_valid = False
-            cname_valid = a_valid
+                cname_valid = False
         
         if not cname_valid:
             return False
