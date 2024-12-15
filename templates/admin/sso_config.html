@@ -126,27 +126,53 @@ function saveDomain() {
             if (dnsRecordsDiv && dnsOutputDiv) {
                 dnsRecordsDiv.style.display = 'block';
                 dnsOutputDiv.innerHTML = `
-                    <table class="table table-bordered mt-3">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Name</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>${data.records[0].type}</td>
-                                <td>${data.records[0].name}</td>
-                                <td>${data.records[0].value}</td>
-                            </tr>
-                            <tr>
-                                <td>${data.records[1].type}</td>
-                                <td>${data.records[1].name}</td>
-                                <td>${data.records[1].value}</td>
-                            </tr>
-                        </tbody>
-                    </table>`;
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Required DNS Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                        <th>Purpose</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>${data.records[0].type}</td>
+                                        <td>${data.records[0].name}</td>
+                                        <td>${data.records[0].value}</td>
+                                        <td>Domain Verification</td>
+                                    </tr>
+                                    <tr>
+                                        <td>${data.records[1].type}</td>
+                                        <td>${data.records[1].name}</td>
+                                        <td>${data.records[1].value}</td>
+                                        <td>SSO Authentication</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div class="mt-4">
+                                <h5>SSL Certificate</h5>
+                                <p>Upload your SSL certificate and private key:</p>
+                                <form id="sslForm" class="mb-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Certificate File (CRT)</label>
+                                        <input type="file" class="form-control" id="certFile" accept=".crt,.pem" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Private Key File (KEY)</label>
+                                        <input type="file" class="form-control" id="keyFile" accept=".key" required>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="uploadSSLCertificate()">Upload SSL Certificate</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>`;
             }
         } else {
             alert('Error: ' + (data.error || 'Failed to save domain'));

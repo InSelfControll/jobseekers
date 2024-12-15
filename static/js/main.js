@@ -1,4 +1,39 @@
 
+function uploadSSLCertificate() {
+    const formData = new FormData();
+    const certFile = document.getElementById('certFile').files[0];
+    const keyFile = document.getElementById('keyFile').files[0];
+    
+    if (!certFile || !keyFile) {
+        alert('Please select both certificate and key files');
+        return;
+    }
+    
+    formData.append('cert', certFile);
+    formData.append('key', keyFile);
+    
+    fetch('/admin/upload-ssl', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSL certificate uploaded successfully!');
+        } else {
+            alert('Error: ' + (data.error || 'Failed to upload SSL certificate'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to upload SSL certificate');
+    });
+}
+
+
 let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
 function toggleDarkMode() {
