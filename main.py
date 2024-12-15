@@ -49,37 +49,31 @@ async def run_web_server():
 async def run_telegram_bot():
     """Run the Telegram bot"""
     try:
-        # Create a lock file to ensure single instance
-        if os.path.exists("bot.lock"):
-            os.remove("bot.lock")
-        with open("bot.lock", "w") as f:
-            f.write(str(os.getpid()))
-
         application = await start_bot()
         if application:
             await application.initialize()
             await application.start()
             await application.updater.start_polling(
                 drop_pending_updates=True,
-                allowed_updates=['message'],
+                allowed_updates=[Update.MESSAGE],
                 read_timeout=30,
                 write_timeout=30
             )
             
-            while True:
-                await asyncio.sleep(1)
+            try:
+                while True:
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                logger.info("Telegram bot gracefully shutting down")
+                await application.updater.stop()
+                await application.stop()
+                await application.shutdown()
                 
-    except asyncio.CancelledError:
-        logger.info("Telegram bot gracefully shutting down.")
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
     finally:
         if os.path.exists("bot.lock"):
             os.remove("bot.lock")
-        if 'application' in locals() and application:
-            await application.updater.stop()
-            await application.stop()
-            await application.shutdown()
 
 
 async def main():
