@@ -68,8 +68,7 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_PATH='/',
-    SESSION_COOKIE_DOMAIN=None
+    SESSION_COOKIE_PATH='/'
 )
 
 if __name__ == '__main__':

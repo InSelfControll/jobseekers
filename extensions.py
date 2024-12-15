@@ -25,9 +25,16 @@ def create_app():
     """Create and configure Flask application"""
     app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
-    app.config['WTF_CSRF_ENABLED'] = True
-    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour token expiry
-    app.config['WTF_CSRF_SSL_STRICT'] = True
+    app.config.update(
+        WTF_CSRF_ENABLED=True,
+        WTF_CSRF_TIME_LIMIT=3600,
+        WTF_CSRF_SSL_STRICT=True,
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        PERMANENT_SESSION_LIFETIME=3600,
+        SESSION_COOKIE_NAME='session'
+    )
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
