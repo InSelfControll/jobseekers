@@ -63,10 +63,14 @@ def load_user(user_id):
         return None
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
-app.config['WTF_CSRF_ENABLED'] = True
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config.update(
+    WTF_CSRF_ENABLED=True,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_PATH='/',
+    SESSION_COOKIE_DOMAIN=None
+)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
