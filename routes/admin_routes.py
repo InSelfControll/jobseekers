@@ -25,7 +25,31 @@ def admin_required(f):
 def sso_config():
     if not current_user.is_admin:
         abort(403)
-    return render_template('admin/sso_config.html')
+    # Get all admins for the company
+    admins = Employer.query.filter(
+        (Employer.is_admin == True) & 
+        (Employer.company_domain == current_user.company_domain)
+    ).all()
+    return render_template('admin/sso_config.html', admins=admins)
+
+@admin_bp.route('/remove-admin/<int:admin_id>', methods=['POST'])
+@login_required
+@admin_required
+def remove_admin(admin_id):
+    if not current_user.is_owner:
+        return jsonify({'success': False, 'error': 'Only owners can remove admins'})
+        
+    try:
+        admin = Employer.query.get(admin_id)
+        if admin.is_owner:
+            return jsonify({'success': False, 'error': 'Cannot remove owner'})
+            
+        admin.is_admin = False
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
 
 def verify_domain_records(domain, provider):
     try:

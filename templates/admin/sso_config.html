@@ -2,26 +2,70 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container">
-    <h2>SSO Configuration</h2>
-    <div class="card">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Admin Panel</h2>
+        </div>
+    </div>
+
+    <!-- Admin List -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Administrators</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Company</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                    <tr>
+                        <td>{{ admin.email }}</td>
+                        <td>{{ admin.company_name }}</td>
+                        <td>{{ "Owner" if admin.is_owner else "Admin" }}</td>
+                        <td>
+                            {% if not admin.is_owner %}
+                            <button onclick="removeAdmin('{{ admin.id }}')" class="btn btn-danger btn-sm">Remove</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SSO Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>SSO Configuration</h4>
+        </div>
         <div class="card-body">
             <form id="sso-form">
                 <div class="mb-3">
                     <label>Domain</label>
-                    <input type="text" name="domain" id="domain" class="form-control" required>
+                    <input type="text" name="domain" id="domain" class="form-control" value="{{ current_user.sso_domain or '' }}" required>
                 </div>
                 <div class="mb-3">
                     <label>Provider</label>
                     <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
-                        <option value="GITHUB">GitHub</option>
-                        <option value="SAML">Azure AD / Microsoft</option>
+                        <option value="GITHUB" {% if current_user.sso_provider == 'GITHUB' %}selected{% endif %}>GitHub</option>
+                        <option value="AZURE" {% if current_user.sso_provider == 'AZURE' %}selected{% endif %}>Azure AD / Microsoft</option>
                     </select>
                 </div>
                 
+                <!-- GitHub Fields -->
                 <div id="github-fields" style="display: none;">
                     <div class="mb-3">
                         <label>Client ID</label>
                         <input type="text" name="client_id" id="client_id" class="form-control">
+                        <small class="text-muted">Create these at github.com/settings/developers</small>
                     </div>
                     <div class="mb-3">
                         <label>Client Secret</label>
@@ -29,10 +73,11 @@
                     </div>
                 </div>
                 
-                <div id="saml-fields" style="display: none;">
+                <!-- Azure Fields -->
+                <div id="azure-fields" style="display: none;">
                     <div class="mb-3">
-                        <label>SAML Manifest File</label>
-                        <input type="file" name="saml_manifest" id="saml_manifest" class="form-control" accept=".xml">
+                        <label>Manifest File</label>
+                        <input type="file" name="manifest_file" id="manifest_file" class="form-control" accept=".xml">
                         <small class="text-muted">Upload your Azure AD Federation Metadata XML file</small>
                     </div>
                 </div>
@@ -51,4 +96,114 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleProviderFields() {
+    const provider = document.getElementById('provider').value;
+    document.getElementById('github-fields').style.display = provider === 'GITHUB' ? 'block' : 'none';
+    document.getElementById('azure-fields').style.display = provider === 'AZURE' ? 'block' : 'none';
+}
+
+function saveDomain() {
+    const domain = document.getElementById('domain').value;
+    const provider = document.getElementById('provider').value;
+    
+    fetch('/admin/save-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain, provider })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('dns-records').style.display = 'block';
+            document.getElementById('dns-output').textContent = 
+                `${data.cname_record}\n${data.txt_record}`;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function verifyDomain() {
+    const domain = document.getElementById('domain').value;
+    
+    fetch('/admin/verify-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Domain verified successfully!');
+        } else {
+            alert('Verification failed: ' + data.error);
+        }
+    });
+}
+
+function saveSSOSettings() {
+    const provider = document.getElementById('provider').value;
+    const formData = new FormData();
+    
+    formData.append('provider', provider);
+    
+    if (provider === 'GITHUB') {
+        formData.append('client_id', document.getElementById('client_id').value);
+        formData.append('client_secret', document.getElementById('client_secret').value);
+    } else if (provider === 'AZURE') {
+        const manifestFile = document.getElementById('manifest_file').files[0];
+        if (manifestFile) {
+            formData.append('manifest_file', manifestFile);
+        }
+    }
+    
+    fetch('/admin/save-sso-settings', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSO settings saved successfully!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function removeAdmin(adminId) {
+    if (!confirm('Are you sure you want to remove this admin?')) return;
+    
+    fetch('/admin/remove-admin/' + adminId, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+// Initialize provider fields on load
+document.addEventListener('DOMContentLoaded', toggleProviderFields);
+</script>
 {% endblock %}
