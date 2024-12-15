@@ -42,9 +42,9 @@ class SSLService:
                 '--agree-tos',
                 '--no-eff-email',
                 '-d', self.domain,
-                '--config-dir', self.cert_dir,
-                '--work-dir', os.path.join(self.cert_dir, 'work'),
-                '--logs-dir', os.path.join(self.cert_dir, 'logs'),
+                '--config-dir', os.path.join('/home/runner/letsencrypt', 'config'),
+                '--work-dir', os.path.join('/home/runner/letsencrypt', 'work'),
+                '--logs-dir', os.path.join('/home/runner/letsencrypt', 'logs'),
                 '--manual-public-ip-logging-ok',
                 '--force-renewal'
             ]
