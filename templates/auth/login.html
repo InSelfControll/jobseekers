@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -26,24 +27,19 @@
                 
                 <div class="text-center mt-3">
                     <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
-                    <div class="mt-3">
-                        {% if employer and employer.sso_provider == 'GITHUB' %}
-                            <a href="{{ url_for('sso.github_login') }}" class="btn btn-dark">
-                                Continue with GitHub SSO
-                            </a>
-                        {% elif employer and employer.sso_provider == 'SAML' %}
-                            <a href="{{ url_for('sso.saml_login') }}" class="btn btn-secondary">
-                                Continue with Azure AD
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('sso.saml_login') }}" class="btn btn-secondary">
-                                Azure AD Login
-                            </a>
-                            <a href="{{ url_for('sso.github_login') }}" class="btn btn-dark">
-                                GitHub SSO
-                            </a>
-                        {% endif %}
-                    </div>
+                    {% if employer and employer.sso_provider %}
+                        <div class="mt-3">
+                            {% if employer.sso_provider == 'GITHUB' %}
+                                <a href="{{ url_for('sso.github_login') }}" class="btn btn-dark">
+                                    Continue with GitHub SSO
+                                </a>
+                            {% elif employer.sso_provider == 'SAML' %}
+                                <a href="{{ url_for('sso.saml_login') }}" class="btn btn-secondary">
+                                    Continue with Azure AD
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
