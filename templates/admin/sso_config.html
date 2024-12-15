@@ -48,7 +48,8 @@
             <a href="{{ url_for('admin.domain_config') }}" class="btn btn-primary float-end">Configure Domain</a>
         </div>
         <div class="card-body">
-            <form id="sso-form">
+            <form id="sso-form" method="POST" action="{{ url_for('admin.save_sso_settings') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label>Provider</label>
                     <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
@@ -61,11 +62,11 @@
                 <div id="github-fields" style="display: none;">
                     <div class="mb-3">
                         <label>Client ID</label>
-                        <input type="text" name="client_id" id="client_id" class="form-control">
+                        <input type="text" name="client_id" id="client_id" class="form-control" autocomplete="off">
                     </div>
                     <div class="mb-3">
                         <label>Client Secret</label>
-                        <input type="password" name="client_secret" id="client_secret" class="form-control">
+                        <input type="password" name="client_secret" id="client_secret" class="form-control" autocomplete="off">
                     </div>
                 </div>
                 

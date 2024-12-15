@@ -231,30 +231,43 @@ def verify_domain():
 @login_required
 @admin_required
 def save_sso_settings():
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'error': 'No data provided'}), 400
-        
     try:
         employer = Employer.query.get(current_user.id)
-        employer.sso_provider = data['provider']
+        provider = request.form.get('provider')
+        employer.sso_provider = provider
         
-        # Store credentials securely in database
-        if data['provider'] == 'GITHUB':
+        if provider == 'GITHUB':
+            client_id = request.form.get('client_id')
+            client_secret = request.form.get('client_secret')
+            
+            if not client_id or not client_secret:
+                flash('Client ID and Client Secret are required for GitHub SSO', 'error')
+                return redirect(url_for('admin.sso_config'))
+                
             employer.sso_config = {
-                'client_id': data['client_id'],
-                'client_secret': data['client_secret']
+                'client_id': client_id,
+                'client_secret': client_secret
             }
-        elif data['provider'] == 'AZURE':
+            
+        elif provider == 'AZURE':
+            manifest_file = request.files.get('manifest_file')
+            if not manifest_file:
+                flash('Manifest file is required for Azure SSO', 'error')
+                return redirect(url_for('admin.sso_config'))
+                
+            manifest_content = manifest_file.read().decode('utf-8')
             employer.sso_config = {
-                'manifest': data['manifest_content']
+                'manifest': manifest_content
             }
             
         db.session.commit()
-        return jsonify({'success': True})
+        flash('SSO settings saved successfully', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        flash(f'Error saving SSO settings: {str(e)}', 'error')
+        
+    return redirect(url_for('admin.sso_config'))
         
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
