@@ -34,50 +34,53 @@ class SSLService:
             os.chmod(path, 0o755)
 
     def generate_certificate(self):
-        """Generate a new Let's Encrypt SSL certificate"""
+        """Generate a new Let's Encrypt SSL certificate using Cloudflare DNS challenge"""
         try:
-            import subprocess
-
-            # Kill any processes using ports 80/443
-            os.system('pkill python3')
-            os.system('pkill nginx')
+            logging.info(f"Starting certificate generation for {self.domain} using Cloudflare DNS challenge")
             
-            # Load Cloudflare credentials from environment
-            with open('/home/runner/secrets/cloudflare.ini', 'w') as f:
-                f.write(f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n")
-            os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
-
-            # Create config directory
+            # Create secrets directory
             os.makedirs('/home/runner/secrets/', exist_ok=True)
             
             # Write Cloudflare credentials
-            with open('/home/runner/secrets/cloudflare.ini', 'w') as f:
-                f.write(f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n")
-            os.chmod('/home/runner/secrets/cloudflare.ini', 0o600)
+            cloudflare_config = f"dns_cloudflare_api_token = {os.getenv('CLOUDFLARE_API_TOKEN')}\n"
+            config_path = '/home/runner/secrets/cloudflare.ini'
+            
+            with open(config_path, 'w') as f:
+                f.write(cloudflare_config)
+            os.chmod(config_path, 0o600)
+            
+            logging.info("Cloudflare credentials configured successfully")
             
             cmd = [
-                'certbot', 'certonly', '--non-interactive',
-                '--dns-cloudflare', '--dns-cloudflare-credentials', '/home/runner/secrets/cloudflare.ini',
-                '--agree-tos', '--email', self.email,
+                'certbot', 'certonly',
+                '--dns-cloudflare',
+                '--dns-cloudflare-credentials', '/home/runner/secrets/cloudflare.ini',
+                '--non-interactive',
+                '--agree-tos',
+                '--email', self.email,
                 '-d', self.domain,
                 '--config-dir', '/home/runner/letsencrypt/',
-                '--preferred-challenges', 'dns-01',
                 '--work-dir', '/home/runner/letsencrypt/',
                 '--logs-dir', '/home/runner/letsencrypt/',
-                '--quiet'
+                '--preferred-challenges', 'dns-01',
+                '-v'  # Verbose output for debugging
             ]
+
+            logging.info(f"Executing certbot with command: {' '.join(cmd)}")
 
             process = subprocess.run(cmd,
                                    capture_output=True,
                                    text=True,
                                    check=False)
 
+            if process.stdout:
+                logging.info(f"Certbot output: {process.stdout}")
+
             if process.returncode != 0:
                 logging.error(f"Certificate generation failed: {process.stderr}")
                 return False, f"Certificate generation failed: {process.stderr}"
-
-            if process.returncode != 0:
-                logging.error(f"Certificate generation failed: {stderr}")
+                
+            logging.info("Certificate generated successfully using Cloudflare DNS challenge")
                 return False, f"Certificate generation failed: {stderr}"
             if process.returncode != 0:
                 return False, f"Certificate generation failed: {process.stderr}"
