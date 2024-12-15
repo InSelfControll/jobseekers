@@ -32,9 +32,12 @@ def create_app():
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_NAME='session',
         PERMANENT_SESSION_LIFETIME=3600,
-        SESSION_COOKIE_NAME='session'
+        SESSION_TYPE='filesystem'
     )
+    from flask_session import Session
+    Session(app)
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
