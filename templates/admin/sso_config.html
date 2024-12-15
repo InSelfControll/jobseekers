@@ -315,11 +315,12 @@ function verifyDomain() {
     });
 }
 
-function saveSSOSettings() {
+function saveSSOSettings(event) {
+    event.preventDefault();
+    
     const provider = document.getElementById('provider').value;
-    const data = {
-        provider: provider
-    };
+    const data = new FormData();
+    data.append('provider', provider);
     
     if (provider === 'GITHUB') {
         const clientId = document.getElementById('client_id').value;
@@ -330,55 +331,41 @@ function saveSSOSettings() {
             return;
         }
         
-        data.client_id = clientId;
-        data.client_secret = clientSecret;
+        data.append('client_id', clientId);
+        data.append('client_secret', clientSecret);
     } else if (provider === 'AZURE') {
         const manifestFile = document.getElementById('manifest_file').files[0];
         if (!manifestFile) {
             alert('Please select a manifest file');
             return;
         }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            data.manifest_content = e.target.result;
-            sendSSORequest(data);
-        };
-        reader.readAsText(manifestFile);
-        return;
+        data.append('manifest_file', manifestFile);
     }
     
-    sendSSORequest(data);
-}
-
-function sendSSORequest(data) {
     fetch('/admin/save-sso-settings', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify(data)
+        body: data
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
             alert('SSO settings saved successfully!');
             window.location.reload();
         } else {
-            alert('Error: ' + (data.error || 'Failed to save SSO settings'));
+            alert('Error: ' + (result.error || 'Failed to save SSO settings'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to save SSO settings: ' + error.message);
+        alert('Failed to save SSO settings');
     });
 }
+
+// Add event listener to the form
+document.getElementById('sso-form').addEventListener('submit', saveSSOSettings);
 
 function removeAdmin(adminId) {
     if (!confirm('Are you sure you want to remove this admin?')) return;
