@@ -5,14 +5,8 @@ import subprocess
 import logging
 from models import Employer
 from extensions import db, create_app
-import certbot.main
+from certbot import main as certbot_main
 from flask import current_app
-
-from certbot import main as certbot
-import os
-from flask import current_app
-from models import Employer
-from extensions import db
 
 class SSLService:
     def __init__(self, domain, email):
@@ -40,7 +34,7 @@ class SSLService:
                 '--non-interactive'
             ]
             
-            certbot.main.main(certbot_args)
+            certbot_main.main(certbot_args)
             
             # Update certificate paths in database
             employer = Employer.query.filter_by(sso_domain=self.domain).first()
@@ -77,7 +71,7 @@ class SSLService:
                 '--non-interactive'
             ]
             
-            certbot.main.main(certbot_args)
+            certbot_main.main(certbot_args)
             
             # Update certificate expiry in database
             employer.ssl_expiry = self._get_cert_expiry()
