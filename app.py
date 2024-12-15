@@ -1,5 +1,5 @@
 import os
-from flask import redirect, url_for, jsonify, request
+from flask import redirect, url_for, jsonify, request, g
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from extensions import create_app, db, login_manager, logger
 
@@ -69,6 +69,28 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_PATH='/'
 )
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.Config')
+    
+    @app.before_request
+    def handle_custom_domain():
+        host = request.headers.get('Host', '').lower()
+        if host != app.config['PRIMARY_DOMAIN']:
+            from models import Employer #Import here to avoid circular import
+            employer = Employer.query.filter_by(sso_domain=host, domain_verified=True).first()
+            if employer:
+                g.custom_domain = True
+                g.domain_config = {
+                    'sso_provider': employer.sso_provider,
+                    'sso_config': employer.sso_config
+                }
+            else:
+                g.custom_domain = False
+
+    return app
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

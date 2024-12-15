@@ -1,6 +1,5 @@
-
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session
-from flask_login import login_user, logout_user, login_required
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session, g
+from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Employer
@@ -37,8 +36,14 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    domain = request.headers.get('Host')
-    employer = Employer.query.filter_by(sso_domain=domain).first()
+    if current_user.is_authenticated:
+        return redirect(url_for('employer.dashboard'))
+        
+    # Added to handle custom domains (incomplete - needs domain config loading)
+    if hasattr(g, 'custom_domain') and g.custom_domain:
+        if g.domain_config['sso_provider']:
+            return redirect(url_for(f'sso.{g.domain_config["sso_provider"].lower()}_login'))
+    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -49,7 +54,8 @@ def login():
             return redirect(url_for('employer.dashboard'))
         
         flash('Invalid email or password', 'error')
-    return render_template('auth/login.html', employer=employer)
+    return render_template('auth/login.html', employer=None) #Removed employer=employer
+
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -169,7 +175,7 @@ def saml_callback():
     
     if not errors and auth.is_authenticated():
         # Generate SSO domain after successful authentication
-        domain, cname, txt = generate_sso_domain(employer, "SAML")
+        domain, cname, txt = generate_sso_domain(None, "SAML") #Removed employer
         flash(f"Configure your DNS with:\n{cname}\n{txt}", "info")
     
     if not errors:

@@ -136,9 +136,15 @@ def save_domain():
         return jsonify({'success': False, 'error': 'Domain is required'}), 400
     
     try:
+        # Check if domain is already in use
+        existing = Employer.query.filter_by(sso_domain=domain).first()
+        if existing and existing.id != current_user.id:
+            return jsonify({'success': False, 'error': 'Domain already in use'}), 400
+            
         employer = Employer.query.get(current_user.id)
         employer.sso_domain = domain
         employer.domain_verified = False
+        employer.ssl_enabled = False
         db.session.commit()
         
         return jsonify({
