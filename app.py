@@ -14,6 +14,16 @@ def create_app():
     @app.after_request
     def add_security_headers(response):
         response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        
+        # Set proper MIME types for assets
+        if response.mimetype == 'text/plain':
+            if response.headers['Content-Disposition'].endswith('.css'):
+                response.mimetype = 'text/css'
+            elif response.headers['Content-Disposition'].endswith('.js'):
+                response.mimetype = 'application/javascript'
         return response
 
     from flask_wtf.csrf import CSRFProtect, CSRFError
