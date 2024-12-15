@@ -141,6 +141,59 @@ def update_domain():
     if not domain:
         return jsonify({'success': False, 'error': 'Domain is required'}), 400
         
+    try:
+        employer = Employer.query.get(current_user.id)
+        employer.sso_domain = domain
+        employer.domain_verified = False
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/verify-domain', methods=['POST'])
+@login_required
+@admin_required
+def verify_domain():
+    data = request.get_json()
+    if not data or not data.get('domain'):
+        return jsonify({'success': False, 'error': 'Domain is required'}), 400
+        
+    try:
+        if verify_domain_records(data['domain'], current_user.sso_provider):
+            employer = Employer.query.get(current_user.id)
+            employer.domain_verified = True
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'Domain verification failed'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/save-sso-settings', methods=['POST'])
+@login_required
+@admin_required
+def save_sso_settings():
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+    try:
+        employer = Employer.query.get(current_user.id)
+        employer.sso_provider = data['provider']
+        
+        # Store encrypted credentials in environment variables
+        if data['provider'] == 'GITHUB':
+            os.environ[f'GITHUB_CLIENT_ID_{employer.id}'] = data['client_id']
+            os.environ[f'GITHUB_CLIENT_SECRET_{employer.id}'] = data['client_secret']
+        elif data['provider'] == 'SAML':
+            os.environ[f'SAML_MANIFEST_{employer.id}'] = data['saml_manifest']
+            
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+        
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
     employer.domain_verified = False

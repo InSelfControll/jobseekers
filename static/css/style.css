@@ -254,3 +254,32 @@ body {
     margin-top: 20px;
     text-align: center;
 }
+.dark-mode {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.dark-mode .card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-mode .navbar {
+    background-color: #2d2d2d !important;
+}
+
+.dark-mode .form-control {
+    background-color: #333;
+    border-color: #404040;
+    color: #fff;
+}
+
+.dark-mode .btn-outline-light {
+    color: #fff;
+    border-color: #fff;
+}
+
+.dark-mode .btn-outline-light:hover {
+    background-color: #fff;
+    color: #1a1a1a;
+}
