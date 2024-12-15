@@ -128,7 +128,6 @@ def save_domain():
     if not data:
         return jsonify({'success': False, 'error': 'No data provided'}), 400
         
-    provider = data.get('provider')
     domain = data.get('domain')
     
     if not domain:
@@ -145,7 +144,10 @@ def save_domain():
     
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
-    employer.sso_provider = provider.upper()
+    
+    # Generate DNS records
+    domain_hash = hashlib.sha256(f"{domain}:{employer.sso_provider or 'SSO'}".encode()).hexdigest()[:16]
+    
     db.session.commit()
     
     # Generate verification records

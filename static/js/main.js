@@ -75,9 +75,39 @@ function saveDomain() {
     .then(data => {
         if (data.success) {
             alert('Domain saved successfully!');
+            // Show DNS records
+            const dnsOutput = document.getElementById('dns-output');
+            const dnsRecords = document.getElementById('dns-records');
+            
+            if (data.records && dnsOutput) {
+                dnsOutput.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.records.map(record => `
+                                <tr>
+                                    <td>${record.type}</td>
+                                    <td>${record.name}</td>
+                                    <td>${record.value}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>`;
+                dnsRecords.style.display = 'block';
+            }
         } else {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error || 'Failed to save domain'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save domain settings');
     });
 }
 
