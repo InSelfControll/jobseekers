@@ -13,7 +13,7 @@ class SSLService:
         self.domain = domain
         self.email = email
         base_path = os.path.abspath(os.path.dirname(current_app.root_path))
-        self.cert_dir = os.path.join(base_path, 'ssl', 'letsencrypt')
+        self.cert_dir = os.path.join(os.path.dirname(base_path), 'letsencrypt')
         self.webroot_path = os.path.join(base_path, 'static')
         self.acme_path = os.path.join(self.webroot_path, '.well-known', 'acme-challenge')
         
