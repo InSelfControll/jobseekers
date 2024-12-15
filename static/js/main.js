@@ -116,7 +116,22 @@ function sendSSOSettings(data) {
 
 // Initialize dark mode on page load
 document.addEventListener('DOMContentLoaded', () => {
-    document.body.classList.toggle('dark-mode', isDarkMode);
+    const prefersDark = localStorage.getItem('darkMode') !== 'false';
+    document.body.classList.toggle('dark-mode', prefersDark);
     updateThemeIcon();
     feather.replace();
 });
+
+function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const icon = document.querySelector('[data-feather]');
+    if (icon) {
+        icon.setAttribute('data-feather', document.body.classList.contains('dark-mode') ? 'sun' : 'moon');
+        feather.replace();
+    }
+}
