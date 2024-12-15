@@ -1,7 +1,5 @@
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
-
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 from flask_login import login_required, current_user
 from extensions import db
 from functools import wraps
@@ -11,11 +9,7 @@ import dns.resolver
 from models import Employer
 from flask import abort
 
-@admin_bp.route('/sso-config')
-@login_required
-@admin_required
-def sso_config():
-    return render_template('admin/sso_config.html')
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 def admin_required(f):
     @wraps(f)
@@ -24,6 +18,12 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
+
+@admin_bp.route('/sso-config')
+@login_required
+@admin_required
+def sso_config():
+    return render_template('admin/sso_config.html')
 
 def verify_domain_records(domain, provider):
     try:
@@ -82,8 +82,23 @@ def save_domain():
     
     if existing:
         return jsonify({'success': False, 'error': 'Domain already in use'}), 400
-        
-
+    
+    employer = Employer.query.get(current_user.id)
+    employer.sso_domain = domain
+    employer.sso_provider = provider.upper()
+    db.session.commit()
+    
+    # Generate verification records
+    domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
+    cname_record = f"CNAME {domain} auth.{request.host}"
+    txt_record = f"TXT {domain} \"v=sso provider={provider} verify={domain_hash}\""
+    
+    return jsonify({
+        'success': True,
+        'cname_record': cname_record,
+        'txt_record': txt_record,
+        'shadow_url': f"https://{domain}/login"
+    })
 
 @admin_bp.route('/email-settings', methods=['GET'])
 @login_required
@@ -112,23 +127,6 @@ def update_email_settings():
     
     return redirect(url_for('admin.email_settings'))
 
-    employer = Employer.query.get(current_user.id)
-    employer.sso_domain = domain
-    employer.sso_provider = provider.upper()
-    db.session.commit()
-    
-    # Generate verification records
-    domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
-    cname_record = f"CNAME {domain} auth.{request.host}"
-    txt_record = f"TXT {domain} \"v=sso provider={provider} verify={domain_hash}\""
-    
-    return jsonify({
-        'success': True,
-        'cname_record': cname_record,
-        'txt_record': txt_record,
-        'shadow_url': f"https://{domain}/login"  # Shadow interface URL
-    })
-
 @admin_bp.route('/update-domain', methods=['POST'])
 @login_required
 @admin_required
@@ -143,7 +141,7 @@ def update_domain():
         
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
-    employer.domain_verified = False  # Reset verification status
+    employer.domain_verified = False
     db.session.commit()
     
     return jsonify({'success': True})
