@@ -18,6 +18,10 @@ class Employer(UserMixin, db.Model):
     email_footer = db.Column(db.Text)
     notify_new_applications = db.Column(db.Boolean, default=True)
     notify_status_changes = db.Column(db.Boolean, default=True)
+    ssl_enabled = db.Column(db.Boolean, default=False)
+    ssl_cert_path = db.Column(db.String(512))
+    ssl_key_path = db.Column(db.String(512))
+    ssl_expiry = db.Column(db.DateTime)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
 class Job(db.Model):

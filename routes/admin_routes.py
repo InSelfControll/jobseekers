@@ -92,31 +92,23 @@ def verify_domain_records(domain, provider):
     except:
         return False
 
-@admin_bp.route('/upload-ssl', methods=['POST'])
+@admin_bp.route('/generate-ssl', methods=['POST'])
 @login_required
 @admin_required
-def upload_ssl():
-    if 'cert' not in request.files or 'key' not in request.files:
-        return jsonify({'success': False, 'error': 'Missing certificate files'})
-        
-    cert_file = request.files['cert']
-    key_file = request.files['key']
-    
+def generate_ssl():
     try:
-        # Save SSL files securely
-        cert_path = f'ssl/{current_user.id}/cert.pem'
-        key_path = f'ssl/{current_user.id}/key.pem'
+        from services.ssl_service import SSLService
         
-        os.makedirs(os.path.dirname(cert_path), exist_ok=True)
-        cert_file.save(cert_path)
-        key_file.save(key_path)
+        if not current_user.sso_domain:
+            return jsonify({'success': False, 'error': 'Please configure domain first'})
+            
+        ssl_service = SSLService(current_user.sso_domain, current_user.email)
+        success, message = ssl_service.generate_certificate()
         
-        # Update employer SSL status
-        employer = Employer.query.get(current_user.id)
-        employer.ssl_enabled = True
-        db.session.commit()
-        
-        return jsonify({'success': True})
+        return jsonify({
+            'success': success,
+            'message': message
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
