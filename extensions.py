@@ -33,8 +33,15 @@ def create_app():
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_NAME='session',
+        SESSION_COOKIE_DOMAIN=None,
+        SESSION_COOKIE_PARTITIONED=True,
         PERMANENT_SESSION_LIFETIME=3600,
-        SESSION_TYPE='filesystem'
+        SESSION_TYPE='filesystem',
+        MIME_TYPES={
+            '.js': 'application/javascript',
+            '.css': 'text/css',
+            '.html': 'text/html'
+        }
     )
     from flask_session import Session
     Session(app)

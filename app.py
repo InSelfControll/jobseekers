@@ -16,11 +16,10 @@ def add_security_headers(response):
     response.headers['Content-Security-Policy'] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://*.browser-intake-us5-datadoghq.com"
     
     # Set proper MIME types for assets
-    if response.mimetype == 'text/plain':
-        if response.headers['Content-Disposition'].endswith('.css'):
-            response.mimetype = 'text/css'
-        elif response.headers['Content-Disposition'].endswith('.js'):
-            response.mimetype = 'application/javascript'
+    if '.js' in request.path:
+        response.headers['Content-Type'] = 'application/javascript'
+    elif '.css' in request.path:
+        response.headers['Content-Type'] = 'text/css'
     return response
 
 # CSRF error handler
