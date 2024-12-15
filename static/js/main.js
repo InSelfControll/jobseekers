@@ -58,8 +58,12 @@ function encryptSensitiveData(data) {
 
 function saveDomain() {
     const domain = document.getElementById('domain').value;
+    if (!domain) {
+        alert('Please enter a domain name');
+        return;
+    }
     
-    fetch('/admin/update-domain', {
+    fetch('/admin/save-domain', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
