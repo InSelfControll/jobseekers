@@ -8,39 +8,6 @@
         </div>
     </div>
 
-    <!-- Admin List -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Administrators</h4>
-        </div>
-        <div class="card-body">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Company</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for admin in admins %}
-                    <tr>
-                        <td>{{ admin.email }}</td>
-                        <td>{{ admin.company_name }}</td>
-                        <td>{{ "Owner" if admin.is_owner else "Admin" }}</td>
-                        <td>
-                            {% if not admin.is_owner %}
-                            <button onclick="removeAdmin('{{ admin.id }}')" class="btn btn-danger btn-sm">Remove</button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <!-- SSO Configuration -->
     <div class="card mb-4">
         <div class="card-header">
@@ -48,13 +15,19 @@
             <a href="{{ url_for('admin.domain_config') }}" class="btn btn-primary float-end">Configure Domain</a>
         </div>
         <div class="card-body">
+            {% if current_user.domain_verified %}
+            <div class="alert alert-success mb-4">
+                <i class="fas fa-check-circle"></i> Domain Verified: {{ current_user.sso_domain }}
+            </div>
+            {% endif %}
+            
             <form id="sso-form" method="POST" action="{{ url_for('admin.save_sso_settings') }}" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label>Provider</label>
                     <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
                         <option value="GITHUB" {% if current_user.sso_provider == 'GITHUB' %}selected{% endif %}>GitHub</option>
-                        <option value="AZURE" {% if current_user.sso_provider == 'AZURE' %}selected{% endif %}>Azure AD / Microsoft</option>
+                        <option value="AZURE" {% if current_user.sso_provider == 'AZURE' %}selected{% endif %}>Azure AD</option>
                     </select>
                 </div>
                 
@@ -62,11 +35,15 @@
                 <div id="github-fields" style="display: none;">
                     <div class="mb-3">
                         <label>Client ID</label>
-                        <input type="text" name="client_id" id="client_id" class="form-control" autocomplete="off">
+                        <input type="text" name="client_id" id="client_id" class="form-control" 
+                               value="{{ current_user.sso_config.get('client_id', '') if current_user.sso_config }}" 
+                               autocomplete="off">
                     </div>
                     <div class="mb-3">
                         <label>Client Secret</label>
-                        <input type="password" name="client_secret" id="client_secret" class="form-control" autocomplete="off">
+                        <input type="password" name="client_secret" id="client_secret" class="form-control" 
+                               value="{{ current_user.sso_config.get('client_secret', '') if current_user.sso_config }}" 
+                               autocomplete="off">
                     </div>
                 </div>
                 
@@ -77,6 +54,11 @@
                         <input type="file" name="manifest_file" id="manifest_file" class="form-control" accept=".xml">
                         <small class="text-muted">Upload your Azure AD Federation Metadata XML file</small>
                     </div>
+                    {% if current_user.sso_config and current_user.sso_config.get('manifest') %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Manifest file is configured
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="mb-4">
@@ -91,19 +73,9 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ssoForm = document.getElementById('sso-form');
-    const provider = document.getElementById('provider');
-    const githubFields = document.getElementById('github-fields');
-    const azureFields = document.getElementById('azure-fields');
-    
-    if (ssoForm) {
-        toggleProviderFields(); // Set initial state
-        ssoForm.addEventListener('submit', saveSSOSettings);
-    }
-    
-    if (provider) {
-        provider.addEventListener('change', toggleProviderFields);
-    }
+    toggleProviderFields();
+});
+
 function toggleProviderFields() {
     const provider = document.getElementById('provider');
     const githubFields = document.getElementById('github-fields');
@@ -114,310 +86,5 @@ function toggleProviderFields() {
         azureFields.style.display = provider.value === 'AZURE' ? 'block' : 'none';
     }
 }
-
-function saveDomain() {
-    const domain = document.getElementById('domain').value;
-    const provider = document.getElementById('provider').value;
-    
-    fetch('/admin/save-domain', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ domain, provider })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('dns-records').style.display = 'block';
-            document.getElementById('dns-output').innerHTML = `
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Name</th>
-                            <th>Value</th>
-                            <th>Purpose</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>A</td>
-                            <td>${domain}</td>
-                            <td>${data.records[0].value}</td>
-                            <td>Domain Verification</td>
-                        </tr>
-                        <tr>
-                            <td>TXT</td>
-                            <td>${domain}</td>
-                            <td>${data.records[1].value}</td>
-                            <td>SSO Authentication</td>
-                        </tr>
-                    </tbody>
-                </table>`;
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Required DNS Records</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Name</th>
-                                    <th>Value</th>
-                                    <th>Purpose</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>A</td>
-                                    <td>${domain}</td>
-                                    <td>${data.records[0].value}</td>
-                                    <td>Domain Verification</td>
-                                </tr>
-                                <tr>
-                                    <td>TXT</td>
-                                    <td>${domain}</td>
-                                    <td>${data.records[1].value}</td>
-                                    <td>SSO Authentication</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>`;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-}
-        if (data.success) {
-            const dnsRecordsDiv = document.getElementById('dns-records');
-            const dnsOutputDiv = document.getElementById('dns-output');
-            
-            if (dnsRecordsDiv && dnsOutputDiv && data.records) {
-                dnsRecordsDiv.style.display = 'block';
-                dnsOutputDiv.innerHTML = `
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Required DNS Records</h5>
-                        </div>
-                        <div class="card-body">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>Name</th>
-                                        <th>Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>A</td>
-                                        <td>${domain}</td>
-                                        <td>${data.records[0].value}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>TXT</td>
-                                        <td>${domain}</td>
-                                        <td>${data.records[1].value}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-            } else {
-                console.error('DNS records data missing:', data);
-            }
-        } else {
-            alert('Error: ' + (data.error || 'Failed to save domain'));
-        }
-                        <div class="card-body">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>Name</th>
-                                        <th>Value</th>
-                                        <th>Purpose</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>${data.records[0].type}</td>
-                                        <td>${data.records[0].name}</td>
-                                        <td>${data.records[0].value}</td>
-                                        <td>Domain Verification</td>
-                                    </tr>
-                                    <tr>
-                                        <td>${data.records[1].type}</td>
-                                        <td>${data.records[1].name}</td>
-                                        <td>${data.records[1].value}</td>
-                                        <td>SSO Authentication</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            
-                            <div class="mt-4">
-                                <h5>SSL Certificate</h5>
-                                <p>Upload your SSL certificate and private key:</p>
-                                <form id="sslForm" class="mb-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Certificate File (CRT)</label>
-                                        <input type="file" class="form-control" id="certFile" accept=".crt,.pem" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Private Key File (KEY)</label>
-                                        <input type="file" class="form-control" id="keyFile" accept=".key" required>
-                                    </div>
-                                    <button type="button" class="btn btn-primary" onclick="uploadSSLCertificate()">Upload SSL Certificate</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>`;
-            }
-        } else {
-            alert('Error: ' + (data.error || 'Failed to save domain'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to save domain settings');
-    });
-}
-                <div class="mb-3">
-                    <h5>Add these DNS records to verify domain ownership:</h5>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Name</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.records.map(record => `
-                                <tr>
-                                    <td>${record.type}</td>
-                                    <td>${record.name}</td>
-                                    <td>${record.value}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-
-function verifyDomain() {
-    const domain = document.getElementById('domain').value;
-    
-    fetch('/admin/verify-domain', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ domain })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Domain verified successfully!');
-        } else {
-            alert('Verification failed: ' + data.error);
-        }
-    });
-}
-
-function saveSSOSettings(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const provider = form.querySelector('#provider').value;
-    const data = {
-        provider: provider
-    };
-    
-    if (provider === 'GITHUB') {
-        const clientId = document.getElementById('client_id').value;
-        const clientSecret = document.getElementById('client_secret').value;
-        
-        if (!clientId || !clientSecret) {
-            alert('Please fill in all GitHub SSO fields');
-            return;
-        }
-        
-        data.client_id = clientId;
-        data.client_secret = clientSecret;
-        sendSSORequest(data);
-    } else if (provider === 'AZURE') {
-        const manifestFile = document.getElementById('manifest_file').files[0];
-        if (!manifestFile) {
-            alert('Please select a manifest file');
-            return;
-        }
-        const reader = new FileReader();
-        reader.readAsText(manifestFile);
-        reader.onload = () => {
-            data.manifest_content = reader.result;
-            sendSSORequest(data);
-        };
-    }
-}
-
-function sendSSORequest(data) {
-    fetch('/admin/save-sso-settings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            alert('SSO settings saved successfully!');
-            window.location.reload();
-        } else {
-            alert('Error: ' + (result.error || 'Failed to save SSO settings'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to save SSO settings');
-    });
-}
-
-// Add event listener to the form
-document.getElementById('sso-form').addEventListener('submit', saveSSOSettings);
-
-function removeAdmin(adminId) {
-    if (!confirm('Are you sure you want to remove this admin?')) return;
-    
-    fetch('/admin/remove-admin/' + adminId, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-
-// Initialize provider fields on load
-document.addEventListener('DOMContentLoaded', toggleProviderFields);
 </script>
 {% endblock %}

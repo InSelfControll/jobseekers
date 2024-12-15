@@ -235,41 +235,52 @@ def verify_domain():
 def save_sso_settings():
     try:
         employer = Employer.query.get(current_user.id)
-        provider = request.form.get('provider')
-        employer.sso_provider = provider
-        
-        if provider == 'GITHUB':
-            client_id = request.form.get('client_id')
-            client_secret = request.form.get('client_secret')
+        if request.is_json:
+            data = request.get_json()
+            provider = data.get('provider')
+            employer.sso_provider = provider
+            employer.sso_config = data
+        else:
+            provider = request.form.get('provider')
+            employer.sso_provider = provider
             
-            if not client_id or not client_secret:
-                flash('Client ID and Client Secret are required for GitHub SSO', 'error')
-                return redirect(url_for('admin.sso_config'))
+            if provider == 'GITHUB':
+                client_id = request.form.get('client_id')
+                client_secret = request.form.get('client_secret')
                 
-            employer.sso_config = {
-                'client_id': client_id,
-                'client_secret': client_secret
-            }
-            
-        elif provider == 'AZURE':
-            manifest_file = request.files.get('manifest_file')
-            if not manifest_file:
-                flash('Manifest file is required for Azure SSO', 'error')
-                return redirect(url_for('admin.sso_config'))
+                if not client_id or not client_secret:
+                    flash('Client ID and Client Secret are required for GitHub SSO', 'error')
+                    return redirect(url_for('admin.sso_config'))
+                    
+                employer.sso_config = {
+                    'client_id': client_id,
+                    'client_secret': client_secret
+                }
                 
-            manifest_content = manifest_file.read().decode('utf-8')
-            employer.sso_config = {
-                'manifest': manifest_content
-            }
-            
+            elif provider == 'AZURE':
+                manifest_file = request.files.get('manifest_file')
+                if manifest_file:
+                    manifest_content = manifest_file.read().decode('utf-8')
+                    employer.sso_config = {
+                        'manifest': manifest_content
+                    }
+                elif not employer.sso_config or 'manifest' not in employer.sso_config:
+                    flash('Manifest file is required for Azure SSO', 'error')
+                    return redirect(url_for('admin.sso_config'))
+                
         db.session.commit()
+        
+        if request.is_json:
+            return jsonify({'success': True})
         flash('SSO settings saved successfully', 'success')
+        return redirect(url_for('admin.sso_config'))
         
     except Exception as e:
         db.session.rollback()
+        if request.is_json:
+            return jsonify({'success': False, 'error': str(e)})
         flash(f'Error saving SSO settings: {str(e)}', 'error')
-        
-    return redirect(url_for('admin.sso_config'))
+        return redirect(url_for('admin.sso_config'))
         
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
