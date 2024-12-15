@@ -15,11 +15,34 @@
                 <button type="submit" class="btn btn-primary">Configure SSO</button>
             </form>
             
-            {% if session.sso_records %}
+            {% if session.sso_domain %}
             <div class="mt-4">
-                <h5>DNS Records to Configure:</h5>
-                <pre>{{ session.sso_records.cname }}
-{{ session.sso_records.txt }}</pre>
+                <h5>Required DNS Records</h5>
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>A</td>
+                                    <td>{{ session.sso_domain }}</td>
+                                    <td>{{ request.host_url.split('://')[1].rstrip('/') }}</td>
+                                </tr>
+                                <tr>
+                                    <td>TXT</td>
+                                    <td>{{ session.sso_domain }}</td>
+                                    <td><code>v=sso1 provider=GITHUB</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
