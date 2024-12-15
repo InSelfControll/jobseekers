@@ -239,12 +239,16 @@ def save_sso_settings():
         employer = Employer.query.get(current_user.id)
         employer.sso_provider = data['provider']
         
-        # Store encrypted credentials in environment variables
+        # Store credentials securely in database
         if data['provider'] == 'GITHUB':
-            os.environ[f'GITHUB_CLIENT_ID_{employer.id}'] = data['client_id']
-            os.environ[f'GITHUB_CLIENT_SECRET_{employer.id}'] = data['client_secret']
-        elif data['provider'] == 'SAML':
-            os.environ[f'SAML_MANIFEST_{employer.id}'] = data['saml_manifest']
+            employer.sso_config = {
+                'client_id': data['client_id'],
+                'client_secret': data['client_secret']
+            }
+        elif data['provider'] == 'AZURE':
+            employer.sso_config = {
+                'manifest': data['manifest_content']
+            }
             
         db.session.commit()
         return jsonify({'success': True})

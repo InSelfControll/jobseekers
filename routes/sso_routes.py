@@ -9,8 +9,11 @@ import os
 
 sso_bp = Blueprint('sso', __name__, url_prefix='/sso')
 
-GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
-GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
+def get_sso_config(domain):
+    employer = Employer.query.filter_by(sso_domain=domain).first()
+    if not employer or not employer.sso_config:
+        return None
+    return employer.sso_config
 GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'
 GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 GITHUB_USER_INFO_URL = 'https://api.github.com/user'
@@ -21,7 +24,12 @@ def github_login():
     domain = request.headers.get('Host')
     employer = Employer.query.filter_by(sso_domain=domain).first()
     if employer and employer.sso_provider == 'GITHUB':
-        github = OAuth2Session(GITHUB_CLIENT_ID)
+        config = get_sso_config(domain)
+        if not config:
+            flash('SSO configuration not found', 'error')
+            return redirect(url_for('auth.login'))
+            
+        github = OAuth2Session(config['client_id'])
         authorization_url, state = github.authorization_url(GITHUB_AUTHORIZE_URL)
         session['oauth_state'] = state
         return redirect(authorization_url)
