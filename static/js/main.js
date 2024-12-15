@@ -74,6 +74,7 @@ function saveDomain() {
         if (data.success) {
             const dnsRecords = document.getElementById('dns-records');
             const dnsRecordsBody = document.getElementById('dns-records-body');
+            const verifySection = document.getElementById('verify-section');
             
             if (data.records && dnsRecordsBody) {
                 dnsRecordsBody.innerHTML = data.records.map(record => `
@@ -84,6 +85,7 @@ function saveDomain() {
                     </tr>
                 `).join('');
                 dnsRecords.style.display = 'block';
+                verifySection.style.display = 'block';
             }
         } else {
             alert('Error: ' + (data.error || 'Failed to save domain'));

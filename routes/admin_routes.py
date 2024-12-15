@@ -59,37 +59,42 @@ def remove_admin(admin_id):
 
 def verify_domain_records(domain, provider):
     try:
-        # Check CNAME record or A record
+        # Check CNAME record
         try:
-            # Try CNAME first
-            try:
-                cname_answers = dns.resolver.resolve(domain, 'CNAME')
-                cname_valid = any(str(rdata.target).rstrip('.') == f"auth.{request.host}" for rdata in cname_answers)
-            except:
-                cname_valid = False
-                
-            # Try A record if CNAME fails
-            if not cname_valid:
-                try:
-                    expected_ip = dns.resolver.resolve(f"auth.{request.host}", 'A')[0].address
-                    a_answers = dns.resolver.resolve(domain, 'A')
-                    cname_valid = any(str(rdata.address) == expected_ip for rdata in a_answers)
-                except:
-                    pass
+            cname_answers = dns.resolver.resolve(domain, 'CNAME')
+            cname_valid = any(str(rdata.target).rstrip('.') == request.host for rdata in cname_answers)
         except:
             cname_valid = False
+        
+        # Check A record if CNAME fails
+        if not cname_valid:
+            try:
+                expected_ip = request.host.split(':')[0]  # Get IP without port
+                a_answers = dns.resolver.resolve(domain, 'A')
+                a_valid = any(str(rdata).rstrip('.') == expected_ip for rdata in a_answers)
+            except:
+                a_valid = False
+            cname_valid = a_valid
+        
+        if not cname_valid:
+            return False
             
-        # Check TXT record
+        # Verify TXT record
         try:
             domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
             expected_txt = f"v=sso provider={provider} verify={domain_hash}"
             txt_answers = dns.resolver.resolve(domain, 'TXT')
-            txt_valid = any(str(rdata).strip('"') == expected_txt for rdata in txt_answers)
-        except:
-            txt_valid = False
+            for rdata in txt_answers:
+                txt_record = str(rdata).strip('"').strip()
+                if txt_record == expected_txt:
+                    return True
+        except Exception as e:
+            print(f"TXT verification error: {str(e)}")
+            pass
             
-        return cname_valid or txt_valid
-    except:
+        return False
+    except Exception as e:
+        print(f"Domain verification error: {str(e)}")
         return False
 
 @admin_bp.route('/generate-ssl', methods=['POST'])
