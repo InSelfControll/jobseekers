@@ -317,19 +317,27 @@ function verifyDomain() {
 
 function saveSSOSettings() {
     const provider = document.getElementById('provider').value;
-    const formData = new FormData();
-    
-    formData.append('provider', provider);
+    const data = {
+        provider: provider
+    };
     
     if (provider === 'GITHUB') {
-        formData.append('client_id', document.getElementById('client_id').value);
-        formData.append('client_secret', document.getElementById('client_secret').value);
+        data.client_id = document.getElementById('client_id').value;
+        data.client_secret = document.getElementById('client_secret').value;
     } else if (provider === 'AZURE') {
         const manifestFile = document.getElementById('manifest_file').files[0];
         if (manifestFile) {
-            formData.append('manifest_file', manifestFile);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                data.manifest_content = e.target.result;
+                sendSSOSettings(data);
+            };
+            reader.readAsText(manifestFile);
+            return;
         }
     }
+    
+    sendSSOSettings(data);
     
     fetch('/admin/save-sso-settings', {
         method: 'POST',
