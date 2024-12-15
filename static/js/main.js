@@ -1,251 +1,87 @@
 
-function generateSSLCertificate() {
-    const statusDiv = document.getElementById('sslStatus');
-    if (!statusDiv) return;
+// Domain configuration
+function toggleSSLSections() {
+    const letsEncryptSection = document.getElementById('letsEncryptSection');
+    const customCertSection = document.getElementById('customCertSection');
+    const selectedOption = document.querySelector('input[name="sslOption"]:checked');
     
-    const alertDiv = statusDiv.querySelector('.alert');
-    if (!alertDiv) return;
-    
-    statusDiv.style.display = 'block';
-    alertDiv.className = 'alert alert-info';
-    alertDiv.textContent = 'Generating SSL certificate...';
-    
-    fetch('/admin/generate-ssl', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || '',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-        return response.text().then(text => {
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                console.error('JSON Parse Error:', e);
-                throw new Error('Invalid JSON response');
-            }
-        });
-    })
-    .then(data => {
-        if (data.success) {
-            alertDiv.className = 'alert alert-success';
-            alertDiv.textContent = 'SSL certificate generated successfully!';
-        } else {
-            alertDiv.className = 'alert alert-danger';
-            alertDiv.textContent = 'Error: ' + (data.error || 'Failed to generate SSL certificate');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alertDiv.className = 'alert alert-danger';
-        alertDiv.textContent = 'Failed to generate SSL certificate';
-    });
-}
-
-
-let isDarkMode = localStorage.getItem('darkMode') === 'true';
-
-function toggleDarkMode() {
-    isDarkMode = !isDarkMode;
-    localStorage.setItem('darkMode', isDarkMode);
-    document.body.classList.toggle('dark-mode', isDarkMode);
-    updateThemeIcon();
-}
-
-function updateThemeIcon() {
-    const icon = document.querySelector('[data-feather="moon"]');
-    if (icon) {
-        icon.setAttribute('data-feather', isDarkMode ? 'sun' : 'moon');
-        feather.replace();
+    if (letsEncryptSection && customCertSection && selectedOption) {
+        letsEncryptSection.style.display = selectedOption.value === 'letsencrypt' ? 'block' : 'none';
+        customCertSection.style.display = selectedOption.value === 'custom' ? 'block' : 'none';
     }
-}
-
-function encryptSensitiveData(data) {
-    // Simple encryption for demonstration - in production use proper encryption
-    return btoa(JSON.stringify(data));
 }
 
 function saveDomain() {
-    const domain = document.getElementById('domain').value;
-    if (!domain) {
-        alert('Please enter a domain name');
-        return;
-    }
+    const domainInput = document.getElementById('domain');
+    if (!domainInput) return;
+    
+    const domain = domainInput.value;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     
     fetch('/admin/save-domain', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({ domain })
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            const dnsRecords = document.getElementById('dns-records');
-            const dnsRecordsBody = document.getElementById('dns-records-body');
-            const verifySection = document.getElementById('verify-section');
-            
-            if (data.records && dnsRecordsBody) {
-                dnsRecordsBody.innerHTML = data.records.map(record => `
-                    <tr>
-                        <td>${record.type}</td>
-                        <td>${record.name}</td>
-                        <td><code>${record.value}</code></td>
-                    </tr>
-                `).join('');
-                dnsRecords.style.display = 'block';
-                verifySection.style.display = 'block'; // Show verify button after save
-            }
+        const dnsRecords = document.getElementById('dns-records');
+        const dnsRecordsBody = document.getElementById('dns-records-body');
+        
+        if (data.success && dnsRecords && dnsRecordsBody) {
+            dnsRecords.style.display = 'block';
+            dnsRecordsBody.innerHTML = `
+                <tr>
+                    <td>CNAME</td>
+                    <td>${domain}</td>
+                    <td>${data.records[0].value}</td>
+                </tr>`;
         } else {
             alert('Error: ' + (data.error || 'Failed to save domain'));
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to save domain settings');
     });
 }
 
 function verifyDomain() {
-    const domain = document.getElementById('domain')?.value;
-    if (!domain) {
-        alert('Please enter a domain first');
-        return;
-    }
+    const domainInput = document.getElementById('domain');
+    if (!domainInput) return;
+    
+    const domain = domainInput.value;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     
     fetch('/admin/verify-domain', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({ domain })
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            alert('Domain verified successfully!');
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Verification failed'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to verify domain. Please try again.');
-    });
-}
-
-function saveSSOSettings(event) {
-    event.preventDefault();
-    const form = event.target;
-    const provider = form.querySelector('#provider')?.value;
-    let data = {
-        provider: provider
-    };
-    
-    if (provider === 'GITHUB') {
-        data.client_id = encryptSensitiveData({
-            id: document.getElementById('client_id').value
-        });
-        data.client_secret = encryptSensitiveData({
-            secret: document.getElementById('client_secret').value
-        });
-    } else if (provider === 'SAML') {
-        const manifestFile = document.getElementById('saml_manifest').files[0];
-        if (manifestFile) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                data.saml_manifest = encryptSensitiveData({
-                    content: e.target.result
-                });
-                sendSSOSettings(data);
-            };
-            reader.readAsText(manifestFile);
-            return;
-        }
-    }
-    
-    sendSSOSettings(data);
-}
-
-function sendSSOSettings(data) {
-    fetch('/admin/save-sso-settings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
-        },
-        body: JSON.stringify(data)
-    })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            alert('SSO settings saved successfully!');
+        const sslSection = document.getElementById('ssl-section');
+        if (data.success && sslSection) {
+            alert('Domain verified successfully!');
+            sslSection.style.display = 'block';
+            const verifiedDomainsDiv = document.querySelector('.alert-info, .alert-success');
+            if (verifiedDomainsDiv) {
+                verifiedDomainsDiv.className = 'alert alert-success';
+                verifiedDomainsDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${data.domain}`;
+            }
         } else {
-            alert('Error: ' + data.error);
+            alert('Verification failed: ' + data.error);
         }
     });
 }
 
-// Initialize dark mode on page load
+// Initialize event listeners only if elements exist
 document.addEventListener('DOMContentLoaded', () => {
-    const prefersDark = localStorage.getItem('darkMode') === 'true';
-    document.body.classList.toggle('dark-mode', prefersDark);
-    updateThemeIcon();
-    feather.replace();
-});
-
-function toggleDarkMode() {
-    const isDark = document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', isDark);
-    updateThemeIcon();
-}
-
-function updateThemeIcon() {
-    const icon = document.querySelector('[data-feather]');
-    if (icon) {
-        icon.setAttribute('data-feather', document.body.classList.contains('dark-mode') ? 'sun' : 'moon');
-        feather.replace();
+    const radioButtons = document.querySelectorAll('input[name="sslOption"]');
+    if (radioButtons.length) {
+        radioButtons.forEach(radio => radio.addEventListener('change', toggleSSLSections));
+        toggleSSLSections();
     }
-}
-
-function toggleProviderFields() {
-    const provider = document.getElementById('provider');
-    const githubFields = document.getElementById('github-fields');
-    const azureFields = document.getElementById('azure-fields');
-    
-    if (!provider || !githubFields || !azureFields) {
-        return; // Exit if elements aren't loaded yet
-    }
-    
-    if (provider.value === 'GITHUB') {
-        githubFields.style.display = 'block';
-        azureFields.style.display = 'none';
-    } else if (provider.value === 'AZURE') {
-        githubFields.style.display = 'none';
-        azureFields.style.display = 'block';
-    } else {
-        githubFields.style.display = 'none';
-        azureFields.style.display = 'none';
-    }
-}
-
-// Ensure DOM is loaded before calling toggleProviderFields
-document.addEventListener('DOMContentLoaded', toggleProviderFields);
-
-// Call toggleProviderFields on page load to set initial state
-document.addEventListener('DOMContentLoaded', () => {
-    toggleProviderFields();
 });
