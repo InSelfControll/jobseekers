@@ -32,7 +32,7 @@
                     </li>
                     {% if current_user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.sso_config') }}">Admin Panel</a>
+                        <a class="nav-link" href="{{ url_for('admin.sso_config') if current_user.is_admin else '#' }}">Admin Panel</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
