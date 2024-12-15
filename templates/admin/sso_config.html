@@ -344,8 +344,8 @@ function saveSSOSettings(event) {
     };
     
     if (provider === 'GITHUB') {
-        const clientId = form.querySelector('#client_id').value;
-        const clientSecret = form.querySelector('#client_secret').value;
+        const clientId = document.getElementById('client_id').value;
+        const clientSecret = document.getElementById('client_secret').value;
         
         if (!clientId || !clientSecret) {
             alert('Please fill in all GitHub SSO fields');
@@ -354,8 +354,9 @@ function saveSSOSettings(event) {
         
         data.client_id = clientId;
         data.client_secret = clientSecret;
+        sendSSORequest(data);
     } else if (provider === 'AZURE') {
-        const manifestFile = form.querySelector('#manifest_file').files[0];
+        const manifestFile = document.getElementById('manifest_file').files[0];
         if (!manifestFile) {
             alert('Please select a manifest file');
             return;
@@ -366,20 +367,17 @@ function saveSSOSettings(event) {
             data.manifest_content = reader.result;
             sendSSORequest(data);
         };
-        return;
     }
-    
-    sendSSORequest(data);
 }
 
 function sendSSORequest(data) {
-    
     fetch('/admin/save-sso-settings', {
         method: 'POST',
         headers: {
+            'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: data
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(result => {
