@@ -93,6 +93,26 @@ function verifyDomain() {
     });
 }
 
+function generateSSLCertificate() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    fetch('/admin/generate-ssl', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSL certificate generated successfully!');
+        } else {
+            alert('Error: ' + (data.error || 'Failed to generate SSL certificate'));
+        }
+    });
+}
+
 // Initialize event listeners only if elements exist
 document.addEventListener('DOMContentLoaded', () => {
     const radioButtons = document.querySelectorAll('input[name="sslOption"]');
