@@ -28,7 +28,21 @@
                                 <h5>DNS Records Required for Domain Verification</h5>
                             </div>
                             <div class="card-body">
-                                <div id="dns-output" class="table-responsive"></div>
+                                <div id="dns-output" class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Name</th>
+                                                <th>Value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dns-records-body"></tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-success" onclick="verifyDomain()">Verify Domain</button>
+                                </div>
                             </div>
                         </div>
                     </div>

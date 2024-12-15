@@ -132,28 +132,24 @@ def save_domain():
     
     if not domain:
         return jsonify({'success': False, 'error': 'Domain is required'}), 400
-        
-    # Check if domain is already in use by another employer
-    existing = Employer.query.filter(
-        Employer.sso_domain == domain,
-        Employer.id != current_user.id
-    ).first()
-    
-    if existing:
-        return jsonify({'success': False, 'error': 'Domain already in use'}), 400
     
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
+    employer.domain_verified = False
     
-    # Generate DNS records
+    # Generate verification records
     domain_hash = hashlib.sha256(f"{domain}:{employer.sso_provider or 'SSO'}".encode()).hexdigest()[:16]
+    server_ip = request.host_url.split('://')[1].rstrip('/')
     
     db.session.commit()
     
-    # Generate verification records
-    domain_hash = hashlib.sha256(f"{domain}:{provider}".encode()).hexdigest()[:16]
-    a_record = f"A {domain} {request.host_url.split('://')[1].split(':')[0]}"
-    txt_record = f"TXT {domain} \"v=sso1 provider={provider} verify={domain_hash}\""
+    return jsonify({
+        'success': True,
+        'records': [
+            {'type': 'A', 'name': domain, 'value': server_ip},
+            {'type': 'TXT', 'name': domain, 'value': f'v=sso provider={employer.sso_provider or "SSO"} verify={domain_hash}'}
+        ]
+    })
     
     return jsonify({
         'success': True,

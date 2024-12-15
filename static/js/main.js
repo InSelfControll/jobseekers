@@ -74,31 +74,17 @@ function saveDomain() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Domain saved successfully!');
-            // Show DNS records
-            const dnsOutput = document.getElementById('dns-output');
             const dnsRecords = document.getElementById('dns-records');
+            const dnsRecordsBody = document.getElementById('dns-records-body');
             
-            if (data.records && dnsOutput) {
-                dnsOutput.innerHTML = `
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Name</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.records.map(record => `
-                                <tr>
-                                    <td>${record.type}</td>
-                                    <td>${record.name}</td>
-                                    <td>${record.value}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>`;
+            if (data.records && dnsRecordsBody) {
+                dnsRecordsBody.innerHTML = data.records.map(record => `
+                    <tr>
+                        <td>${record.type}</td>
+                        <td>${record.name}</td>
+                        <td><code>${record.value}</code></td>
+                    </tr>
+                `).join('');
                 dnsRecords.style.display = 'block';
             }
         } else {
