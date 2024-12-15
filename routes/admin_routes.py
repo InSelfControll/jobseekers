@@ -19,6 +19,12 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@admin_bp.route('/domain-config')
+@login_required
+@admin_required
+def domain_config():
+    return render_template('admin/domain_config.html')
+
 @admin_bp.route('/sso-config')
 @login_required
 @admin_required

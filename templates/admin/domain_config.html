@@ -1,0 +1,160 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Domain Configuration</h2>
+        </div>
+    </div>
+
+    <!-- Domain Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Domain Settings</h4>
+        </div>
+        <div class="card-body">
+            <form id="domain-form">
+                <div class="mb-3">
+                    <label>Domain</label>
+                    <input type="text" name="domain" id="domain" class="form-control" value="{{ current_user.sso_domain or '' }}" required>
+                </div>
+                
+                <div class="btn-group mb-4">
+                    <button type="button" onclick="saveDomain()" class="btn btn-primary">Save Domain</button>
+                    <button type="button" onclick="verifyDomain()" class="btn btn-success">Verify Domain</button>
+                </div>
+                
+                <div id="dns-records" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>DNS Records Required for Domain Verification</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="dns-output"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SSL Certificate Section -->
+                <div id="ssl-section" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>SSL Certificate Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="ssl-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Certificate File (CRT/PEM)</label>
+                                    <input type="file" class="form-control" id="cert-file" accept=".crt,.pem" required>
+                                    <small class="text-muted">Upload your SSL certificate file</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Private Key File</label>
+                                    <input type="file" class="form-control" id="key-file" accept=".key" required>
+                                    <small class="text-muted">Upload your SSL private key file</small>
+                                </div>
+                                <button type="button" onclick="uploadSSL()" class="btn btn-primary">Upload SSL Certificate</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveDomain() {
+    const domain = document.getElementById('domain').value;
+    
+    fetch('/admin/save-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('dns-records').style.display = 'block';
+            document.getElementById('dns-output').innerHTML = `
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>A</td>
+                            <td>${domain}</td>
+                            <td>${data.records[0].value}</td>
+                            <td>Domain Verification</td>
+                        </tr>
+                        <tr>
+                            <td>TXT</td>
+                            <td>${domain}</td>
+                            <td>${data.records[1].value}</td>
+                            <td>Domain Authentication</td>
+                        </tr>
+                    </tbody>
+                </table>`;
+        } else {
+            alert('Error: ' + (data.error || 'Failed to save domain'));
+        }
+    });
+}
+
+function verifyDomain() {
+    const domain = document.getElementById('domain').value;
+    
+    fetch('/admin/verify-domain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ domain })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Domain verified successfully!');
+            document.getElementById('ssl-section').style.display = 'block';
+        } else {
+            alert('Verification failed: ' + data.error);
+        }
+    });
+}
+
+function uploadSSL() {
+    const formData = new FormData();
+    formData.append('cert', document.getElementById('cert-file').files[0]);
+    formData.append('key', document.getElementById('key-file').files[0]);
+    
+    fetch('/admin/upload-ssl', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('SSL certificate uploaded and configured successfully!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}
