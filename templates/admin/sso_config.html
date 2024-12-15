@@ -8,23 +8,23 @@
         </div>
     </div>
 
+    <!-- Domain Status -->
+    {% if current_user.sso_domain %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Domain configured: {{ current_user.sso_domain }}
+    </div>
+    {% endif %}
+
     <!-- SSO Configuration -->
     <div class="card mb-4">
         <div class="card-header">
             <h4>SSO Configuration</h4>
-            <a href="{{ url_for('admin.domain_config') }}" class="btn btn-primary float-end">Configure Domain</a>
         </div>
         <div class="card-body">
-            {% if current_user.domain_verified %}
-            <div class="alert alert-success mb-4">
-                <i class="fas fa-check-circle"></i> Domain Verified: {{ current_user.sso_domain }}
-            </div>
-            {% endif %}
-            
             <form id="sso-form" method="POST" action="{{ url_for('admin.save_sso_settings') }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {{ csrf_token() }}
                 <div class="mb-3">
-                    <label>Provider</label>
+                    <label class="form-label">SSO Provider</label>
                     <select name="provider" id="provider" class="form-control" onchange="toggleProviderFields()">
                         <option value="GITHUB" {% if current_user.sso_provider == 'GITHUB' %}selected{% endif %}>GitHub</option>
                         <option value="AZURE" {% if current_user.sso_provider == 'AZURE' %}selected{% endif %}>Azure AD</option>
@@ -32,38 +32,33 @@
                 </div>
                 
                 <!-- GitHub Fields -->
-                <div id="github-fields" style="display: none;">
+                <div id="github-fields">
                     <div class="mb-3">
-                        <label>Client ID</label>
-                        <input type="text" name="client_id" id="client_id" class="form-control" 
-                               value="{{ current_user.sso_config.get('client_id', '') if current_user.sso_config }}" 
-                               autocomplete="off">
+                        <label class="form-label">Client ID</label>
+                        <input type="text" name="client_id" class="form-control" 
+                               value="{{ current_user.sso_config.get('client_id', '') if current_user.sso_config else '' }}">
                     </div>
                     <div class="mb-3">
-                        <label>Client Secret</label>
-                        <input type="password" name="client_secret" id="client_secret" class="form-control" 
-                               value="{{ current_user.sso_config.get('client_secret', '') if current_user.sso_config }}" 
-                               autocomplete="off">
+                        <label class="form-label">Client Secret</label>
+                        <input type="password" name="client_secret" class="form-control" 
+                               value="{{ current_user.sso_config.get('client_secret', '') if current_user.sso_config else '' }}">
                     </div>
                 </div>
                 
                 <!-- Azure Fields -->
-                <div id="azure-fields" style="display: none;">
+                <div id="azure-fields">
                     <div class="mb-3">
-                        <label>Manifest File</label>
-                        <input type="file" name="manifest_file" id="manifest_file" class="form-control" accept=".xml">
-                        <small class="text-muted">Upload your Azure AD Federation Metadata XML file</small>
+                        <label class="form-label">Manifest File (Federation Metadata XML)</label>
+                        <input type="file" name="manifest_file" class="form-control" accept=".xml">
                     </div>
                     {% if current_user.sso_config and current_user.sso_config.get('manifest') %}
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Manifest file is configured
+                        <i class="fas fa-info-circle"></i> Azure AD manifest is configured
                     </div>
                     {% endif %}
                 </div>
 
-                <div class="mb-4">
-                    <button type="submit" class="btn btn-primary">Save SSO Settings</button>
-                </div>
+                <button type="submit" class="btn btn-primary">Save SSO Settings</button>
             </form>
         </div>
     </div>

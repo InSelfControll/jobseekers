@@ -1,3 +1,15 @@
+// SSO Provider fields toggle
+function toggleProviderFields() {
+    const provider = document.getElementById('provider');
+    const githubFields = document.getElementById('github-fields');
+    const azureFields = document.getElementById('azure-fields');
+    
+    if (provider && githubFields && azureFields) {
+        githubFields.style.display = provider.value === 'GITHUB' ? 'block' : 'none';
+        azureFields.style.display = provider.value === 'AZURE' ? 'block' : 'none';
+    }
+}
+
 // Dark mode toggle
 function toggleDarkMode() {
     const body = document.body;
