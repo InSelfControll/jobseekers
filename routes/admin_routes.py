@@ -19,10 +19,12 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/sso-config', methods=['GET'])
+@admin_bp.route('/sso-config')
 @login_required
 @admin_required
 def sso_config():
+    if not current_user.is_admin:
+        abort(403)
     return render_template('admin/sso_config.html')
 
 def verify_domain_records(domain, provider):
