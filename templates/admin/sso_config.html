@@ -108,6 +108,8 @@ function toggleProviderFields() {
 function saveDomain() {
     const domain = document.getElementById('domain').value;
     const provider = document.getElementById('provider').value;
+    const dnsRecordsDiv = document.getElementById('dns-records');
+    const dnsOutputDiv = document.getElementById('dns-output');
     
     fetch('/admin/save-domain', {
         method: 'POST',
@@ -119,6 +121,46 @@ function saveDomain() {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.success && data.records) {
+            dnsRecordsDiv.style.display = 'block';
+            dnsOutputDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Required DNS Records</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>A</td>
+                                    <td>${domain}</td>
+                                    <td>${data.records[0].value}</td>
+                                    <td>Domain Verification</td>
+                                </tr>
+                                <tr>
+                                    <td>TXT</td>
+                                    <td>${domain}</td>
+                                    <td>${data.records[1].value}</td>
+                                    <td>SSO Authentication</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
         if (data.success) {
             const dnsRecordsDiv = document.getElementById('dns-records');
             const dnsOutputDiv = document.getElementById('dns-output');
