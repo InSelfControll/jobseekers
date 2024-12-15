@@ -57,27 +57,14 @@ def register():
         email = request.form.get('email')
         company_name = request.form.get('company_name')
         password = request.form.get('password')
-        domain = email.split('@')[1]
-        
-        existing_domain = Employer.query.filter_by(company_domain=domain).first()
-        if existing_domain:
-            flash('Another user from your company is already registered', 'error')
-            return redirect(url_for('auth.register'))
-            
-        if Employer.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
-            return redirect(url_for('auth.register'))
-        
-        domain = email.split('@')[1]
-        existing_company = Employer.query.filter_by(company_domain=domain).first()
         
         employer = Employer(
             email=email,
             company_name=company_name,
-            company_domain=domain,
+            company_domain=email.split('@')[1],
             password_hash=generate_password_hash(password),
-            is_admin=not existing_company,  # First user is admin
-            is_owner=not existing_company   # First user is owner
+            is_admin=True,  # All users are admin by default
+            is_owner=True   # All users are owner by default
         )
         
         db.session.add(employer)
