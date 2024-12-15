@@ -191,14 +191,18 @@ function updateThemeIcon() {
 }
 
 function toggleProviderFields() {
-    const provider = document.getElementById('provider').value;
+    const provider = document.getElementById('provider');
     const githubFields = document.getElementById('github-fields');
     const azureFields = document.getElementById('azure-fields');
     
-    if (provider === 'GITHUB') {
+    if (!provider || !githubFields || !azureFields) {
+        return; // Exit if elements aren't loaded yet
+    }
+    
+    if (provider.value === 'GITHUB') {
         githubFields.style.display = 'block';
         azureFields.style.display = 'none';
-    } else if (provider === 'AZURE') {
+    } else if (provider.value === 'AZURE') {
         githubFields.style.display = 'none';
         azureFields.style.display = 'block';
     } else {
@@ -206,6 +210,9 @@ function toggleProviderFields() {
         azureFields.style.display = 'none';
     }
 }
+
+// Ensure DOM is loaded before calling toggleProviderFields
+document.addEventListener('DOMContentLoaded', toggleProviderFields);
 
 // Call toggleProviderFields on page load to set initial state
 document.addEventListener('DOMContentLoaded', () => {
