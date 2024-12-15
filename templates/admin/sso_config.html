@@ -120,8 +120,43 @@ function saveDomain() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            document.getElementById('dns-records').style.display = 'block';
-            document.getElementById('dns-output').innerHTML = `
+            const dnsRecordsDiv = document.getElementById('dns-records');
+            const dnsOutputDiv = document.getElementById('dns-output');
+            
+            if (dnsRecordsDiv && dnsOutputDiv) {
+                dnsRecordsDiv.style.display = 'block';
+                dnsOutputDiv.innerHTML = `
+                    <table class="table table-bordered mt-3">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${data.records[0].type}</td>
+                                <td>${data.records[0].name}</td>
+                                <td>${data.records[0].value}</td>
+                            </tr>
+                            <tr>
+                                <td>${data.records[1].type}</td>
+                                <td>${data.records[1].name}</td>
+                                <td>${data.records[1].value}</td>
+                            </tr>
+                        </tbody>
+                    </table>`;
+            }
+        } else {
+            alert('Error: ' + (data.error || 'Failed to save domain'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save domain settings');
+    });
+}
                 <div class="mb-3">
                     <h5>Add these DNS records to verify domain ownership:</h5>
                     <table class="table table-bordered">
