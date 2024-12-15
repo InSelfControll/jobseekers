@@ -130,22 +130,21 @@ def save_domain():
     if not domain:
         return jsonify({'success': False, 'error': 'Domain is required'}), 400
     
-    employer = Employer.query.get(current_user.id)
-    employer.sso_domain = domain
-    employer.domain_verified = False
-    
-    # Generate verification records
-    domain_hash = hashlib.sha256(f"{domain}:{employer.sso_provider or 'SSO'}".encode()).hexdigest()[:16]
-    server_ip = request.host_url.split('://')[1].rstrip('/')
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'records': [
-            {'type': 'CNAME', 'name': domain, 'value': request.host}
-        ]
-    })
+    try:
+        employer = Employer.query.get(current_user.id)
+        employer.sso_domain = domain
+        employer.domain_verified = False
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'records': [
+                {'type': 'CNAME', 'name': domain, 'value': request.host}
+            ]
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
     
     return jsonify({
         'success': True,

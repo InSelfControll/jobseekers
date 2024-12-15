@@ -85,7 +85,7 @@ function saveDomain() {
                     </tr>
                 `).join('');
                 dnsRecords.style.display = 'block';
-                verifySection.style.display = 'block';
+                verifySection.style.display = 'block'; // Show verify button after save
             }
         } else {
             alert('Error: ' + (data.error || 'Failed to save domain'));
