@@ -20,8 +20,10 @@ class SSLService:
     def generate_certificate(self):
         """Generate a new Let's Encrypt SSL certificate"""
         try:
-            certbot_args = [
-                'certonly',
+            import subprocess
+            
+            cmd = [
+                'certbot', 'certonly',
                 '--webroot',
                 '--webroot-path', self.webroot_path,
                 '--email', self.email,
@@ -34,7 +36,9 @@ class SSLService:
                 '--non-interactive'
             ]
             
-            certbot_main.main(certbot_args)
+            process = subprocess.run(cmd, capture_output=True, text=True)
+            if process.returncode != 0:
+                return False, f"Certificate generation failed: {process.stderr}"
             
             # Update certificate paths in database
             employer = Employer.query.filter_by(sso_domain=self.domain).first()
