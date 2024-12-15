@@ -8,9 +8,16 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour token expiry
+    app.config['WTF_CSRF_SSL_STRICT'] = True
 
     from flask_wtf.csrf import CSRFProtect
     csrf = CSRFProtect(app)
+    
+    # CSRF error handler
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        return jsonify({'error': 'CSRF token validation failed'}), 400
     
     # Configure database
     if os.environ.get("DATABASE_URL"):
