@@ -1,5 +1,5 @@
 import os
-from flask import redirect, url_for, jsonify, request, g
+from flask import redirect, url_for, jsonify, request, g, send_from_directory
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from extensions import create_app, db, login_manager, logger
 
@@ -23,9 +23,9 @@ def add_security_headers(response):
     return response
 
 
-@app.route('/.well-known/acme-challenge/<path:path>')
-def acme_challenge(path):
-    return send_from_directory(app.static_folder + '/.well-known/acme-challenge', path)
+@app.route('/.well-known/acme-challenge/<token>')
+def acme_challenge(token):
+    return send_from_directory(os.path.join(app.root_path, 'static', '.well-known', 'acme-challenge'), token)
 
 # CSRF error handler
 @app.errorhandler(CSRFError)
@@ -76,6 +76,7 @@ app.config.update(
 )
 
 def create_app():
+    from flask import Flask
     app = Flask(__name__)
     app.config.from_object('config.Config')
     

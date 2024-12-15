@@ -15,9 +15,12 @@ class SSLService:
         self.cert_dir = os.path.join(current_app.root_path, 'ssl', 'letsencrypt')
         self.webroot_path = os.path.join(current_app.root_path, 'static')
         self.acme_path = os.path.join(self.webroot_path, '.well-known', 'acme-challenge')
+        
+        # Ensure all directories exist with proper permissions
         os.makedirs(self.cert_dir, exist_ok=True)
         os.makedirs(self.acme_path, exist_ok=True)
-        # Ensure proper permissions
+        os.chmod(self.webroot_path, 0o755)
+        os.chmod(os.path.join(self.webroot_path, '.well-known'), 0o755)
         os.chmod(self.acme_path, 0o755)
         
     def generate_certificate(self):
