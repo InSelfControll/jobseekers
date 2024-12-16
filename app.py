@@ -40,8 +40,7 @@ def create_app():
     def handle_csrf_error(e):
         if request.is_xhr:
             return jsonify({'error': 'CSRF token validation failed', 'code': 'CSRF_ERROR'}), 400
-        flash('Security validation failed. Please try again.', 'error')
-        return redirect(url_for('auth.login'))
+        return jsonify({'error': 'Security validation failed. Please try again.'}), 400
 
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -80,8 +79,4 @@ def create_app():
             else:
                 g.custom_domain = False
 
-    if __name__ == '__main__':
-        with app.app_context():
-            db.create_all()  # Create database tables
-        app.run(host='0.0.0.0', port=80)
     return app

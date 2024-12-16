@@ -1,42 +1,100 @@
 
 import asyncio
 import logging
+import os
+import signal
 from app import create_app, db
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
-from hypercorn.asyncio import serve
 
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('httpx').setLevel(logging.ERROR)
-logging.getLogger('httpcore').setLevel(logging.ERROR) 
-logging.getLogger('telegram').setLevel(logging.ERROR)
-logging.getLogger('telegram.ext').setLevel(logging.ERROR)
-logging.getLogger('bot.telegram_bot').setLevel(logging.INFO)
+def install_missing_modules():
+    """Install any missing Python modules using poetry"""
+    import os
+
+    required_modules = [
+        "flask", "flask-login", "flask-sqlalchemy", "openai", "sqlalchemy",
+        "flask-wtf", "psycopg2-binary", "email-validator", "geopy",
+        "nest-asyncio", "quart", "hypercorn", "asyncpg", "aiohttp",
+        "sqlalchemy-utils", "python-telegram-bot==20.7", "python3-saml",
+        "requests-oauthlib"
+    ]
+
+    for module in required_modules:
+        try:
+            __import__(module.replace('-', '_').split('==')[0])
+        except ImportError:
+            os.system(f"poetry add {module}")
+            logger.info(f"Installed {module}")
+
+from hypercorn.asyncio import serve
+from telegram import Update
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Create Flask app
+app = create_app()
+
 async def run_web_server():
-    """Run the Flask web server using Hypercorn"""
-    app = create_app()
+    """Run the web server"""
     config = Config()
     config.bind = ["0.0.0.0:3000"]
-    config.worker_class = "asyncio"
-    return await serve(app, config)
+    config.use_reloader = False
+    await serve(app, config)
+
+async def run_telegram_bot():
+    """Run the Telegram bot"""
+    try:
+        application = await start_bot()
+        if application:
+            await application.initialize()
+            await application.start()
+            await application.updater.start_polling(
+                drop_pending_updates=True,
+                allowed_updates=[Update.MESSAGE],
+                read_timeout=30,
+                write_timeout=30)
+
+            try:
+                while True:
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                logger.info("Telegram bot gracefully shutting down")
+                await application.updater.stop()
+                await application.stop()
+                await application.shutdown()
+
+    except Exception as e:
+        logger.error(f"Telegram bot error: {e}")
+    finally:
+        if os.path.exists("bot.lock"):
+            os.remove("bot.lock")
 
 async def main():
     """Main entry point for the application"""
     try:
-        # Initialize Flask app and database
-        app = create_app()
+        install_missing_modules()
         with app.app_context():
             db.create_all()
-            logger.info("Database initialized")
-        
-        # Start both web server and bot concurrently
-        logger.info("Starting web server and bot...")
-        await asyncio.gather(
-            run_web_server(),
-            start_bot()
-        )
+            logger.info("Database tables created successfully")
+
+        logger.info("Starting application...")
+        web_task = asyncio.create_task(run_web_server())
+        await asyncio.sleep(2)
+        telegram_task = asyncio.create_task(run_telegram_bot())
+
+        def signal_handler(sig, frame):
+            logger.info(f"Received signal {sig}. Shutting down gracefully.")
+            telegram_task.cancel()
+            web_task.cancel()
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        await asyncio.gather(telegram_task, web_task)
+    except KeyboardInterrupt:
+        logger.info("Shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
