@@ -21,17 +21,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "/apply - Apply for a job\n"
             "/cancel - Cancel current operation"
         )
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=message
-        )
+        await update.message.reply_text(message)
     except Exception as e:
         logger.error(f"Error in start handler: {e}", exc_info=True)
         try:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="An error occurred. Please try again."
-            )
+            await update.message.reply_text("An error occurred. Please try again.")
         except Exception as send_error:
             logger.error(f"Failed to send error message: {send_error}")
 
