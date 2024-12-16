@@ -50,3 +50,22 @@ def generate_cover_letter(skills, job_description):
     except Exception as e:
         logger.error(f"Error generating cover letter: {e}")
         return "Error generating cover letter. Please try again later."
+def calculate_job_match(candidate_skills, job_skills):
+    """Calculate match percentage between candidate skills and job requirements"""
+    if not candidate_skills or not job_skills:
+        return 50  # Default score when skills data is incomplete
+        
+    candidate_skills_set = set()
+    for skill_type in candidate_skills.values():
+        if isinstance(skill_type, list):
+            candidate_skills_set.update([s.lower() for s in skill_type])
+    
+    job_skills_set = set([s.lower() for s in job_skills])
+    
+    if not job_skills_set:
+        return 50
+        
+    matches = len(candidate_skills_set.intersection(job_skills_set))
+    total = len(job_skills_set)
+    
+    return int((matches / total) * 100) if total > 0 else 50

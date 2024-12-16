@@ -98,14 +98,79 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return LOCATION
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the resume upload"""
+    """Handle the resume upload and process jobs"""
     from app import create_app
     app = create_app()
     
     try:
         if not update.message.document:
             await update.message.reply_text("Please send your resume as a PDF file.")
+            return RESUME
+
+        with app.app_context():
+            file = await update.message.document.get_file()
+            resume_path = await save_resume(file, update.effective_user.id)
+            
+            # Extract skills using AI
+            skills = extract_skills(resume_path)
+            
+            # Create job seeker profile
+            job_seeker = JobSeeker(
+                telegram_id=str(update.effective_user.id),
+                full_name=context.user_data['full_name'],
+                phone_number=context.user_data['phone_number'],
+                resume_path=resume_path,
+                skills=skills,
+                latitude=context.user_data['latitude'],
+                longitude=context.user_data['longitude']
+            )
+            
+            db.session.add(job_seeker)
+            db.session.commit()
+
+            # Search for jobs within 20km
+            await update.message.reply_text("🔍 Searching for jobs matching your profile within 20km...")
+            
+            nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, 20)
+            
+            if not nearby_jobs:
+                await update.message.reply_text(
+                    "😔 No jobs found within 20km of your location.\n"
+                    "Use /search <radius> to expand your search radius.\n"
+                    "Example: /search 50 to search within 50km"
+                )
+                return ConversationHandler.END
+
+            await update.message.reply_text(
+                f"🎉 Found {len(nearby_jobs)} jobs that match your profile!"
+            )
+            
+            for job in nearby_jobs[:5]:
+                relevance_score = calculate_job_match(skills, job.required_skills)
+                await update.message.reply_text(
+                    f"🏢 *{job.title}*\n"
+                    f"🏗 _{job.employer.company_name}_\n"
+                    f"📍 {job.location} ({job.distance:.1f}km away)\n"
+                    f"✨ Match Score: {relevance_score}%\n"
+                    f"💼 Description:\n{job.description[:200]}...\n\n"
+                    f"📝 To apply, use /apply {job.id}",
+                    parse_mode='Markdown'
+                )
+            
+            if len(nearby_jobs) > 5:
+                await update.message.reply_text(
+                    f"🔍 {len(nearby_jobs) - 5} more jobs available.\n"
+                    "Use /search <radius> to see jobs in a different radius!"
+                )
+            
             return ConversationHandler.END
+
+    except Exception as e:
+        logging.error(f"Error in handle_resume: {e}")
+        await update.message.reply_text(
+            "Sorry, an error occurred while processing your resume. Please try again."
+        )
+        return ConversationHandler.ENDnHandler.END
 
         with app.app_context():
             file = await update.message.document.get_file()
