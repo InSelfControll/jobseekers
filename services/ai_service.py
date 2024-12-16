@@ -15,10 +15,25 @@ ABACUS_API_BASE_URL = "https://api.abacus.ai/v0"
 def extract_text_from_pdf(pdf_path):
     """Extract text from PDF file"""
     try:
+        if not os.path.exists(pdf_path):
+            logger.error(f"PDF file not found: {pdf_path}")
+            return ""
+            
         reader = PdfReader(pdf_path)
+        if not reader.pages:
+            logger.error("PDF has no pages")
+            return ""
+            
         text = ""
         for page in reader.pages:
-            text += page.extract_text()
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+                
+        if not text.strip():
+            logger.error("No text extracted from PDF")
+            return ""
+            
         return text
     except Exception as e:
         logger.error(f"Error extracting text from PDF: {e}")

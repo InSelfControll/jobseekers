@@ -110,25 +110,31 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             file = await update.message.document.get_file()
             resume_path = await save_resume(file, update.effective_user.id)
             
+            # First extract skills
+            await update.message.reply_text("Processing your resume...")
+            skills = await extract_skills(resume_path)
+            
+            if not skills:
+                await update.message.reply_text("Error processing resume. Please try again.")
+                return RESUME
+
             job_seeker = JobSeeker(
                 telegram_id=str(update.effective_user.id),
                 full_name=context.user_data['full_name'],
                 phone_number=context.user_data['phone_number'],
                 resume_path=resume_path,
                 latitude=context.user_data['latitude'],
-                longitude=context.user_data['longitude']
+                longitude=context.user_data['longitude'],
+                skills=skills
             )
             
             try:
                 db.session.add(job_seeker)
                 db.session.commit()
-                
-                # Extract skills from resume after saving
-                job_seeker.skills = await extract_skills(resume_path)
-                db.session.commit()
 
                 await update.message.reply_text(
                     "Registration complete! 🎉\n"
+                    f"Found {len(skills.get('technical_skills', []))} technical skills and {len(skills.get('soft_skills', []))} soft skills.\n"
                     "Use /search to find jobs in your area."
                 )
                 return ConversationHandler.END
