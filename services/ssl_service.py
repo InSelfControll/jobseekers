@@ -12,34 +12,65 @@ import shutil
 
 def setup_cert_renewal_check():
     """Set up periodic SSL certificate renewal checks"""
-    from extensions import db
+    from extensions import db, create_app
     from models import Employer
     import schedule
     import time
     import threading
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
     def check_and_renew():
-        with create_app().app_context():
-            employers = Employer.query.filter_by(ssl_enabled=True).all()
-            for employer in employers:
-                if employer.sso_domain and employer.ssl_expiry:
-                    # Check if cert expires in less than 30 days
-                    if employer.ssl_expiry - timedelta(days=30) <= datetime.now():
-                        ssl_service = SSLService(employer.sso_domain, employer.email)
-                        success, message = ssl_service.generate_certificate()
-                        if success:
-                            logging.info(f"Renewed certificate for {employer.sso_domain}")
-                        else:
-                            logging.error(f"Failed to renew certificate for {employer.sso_domain}: {message}")
+        try:
+            app = create_app()
+            with app.app_context():
+                logger.info("Starting certificate renewal check")
+                employers = Employer.query.filter_by(ssl_enabled=True).all()
+                
+                for employer in employers:
+                    try:
+                        if not employer.sso_domain or not employer.ssl_expiry:
+                            continue
+                            
+                        # Check if cert expires in less than 30 days
+                        if employer.ssl_expiry - timedelta(days=30) <= datetime.now():
+                            logger.info(f"Certificate renewal needed for {employer.sso_domain}")
+                            ssl_service = SSLService(employer.sso_domain, employer.email)
+                            success, message = ssl_service.generate_certificate()
+                            
+                            if success:
+                                logger.info(f"Successfully renewed certificate for {employer.sso_domain}")
+                            else:
+                                logger.error(f"Failed to renew certificate for {employer.sso_domain}: {message}")
+                                
+                    except Exception as e:
+                        logger.error(f"Error processing renewal for {employer.sso_domain}: {str(e)}")
+                        continue
+                        
+        except Exception as e:
+            logger.error(f"Error in certificate renewal check: {str(e)}")
 
     def run_scheduler():
-        schedule.every().day.do(check_and_renew)
-        while True:
-            schedule.run_pending()
-            time.sleep(3600)  # Check every hour
+        try:
+            logger.info("Starting SSL certificate renewal scheduler")
+            schedule.every().day.at("00:00").do(check_and_renew)
+            
+            while True:
+                try:
+                    schedule.run_pending()
+                    time.sleep(3600)  # Check every hour
+                except Exception as e:
+                    logger.error(f"Error in scheduler loop: {str(e)}")
+                    time.sleep(60)  # Wait a minute before retrying
+                    
+        except Exception as e:
+            logger.error(f"Fatal error in SSL renewal scheduler: {str(e)}")
 
     thread = threading.Thread(target=run_scheduler, daemon=True)
     thread.start()
+    logger.info("SSL certificate renewal checker initialized")
 
 class SSLService:
     def __init__(self, domain, email):

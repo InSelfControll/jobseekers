@@ -44,21 +44,23 @@ async def start_bot():
     token = os.environ.get("TELEGRAM_TOKEN")
     global _instance
     lock_file = None
+    logger.info("Starting Telegram bot initialization")
 
     if not token:
         logger.error("TELEGRAM_TOKEN not found in environment variables")
         return None
 
     try:
-        # Use a more reliable locking mechanism
         import tempfile
         import atexit
+        import psutil
         
         lock_file = os.path.join(tempfile.gettempdir(), "telegram_bot.lock")
+        logger.debug(f"Using lock file: {lock_file}")
         
         def cleanup_lock():
             try:
-                if os.path.exists(lock_file):
+                if lock_file and os.path.exists(lock_file):
                     os.remove(lock_file)
                     logger.info("Cleaned up bot lock file")
             except Exception as e:
@@ -67,23 +69,34 @@ async def start_bot():
         # Register cleanup function
         atexit.register(cleanup_lock)
         
-        async with _lock:  # Use async lock for thread safety
-            if os.path.exists(lock_file):
-                try:
-                    with open(lock_file, "r") as f:
-                        pid = int(f.read().strip())
-                        import psutil
-                        if psutil.pid_exists(pid):
-                            proc = psutil.Process(pid)
-                            if proc.name().startswith('python'):
-                                logger.info(f"Bot already running with PID {pid}")
-                                return None
-                except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                    logger.warning(f"Invalid lock file, cleaning up: {e}")
+        # Check for existing bot process
+        if os.path.exists(lock_file):
+            try:
+                with open(lock_file, "r") as f:
+                    pid = int(f.read().strip())
+                    if psutil.pid_exists(pid):
+                        proc = psutil.Process(pid)
+                        if proc.name().startswith('python'):
+                            logger.info(f"Bot already running with PID {pid}")
+                            return None
+            except Exception as e:
+                logger.warning(f"Error checking existing bot process: {e}")
+            
+            try:
                 os.remove(lock_file)
+                logger.info("Removed stale lock file")
+            except Exception as e:
+                logger.error(f"Error removing stale lock file: {e}")
+                return None
 
+        # Create new lock file
+        try:
             with open(lock_file, "w") as f:
                 f.write(str(os.getpid()))
+            logger.info(f"Created lock file with PID {os.getpid()}")
+        except Exception as e:
+            logger.error(f"Error creating lock file: {e}")
+            return None
 
         if _instance is None:
             application = ApplicationBuilder().token(token).build()
