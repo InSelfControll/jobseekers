@@ -174,11 +174,18 @@ async def start_bot():
             await _instance.updater.start_polling(
                 allowed_updates=['message', 'callback_query'],
                 drop_pending_updates=True,
-                timeout=30,
-                read_timeout=30,
-                write_timeout=30
+                timeout=60,
+                read_timeout=60,
+                write_timeout=60,
+                close_loop=False
             )
             logger.info("Bot successfully started and polling for updates")
+            # Keep the polling running
+            try:
+                await _instance.updater.running
+            except Exception as e:
+                logger.error(f"Error in polling: {e}")
+                raise
 
         return _instance
 
