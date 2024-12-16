@@ -7,7 +7,6 @@ from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -28,9 +27,6 @@ async def run_telegram_bot():
         if not bot:
             logger.error("Failed to initialize bot")
             return
-        # Keep the bot running
-        while True:
-            await asyncio.sleep(60)
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
         if os.path.exists("bot.lock"):
@@ -44,14 +40,10 @@ async def main():
             db.create_all()
             logger.info("Database tables created successfully")
         
-        # Start both web server and bot as separate tasks
-        tasks = [
-            asyncio.create_task(run_web_server()),
-            asyncio.create_task(run_telegram_bot())
-        ]
-        
-        # Wait for both tasks to complete
-        await asyncio.gather(*tasks)
+        await asyncio.gather(
+            run_web_server(),
+            run_telegram_bot()
+        )
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
