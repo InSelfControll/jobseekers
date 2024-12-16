@@ -118,15 +118,28 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Error processing resume. Please try again.")
                 return RESUME
 
-            job_seeker = JobSeeker(
-                telegram_id=str(update.effective_user.id),
-                full_name=context.user_data['full_name'],
-                phone_number=context.user_data['phone_number'],
-                resume_path=resume_path,
-                latitude=context.user_data['latitude'],
-                longitude=context.user_data['longitude'],
-                skills=skills
-            )
+            # First check if user already exists
+            existing_seeker = JobSeeker.query.filter_by(telegram_id=str(update.effective_user.id)).first()
+            if existing_seeker:
+                # Update existing record
+                existing_seeker.full_name = context.user_data['full_name']
+                existing_seeker.phone_number = context.user_data['phone_number']
+                existing_seeker.resume_path = resume_path
+                existing_seeker.latitude = context.user_data['latitude']
+                existing_seeker.longitude = context.user_data['longitude']
+                existing_seeker.skills = skills
+                job_seeker = existing_seeker
+            else:
+                # Create new record
+                job_seeker = JobSeeker(
+                    telegram_id=str(update.effective_user.id),
+                    full_name=context.user_data['full_name'],
+                    phone_number=context.user_data['phone_number'],
+                    resume_path=resume_path,
+                    latitude=context.user_data['latitude'],
+                    longitude=context.user_data['longitude'],
+                    skills=skills
+                )
             
             try:
                 db.session.add(job_seeker)
