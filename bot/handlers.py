@@ -142,10 +142,17 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         with app.app_context():
-            # First check if user exists
+            # First check if user exists with proper string conversion
+            telegram_id = str(update.effective_user.id)
             job_seeker = JobSeeker.query.filter_by(
-                telegram_id=str(update.effective_user.id)
+                telegram_id=telegram_id
             ).first()
+
+            if not job_seeker:
+                await update.message.reply_text(
+                    "⚠️ You need to register first! Please use /register to create your profile."
+                )
+                return
             
             if not job_seeker:
                 await update.message.reply_text(
