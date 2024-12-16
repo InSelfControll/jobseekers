@@ -176,8 +176,7 @@ async def start_bot():
                 drop_pending_updates=True,
                 timeout=60,
                 read_timeout=60,
-                write_timeout=60,
-                close_loop=False
+                write_timeout=60
             )
             logger.info("Bot successfully started and polling for updates")
             # Keep the polling running
