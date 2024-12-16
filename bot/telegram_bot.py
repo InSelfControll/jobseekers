@@ -2,14 +2,13 @@ import os
 import logging
 import asyncio
 import time
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler,
-    ConversationHandler, CallbackContext, filters
-)
-from telegram import Update
+from telegram import Update, Bot
+from telegram.ext import (Application, CommandHandler, MessageHandler,
+                          ConversationHandler, CallbackContext,
+                          ApplicationBuilder, ContextTypes, filters)
 from bot.handlers import (start, register, handle_full_name,
-                           handle_phone_number, handle_location, handle_resume,
-                           handle_job_search, handle_application, cancel)
+                          handle_phone_number, handle_location, handle_resume,
+                          handle_job_search, handle_application, cancel)
 from services.monitoring_service import bot_monitor
 
 # Configure logging
@@ -34,7 +33,6 @@ async def send_status_notification(telegram_id: str, job_title: str,
 
     message = status_messages.get(status)
     if message:
-        from telegram import Bot
         bot = Bot(token)
         await bot.send_message(chat_id=telegram_id, text=message)
 
@@ -58,10 +56,10 @@ async def start_bot():
         import tempfile
         import atexit
         import psutil
-        
+
         lock_file = os.path.join(tempfile.gettempdir(), "telegram_bot.lock")
         logger.debug(f"Using lock file: {lock_file}")
-        
+
         def cleanup_lock():
             try:
                 if lock_file and os.path.exists(lock_file):
@@ -69,10 +67,10 @@ async def start_bot():
                     logger.info("Cleaned up bot lock file")
             except Exception as e:
                 logger.error(f"Error cleaning up lock file: {e}")
-        
+
         # Register cleanup function
         atexit.register(cleanup_lock)
-        
+
         # Check for existing bot process
         if os.path.exists(lock_file):
             try:
@@ -85,7 +83,7 @@ async def start_bot():
                             return None
             except Exception as e:
                 logger.warning(f"Error checking existing bot process: {e}")
-            
+
             try:
                 os.remove(lock_file)
                 logger.info("Removed stale lock file")
@@ -104,7 +102,7 @@ async def start_bot():
 
         if _instance is None:
             application = ApplicationBuilder().token(token).build()
-            
+
             # Add conversation handler for registration
             conv_handler = ConversationHandler(
                 entry_points=[CommandHandler("register", register)],
@@ -127,15 +125,17 @@ async def start_bot():
             # Add handlers
             application.add_handler(CommandHandler("start", start))
             application.add_handler(conv_handler)
-            application.add_handler(
-                CommandHandler("search", handle_job_search))
-            application.add_handler(
-                CommandHandler("apply", handle_application))
+            application.add_handler(CommandHandler("search",
+                                                   handle_job_search))
+            application.add_handler(CommandHandler("apply",
+                                                   handle_application))
 
-            async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            async def error_handler(update: Update,
+                                    context: ContextTypes.DEFAULT_TYPE):
                 error = context.error
-                logger.error(f"Update {update} caused error: {error}", exc_info=context.error)
-                
+                logger.error(f"Update {update} caused error: {error}",
+                             exc_info=context.error)
+
                 if isinstance(error, Exception):
                     error_message = "An unexpected error occurred. Please try again later."
                     if update and update.message:
@@ -143,7 +143,7 @@ async def start_bot():
                             await update.message.reply_text(error_message)
                         except Exception as e:
                             logger.error(f"Failed to send error message: {e}")
-                
+
                 # Prevent the error from propagating
                 return True
 
@@ -153,8 +153,9 @@ async def start_bot():
             bot_monitor.set_status("running")
             # Add message handler wrapper
             original_process_update = _instance.process_update
-            
-            async def monitored_process_update(update: Update, context: CallbackContext):
+
+            async def monitored_process_update(update: Update,
+                                               context: CallbackContext):
                 start_time = time.time()
                 try:
                     result = await original_process_update(update, context)
@@ -164,8 +165,13 @@ async def start_bot():
                 except Exception as e:
                     bot_monitor.record_error(str(e))
                     raise
-                    
+
             _instance.process_update = monitored_process_update
+            
+            # Start polling in non-blocking mode
+            await _instance.initialize()
+            await _instance.start()
+            await _instance.updater.start_polling(drop_pending_updates=True)
 
         return _instance
 
