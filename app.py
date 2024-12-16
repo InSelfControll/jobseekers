@@ -25,7 +25,8 @@ def create_app():
     # Ensure CSRF token is available in all templates
     @app.context_processor
     def inject_csrf_token():
-        return dict(csrf_token=csrf._get_token())
+        from flask_wtf.csrf import generate_csrf
+        return dict(csrf_token=generate_csrf())
     
     @app.after_request
     def add_security_headers(response):
