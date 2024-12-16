@@ -7,7 +7,6 @@ from app import create_app, db
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
-from telegram import Update
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ async def run_telegram_bot():
             await application.start()
             await application.updater.start_polling(
                 drop_pending_updates=True,
-                allowed_updates=[Update.MESSAGE],
+                allowed_updates=["message"],
                 read_timeout=30,
                 write_timeout=30
             )
@@ -66,7 +65,6 @@ async def main():
         logger.info("Application shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
-        raise
     finally:
         cleanup()
 
