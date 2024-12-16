@@ -52,15 +52,20 @@ async def run_web_server():
         if ssl_employers:
             certs = []
             for employer in ssl_employers:
-                if employer.ssl_cert_path and employer.ssl_key_path:
-                    certs.append((employer.ssl_cert_path, employer.ssl_key_path))
+                if employer.ssl_cert_path and employer.ssl_key_path and os.path.exists(employer.ssl_cert_path) and os.path.exists(employer.ssl_key_path):
+                    certs.append({
+                        'cert': employer.ssl_cert_path,
+                        'key': employer.ssl_key_path,
+                        'domains': [employer.sso_domain]
+                    })
                     logging.info(f"Using SSL for domain: {employer.sso_domain}")
             
             if certs:
-                config.certfile = certs[0][0]  # Primary certificate
-                config.keyfile = certs[0][1]   # Primary key
-                if len(certs) > 1:
-                    config.additional_certs = certs[1:]  # Additional certificates
+                # Configure the primary certificate
+                config.certfile = certs[0]['cert']
+                config.keyfile = certs[0]['key']
+                # Add all certificates to the additional certs list
+                config.additional_certs = [(cert['cert'], cert['key']) for cert in certs]
     
     await serve(app, config)
 
