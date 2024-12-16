@@ -44,12 +44,23 @@ async def run_web_server():
     config.bind = ["0.0.0.0:443", "0.0.0.0:80"]
     config.use_reloader = False
     
-    # Check if SSL is configured for the domain
-    if app.config.get('SSL_CERTIFICATE') and app.config.get('SSL_PRIVATE_KEY'):
-        config.certfile = app.config['SSL_CERTIFICATE']
-        config.keyfile = app.config['SSL_PRIVATE_KEY']
-        logging.info(f"Using SSL certificate: {config.certfile}")
-        logging.info(f"Using SSL key: {config.keyfile}")
+    # Query all employers with SSL enabled
+    with app.app_context():
+        from models import Employer
+        ssl_employers = Employer.query.filter_by(ssl_enabled=True).all()
+        
+        if ssl_employers:
+            certs = []
+            for employer in ssl_employers:
+                if employer.ssl_cert_path and employer.ssl_key_path:
+                    certs.append((employer.ssl_cert_path, employer.ssl_key_path))
+                    logging.info(f"Using SSL for domain: {employer.sso_domain}")
+            
+            if certs:
+                config.certfile = certs[0][0]  # Primary certificate
+                config.keyfile = certs[0][1]   # Primary key
+                if len(certs) > 1:
+                    config.additional_certs = certs[1:]  # Additional certificates
     
     await serve(app, config)
 
