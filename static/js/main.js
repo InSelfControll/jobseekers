@@ -86,7 +86,11 @@ function verifyDomain() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Domain verified successfully!');
+            if (data.already_verified) {
+                alert('Domain is already verified!');
+            } else {
+                alert('Domain verified successfully!');
+            }
             document.getElementById('ssl-section').style.display = 'block';
             
             // Update verified domains section

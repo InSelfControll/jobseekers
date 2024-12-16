@@ -22,6 +22,7 @@ class Employer(UserMixin, db.Model):
     ssl_cert_path = db.Column(db.String(512))
     ssl_key_path = db.Column(db.String(512))
     ssl_expiry = db.Column(db.DateTime)
+    domain_verification_date = db.Column(db.DateTime)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
 class Job(db.Model):

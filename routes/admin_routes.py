@@ -1,5 +1,4 @@
-
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_from, jsonify
 from flask_login import login_required, current_user
 from extensions import db
 from functools import wraps
@@ -8,6 +7,7 @@ import hashlib
 import dns.resolver
 from models import Employer
 from flask import abort
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -239,19 +239,27 @@ def update_domain():
 @admin_required
 def verify_domain():
     data = request.get_json()
-    if not data or not data.get('domain'):
-        return jsonify({'success': False, 'error': 'Domain is required'}), 400
+    domain = data.get('domain', '').lower()
+    
+    if not domain:
+        return jsonify({'success': False, 'error': 'Domain is required'})
+
+    # Check if domain is already verified
+    employer = Employer.query.filter_by(sso_domain=domain).first()
+    if employer and employer.domain_verified:
+        return jsonify({'success': True, 'domain': domain, 'already_verified': True})
         
-    try:
-        if verify_domain_records(data['domain'], current_user.sso_provider):
-            employer = Employer.query.get(current_user.id)
-            employer.domain_verified = True
-            employer.sso_domain = data['domain']
-            db.session.commit()
-            return jsonify({'success': True, 'domain': data['domain']})
+    # Update user's domain
+    current_user.sso_domain = domain
+    
+    # Verify domain records
+    if verify_domain_records(domain, current_user.sso_provider):
+        current_user.domain_verified = True
+        current_user.domain_verification_date = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'success': True, 'domain': domain})
+    else:
         return jsonify({'success': False, 'error': 'Domain verification failed'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @admin_bp.route('/save-sso-settings', methods=['POST'])
 @login_required
