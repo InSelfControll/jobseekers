@@ -140,17 +140,25 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from app import create_app
     app = create_app()
     
-    # Get search radius from command arguments
-    try:
-        radius = float(context.args[0]) if context.args else 15
-    except (ValueError, IndexError):
-        radius = 15
-    
     try:
         with app.app_context():
+            # First check if user exists
             job_seeker = JobSeeker.query.filter_by(
                 telegram_id=str(update.effective_user.id)
             ).first()
+            
+            if not job_seeker:
+                await update.message.reply_text(
+                    "⚠️ Please register first using /register command before searching for jobs.\n"
+                    "This will help us find jobs matching your profile!"
+                )
+                return
+                
+            # Get search radius from command arguments
+            try:
+                radius = float(context.args[0]) if context.args else 15
+            except (ValueError, IndexError):
+                radius = 15
             
             if not job_seeker:
                 await update.message.reply_text(
