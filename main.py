@@ -18,7 +18,7 @@ async def run_web_server():
     """Run the Flask web server using Hypercorn"""
     app = create_app()
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = ["0.0.0.0:3000"]  # Changed port to 3000
     return await serve(app, config)
 
 async def main():
