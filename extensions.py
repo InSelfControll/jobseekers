@@ -3,6 +3,7 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -10,12 +11,14 @@ logger = logging.getLogger(__name__)
 
 # Initialize extensions
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 
 def init_db(app):
     """Initialize database with SQLAlchemy"""
     try:
         db.init_app(app)
+        migrate.init_app(app, db)
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
