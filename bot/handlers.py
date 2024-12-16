@@ -12,17 +12,26 @@ FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
-    await update.message.reply_text(
-        "Welcome to the Job Application Bot! 🎯\n"
-        "Use /register to create your profile and start applying for jobs."
-    )
+    try:
+        await update.message.reply_text(
+            "Welcome to the Job Application Bot! 🎯\n"
+            "Use /register to create your profile and start applying for jobs."
+        )
+    except Exception as e:
+        logger.error(f"Error in start handler: {e}")
+        await update.message.reply_text("An error occurred. Please try again.")
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
-    await update.message.reply_text(
-        "Let's create your profile! First, please send me your full name."
-    )
-    return FULL_NAME
+    try:
+        await update.message.reply_text(
+            "Let's create your profile! First, please send me your full name."
+        )
+        return FULL_NAME
+    except Exception as e:
+        logger.error(f"Error in register handler: {e}")
+        await update.message.reply_text("An error occurred. Please try again.")
+        return ConversationHandler.END
 
 async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the full name input"""

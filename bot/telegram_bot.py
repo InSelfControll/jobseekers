@@ -168,10 +168,17 @@ async def start_bot():
 
             _instance.process_update = monitored_process_update
             
-            # Start polling in non-blocking mode
+            # Initialize and start polling
             await _instance.initialize()
             await _instance.start()
-            await _instance.updater.start_polling(drop_pending_updates=True)
+            await _instance.updater.start_polling(
+                allowed_updates=['message', 'callback_query'],
+                drop_pending_updates=True,
+                timeout=30,
+                read_timeout=30,
+                write_timeout=30
+            )
+            logger.info("Bot successfully started and polling for updates")
 
         return _instance
 
