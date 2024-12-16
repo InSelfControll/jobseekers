@@ -122,32 +122,21 @@ async def start_bot():
                 },
                 fallbacks=[CommandHandler("cancel", cancel)])
 
-            async def error_handler(update: Update,
-                                    context: ContextTypes.DEFAULT_TYPE):
-                error = context.error
-                logger.error(f"Update {update} caused error: {error}",
-                             exc_info=context.error)
-
-                if isinstance(error, Exception):
-                    error_message = "An unexpected error occurred. Please try again later."
-                    if update and update.message:
-                        try:
-                            await update.message.reply_text(error_message)
-                        except Exception as e:
-                            logger.error(f"Failed to send error message: {e}")
-
-                # Prevent the error from propagating
+            async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+                """Handle errors in the bot."""
+                logger.error(f"Exception while handling an update: {context.error}")
                 return True
 
+            async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+                """Handle all non-command messages."""
+                await start(update, context)
+
             # Add handlers
-            # Add handlers in specific order
-            application.add_handler(conv_handler)  # Registration conversation handler first
             application.add_handler(CommandHandler("start", start))
+            application.add_handler(conv_handler)  # Registration conversation handler
             application.add_handler(CommandHandler("search", handle_job_search))
             application.add_handler(CommandHandler("apply", handle_application))
-            # Default handlers last
-            application.add_handler(MessageHandler(filters.COMMAND, start))  # Fallback for unknown commands
-            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))  # Handle regular messages
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
             # Add error handler before starting polling
             application.add_error_handler(error_handler)
