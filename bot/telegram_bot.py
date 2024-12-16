@@ -39,13 +39,7 @@ async def start_bot():
         application.add_handler(CommandHandler("search", handle_job_search))
         application.add_handler(CommandHandler("apply", handle_application))
         
-        async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            logger.error(f"Update {update} caused error {context.error}")
-            if update and update.message:
-                await update.message.reply_text(
-                    "Sorry, something went wrong. Please try again later."
-                )
-        
+        from bot.handlers import error_handler
         application.add_error_handler(error_handler)
         _instance = application
         

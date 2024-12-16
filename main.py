@@ -8,8 +8,7 @@ from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from bot.telegram_bot import logger
 
 app = create_app()
 
@@ -43,30 +42,17 @@ async def run_telegram_bot():
             os.remove("bot.lock")
 
 async def main():
+    with app.app_context():
+        db.create_all()
+    
+    tasks = [run_web_server(), run_telegram_bot()]
+    
     try:
-        with app.app_context():
-            db.create_all()
-        
-        tasks = [
-            asyncio.create_task(run_web_server()),
-            asyncio.create_task(run_telegram_bot())
-        ]
-        
-        def cleanup():
-            for task in tasks:
-                task.cancel()
-            
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(sig, lambda s, f: cleanup())
-            
         await asyncio.gather(*tasks)
-        
-    except asyncio.CancelledError:
+    except (asyncio.CancelledError, KeyboardInterrupt):
         logger.info("Application shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
-    finally:
-        cleanup()
 
 if __name__ == '__main__':
     asyncio.run(main())

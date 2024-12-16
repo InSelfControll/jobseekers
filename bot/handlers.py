@@ -283,3 +283,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Registration cancelled. Use /register to start again."
     )
     return ConversationHandler.END
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Centralized error handler for bot updates"""
+    logger.error(f"Update {update} caused error {context.error}")
+    if update and update.message:
+        await update.message.reply_text(
+            "Sorry, something went wrong. Please try again later."
+        )
