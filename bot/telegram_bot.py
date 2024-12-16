@@ -1,191 +1,114 @@
+
 import os
 import logging
 import asyncio
 import time
 from telegram import Update, Bot
 from telegram.ext import (Application, CommandHandler, MessageHandler,
-                          ConversationHandler, CallbackContext,
-                          ApplicationBuilder, ContextTypes, filters)
+                        ConversationHandler, CallbackContext,
+                        ApplicationBuilder, ContextTypes, filters)
 from bot.handlers import (start, register, handle_full_name,
-                          handle_phone_number, handle_location, handle_resume,
-                          handle_job_search, handle_application, cancel)
+                        handle_phone_number, handle_location, handle_resume,
+                        handle_job_search, handle_application, cancel)
 from services.monitoring_service import bot_monitor
 
-# Configure logging
 logger = logging.getLogger(__name__)
 FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
-
-async def send_status_notification(telegram_id: str, job_title: str,
-                                   status: str):
+async def send_status_notification(telegram_id: str, job_title: str, status: str):
     """Send application status notification to user"""
     token = os.environ.get("TELEGRAM_TOKEN")
     if not token:
+        logger.error("TELEGRAM_TOKEN not found")
         return
 
     status_messages = {
-        'accepted':
-        f'🎉 Congratulations! Your application for "{job_title}" has been accepted!',
-        'rejected':
-        f'📝 Update on your application for "{job_title}": Unfortunately, the employer has decided not to proceed.',
+        'accepted': f'🎉 Congratulations! Your application for "{job_title}" has been accepted!',
+        'rejected': f'📝 Update on your application for "{job_title}": Unfortunately, the employer has decided not to proceed.',
         'pending': f'⏳ Your application for "{job_title}" is now under review.'
     }
 
     message = status_messages.get(status)
     if message:
-        bot = Bot(token)
-        await bot.send_message(chat_id=telegram_id, text=message)
-
+        try:
+            bot = Bot(token)
+            await bot.send_message(chat_id=telegram_id, text=message)
+        except Exception as e:
+            logger.error(f"Error sending notification: {e}")
 
 _instance = None
-_lock = asyncio.Lock()
-
 
 async def start_bot():
     """Initialize and start the Telegram bot"""
-    token = os.environ.get("TELEGRAM_TOKEN")
     global _instance
-    lock_file = None
-    logger.info("Starting Telegram bot initialization")
-
+    token = os.environ.get("TELEGRAM_TOKEN")
+    
     if not token:
         logger.error("TELEGRAM_TOKEN not found in environment variables")
         return None
 
     try:
-        import tempfile
-        import atexit
-        import psutil
-
-        lock_file = os.path.join(tempfile.gettempdir(), "telegram_bot.lock")
-        logger.debug(f"Using lock file: {lock_file}")
-
-        def cleanup_lock():
-            try:
-                if lock_file and os.path.exists(lock_file):
-                    os.remove(lock_file)
-                    logger.info("Cleaned up bot lock file")
-            except Exception as e:
-                logger.error(f"Error cleaning up lock file: {e}")
-
-        # Register cleanup function
-        atexit.register(cleanup_lock)
-
-        # Check for existing bot process
-        if os.path.exists(lock_file):
-            try:
-                with open(lock_file, "r") as f:
-                    pid = int(f.read().strip())
-                    if psutil.pid_exists(pid):
-                        proc = psutil.Process(pid)
-                        if proc.name().startswith('python'):
-                            logger.info(f"Bot already running with PID {pid}")
-                            return None
-            except Exception as e:
-                logger.warning(f"Error checking existing bot process: {e}")
-
-            try:
-                os.remove(lock_file)
-                logger.info("Removed stale lock file")
-            except Exception as e:
-                logger.error(f"Error removing stale lock file: {e}")
-                return None
-
-        # Create new lock file
-        try:
-            with open(lock_file, "w") as f:
-                f.write(str(os.getpid()))
-            logger.info(f"Created lock file with PID {os.getpid()}")
-        except Exception as e:
-            logger.error(f"Error creating lock file: {e}")
-            return None
-
         if _instance is None:
-            application = ApplicationBuilder().token(token).build()
-
+            builder = ApplicationBuilder().token(token)
+            builder.read_timeout(30)
+            builder.write_timeout(30)
+            builder.connect_timeout(30)
+            builder.pool_timeout(30)
+            
+            application = builder.build()
+            
             # Add conversation handler for registration
             conv_handler = ConversationHandler(
                 entry_points=[CommandHandler("register", register)],
                 states={
-                    FULL_NAME: [
-                        MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                       handle_full_name)
-                    ],
-                    PHONE_NUMBER: [
-                        MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                       handle_phone_number)
-                    ],
-                    LOCATION:
-                    [MessageHandler(filters.LOCATION, handle_location)],
-                    RESUME:
-                    [MessageHandler(filters.Document.PDF, handle_resume)],
+                    FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_full_name)],
+                    PHONE_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_phone_number)],
+                    LOCATION: [MessageHandler(filters.LOCATION, handle_location)],
+                    RESUME: [MessageHandler(filters.Document.PDF, handle_resume)],
                 },
-                fallbacks=[CommandHandler("cancel", cancel)])
+                fallbacks=[CommandHandler("cancel", cancel)]
+            )
 
-            async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-                """Handle errors in the bot."""
-                logger.error(f"Exception while handling an update: {context.error}")
-                return True
-
-            async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-                """Handle all non-command messages."""
-                await start(update, context)
-
-            # Add handlers in specific order
-            application.add_handler(conv_handler)  # Registration conversation handler first
+            # Add handlers
+            application.add_handler(conv_handler)
             application.add_handler(CommandHandler("start", start))
             application.add_handler(CommandHandler("search", handle_job_search))
             application.add_handler(CommandHandler("apply", handle_application))
             application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))
-            application.add_handler(MessageHandler(filters.COMMAND, start))  # Fallback for unknown commands
-
-            # Add error handler before starting polling
+            
+            # Error handler
+            async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+                logger.error(f"Exception while handling an update: {context.error}")
+                if update and isinstance(update, Update) and update.effective_message:
+                    await update.effective_message.reply_text(
+                        "Sorry, an error occurred while processing your request."
+                    )
+            
             application.add_error_handler(error_handler)
             _instance = application
-            # Initialize bot monitoring
-            bot_monitor.set_status("running")
-
-            # Send ready message
-            async def post_init(app: Application) -> None:
-                logger.info("Bot is ready and responding to messages")
-            application.post_init = post_init
-            # Add message handler wrapper
-            original_process_update = _instance.process_update
-
-            async def monitored_process_update(update: Update,
-                                               context: CallbackContext):
-                start_time = time.time()
-                try:
-                    result = await original_process_update(update, context)
-                    execution_time = time.time() - start_time
-                    bot_monitor.record_message(execution_time)
-                    return result
-                except Exception as e:
-                    bot_monitor.record_error(str(e))
-                    raise
-
-            _instance.process_update = monitored_process_update
             
-            # Initialize and start polling
-            await _instance.initialize()
-            await _instance.start()
-            await _instance.updater.start_polling(
+            # Initialize monitoring
+            bot_monitor.set_status("running")
+            
+            # Start the bot
+            await application.initialize()
+            await application.start()
+            
+            # Start polling in non-blocking mode
+            await application.updater.start_polling(
                 allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True
+                drop_pending_updates=True,
+                close_loop=False
             )
-            logger.info("Bot successfully started and polling for updates")
-            # Keep the polling running
-            try:
-                while True:
-                    await asyncio.sleep(1)
-            except Exception as e:
-                logger.error(f"Error in polling: {e}")
-                raise
-
-        return _instance
-
+            
+            logger.info("Telegram bot successfully started")
+            
+            # Keep the bot running
+            while True:
+                await asyncio.sleep(1)
+                
     except Exception as e:
         logger.error(f"Error initializing bot: {e}")
-        if os.path.exists(lock_file):
-            os.remove(lock_file)
         return None
+
+    return _instance

@@ -25,30 +25,20 @@ async def run_web_server():
     config.bind = ["0.0.0.0:5000"]
     return await serve(app, config)
 
-async def run_telegram_bot():
-    """Run the Telegram bot"""
-    try:
-        bot = await start_bot()
-        if not bot:
-            logger.error("Failed to initialize bot")
-            return
-    except Exception as e:
-        logger.error(f"Telegram bot error: {e}")
-        if os.path.exists("bot.lock"):
-            os.remove("bot.lock")
-
 async def main():
     """Main entry point for the application"""
     try:
+        # Initialize Flask app and database
         app = create_app()
         with app.app_context():
             db.create_all()
             logger.info("Database tables created successfully")
         
-        await asyncio.gather(
-            run_web_server(),
-            run_telegram_bot()
-        )
+        # Start both web server and bot
+        bot_task = asyncio.create_task(start_bot())
+        web_task = asyncio.create_task(run_web_server())
+        
+        await asyncio.gather(web_task, bot_task)
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
