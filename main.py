@@ -15,7 +15,8 @@ logging.getLogger('httpx').setLevel(logging.ERROR)
 logging.getLogger('httpcore').setLevel(logging.ERROR) 
 logging.getLogger('telegram').setLevel(logging.ERROR)
 logging.getLogger('telegram.ext').setLevel(logging.ERROR)
-logging.getLogger('bot.telegram_bot').setLevel(logging.INFO)
+logging.getLogger('bot.telegram_bot').setLevel(logging.WARNING)
+logging.getLogger('asyncio').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 async def run_web_server():
