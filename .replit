@@ -1,78 +1,10 @@
-modules = ["python-3.11"]
+
+run = "python main.py"
+modules = ["python-3.10:v18-20230807-322e88b"]
 
 [nix]
-channel = "stable-24_05"
-
-[workflows]
-runButton = "Project"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "JobSeeker Platform"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "SSL Certificate Renewal"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Telegram Bot"
-
-[[workflows.workflow]]
-name = "JobSeeker Platform"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "SSL Certificate Renewal"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 -c 'from services.ssl_service import setup_cert_renewal_check; setup_cert_renewal_check()'"
-
-[[workflows.workflow]]
-name = "Telegram Bot"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 -c 'import asyncio; from bot.telegram_bot import start_bot; asyncio.run(start_bot())'"
+channel = "stable-23_05"
 
 [deployment]
-run = ["sh", "-c", "python app.py"]
+run = ["sh", "-c", "python main.py"]
 deploymentTarget = "cloudrun"
-
-[[ports]]
-localPort = 80
-
-[[ports]]
-localPort = 5000
-externalPort = 80
