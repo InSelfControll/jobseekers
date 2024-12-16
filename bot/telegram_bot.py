@@ -1,4 +1,3 @@
-
 import os
 import logging
 import asyncio
@@ -111,3 +110,20 @@ async def start_bot():
         return None
 
     return _instance
+
+async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle resume upload"""
+    try:
+        from config import Config
+        config = Config()
+        #Example of what you might want to do with config
+        #file_id = update.message.document.file_id
+        #file = await update.message.document.get_file()
+        #await file.download(custom_path=config.resume_download_path + file_id)
+        await update.message.reply_text("Resume received!")
+        return ConversationHandler.END
+    except Exception as e:
+        logger.error(f"Error in handle_resume: {e}")
+        await update.message.reply_text("Error processing your resume. Please try again later.")
+        return ConversationHandler.END
+```
