@@ -31,13 +31,18 @@ class SSLService:
                 logging.error("Cloudflare API token not found in secrets")
                 return False, "Cloudflare API token not configured"
 
-            # Set token as environment variable for certbot plugin
-            os.environ['CLOUDFLARE_DNS_API_TOKEN'] = cloudflare_token
+            # Create credentials file for Cloudflare
+            os.makedirs('/home/runner/letsencrypt/', exist_ok=True)
+            credentials_path = '/home/runner/letsencrypt/cloudflare.ini'
+            with open(credentials_path, 'w') as f:
+                f.write(f"dns_cloudflare_api_token = {cloudflare_token}\n")
+            os.chmod(credentials_path, 0o600)
 
             logging.info("Cloudflare credentials configured")
 
             cmd = [
                 'certbot', 'certonly', '--dns-cloudflare',
+                '--dns-cloudflare-credentials', credentials_path,
                 '--non-interactive', '--agree-tos', '--email', self.email,
                 '-d', self.domain, '--config-dir', '/home/runner/letsencrypt/',
                 '--work-dir', '/home/runner/letsencrypt/', '--logs-dir',
