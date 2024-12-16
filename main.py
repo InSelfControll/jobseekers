@@ -6,46 +6,24 @@ import signal
 from app import create_app, db
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
-
-def install_missing_modules():
-    """Install any missing Python modules using poetry"""
-    import os
-
-    required_modules = [
-        "flask", "flask-login", "flask-sqlalchemy", "openai", "sqlalchemy",
-        "flask-wtf", "psycopg2-binary", "email-validator", "geopy",
-        "nest-asyncio", "quart", "hypercorn", "asyncpg", "aiohttp",
-        "sqlalchemy-utils", "python-telegram-bot==20.7", "python3-saml",
-        "requests-oauthlib"
-    ]
-
-    for module in required_modules:
-        try:
-            __import__(module.replace('-', '_').split('==')[0])
-        except ImportError:
-            os.system(f"poetry add {module}")
-            logger.info(f"Installed {module}")
-
 from hypercorn.asyncio import serve
-from telegram import Update
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Create Flask app
 app = create_app()
 
 async def run_web_server():
-    """Run the web server"""
     config = Config()
     config.bind = ["0.0.0.0:3000"]
     config.use_reloader = False
     await serve(app, config)
 
 async def run_telegram_bot():
-    """Run the Telegram bot"""
     try:
+        if os.path.exists("bot.lock"):
+            os.remove("bot.lock")
+            
         application = await start_bot()
         if application:
             await application.initialize()
@@ -54,17 +32,11 @@ async def run_telegram_bot():
                 drop_pending_updates=True,
                 allowed_updates=[Update.MESSAGE],
                 read_timeout=30,
-                write_timeout=30)
-
-            try:
-                while True:
-                    await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                logger.info("Telegram bot gracefully shutting down")
-                await application.updater.stop()
-                await application.stop()
-                await application.shutdown()
-
+                write_timeout=30
+            )
+            
+            while True:
+                await asyncio.sleep(1)
     except Exception as e:
         logger.error(f"Telegram bot error: {e}")
     finally:
@@ -72,32 +44,31 @@ async def run_telegram_bot():
             os.remove("bot.lock")
 
 async def main():
-    """Main entry point for the application"""
     try:
-        install_missing_modules()
         with app.app_context():
             db.create_all()
-            logger.info("Database tables created successfully")
-
-        logger.info("Starting application...")
+        
         web_task = asyncio.create_task(run_web_server())
-        await asyncio.sleep(2)
+        await asyncio.sleep(2)  # Give web server time to start
+        
         telegram_task = asyncio.create_task(run_telegram_bot())
-
-        def signal_handler(sig, frame):
-            logger.info(f"Received signal {sig}. Shutting down gracefully.")
-            telegram_task.cancel()
+        
+        def cleanup():
             web_task.cancel()
-
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-
-        await asyncio.gather(telegram_task, web_task)
-    except KeyboardInterrupt:
-        logger.info("Shutdown requested")
+            telegram_task.cancel()
+            
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, lambda s, f: cleanup())
+            
+        await asyncio.gather(web_task, telegram_task)
+        
+    except asyncio.CancelledError:
+        logger.info("Application shutdown requested")
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     asyncio.run(main())
