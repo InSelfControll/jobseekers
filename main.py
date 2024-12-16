@@ -18,7 +18,7 @@ async def run_web_server():
     """Run the Flask web server using Hypercorn"""
     app = create_app()
     config = Config()
-    config.bind = ["0.0.0.0:3000"]  # Changed port to 3000
+    config.bind = ["0.0.0.0:3000"]
     return await serve(app, config)
 
 async def main():
@@ -29,11 +29,8 @@ async def main():
         with app.app_context():
             db.create_all()
         
-        # Start both web server and bot concurrently
-        await asyncio.gather(
-            run_web_server(),
-            start_bot()
-        )
+        # Start web server only - bot will be started separately
+        await run_web_server()
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
