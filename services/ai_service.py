@@ -74,7 +74,7 @@ async def extract_skills(resume_path):
             "total_years": 0
         }
 
-def generate_cover_letter(candidate_info, job_info):
+async def generate_cover_letter(candidate_info, job_info):
     """Generate a personalized cover letter using AI"""
     try:
         prompt = f"""
