@@ -108,6 +108,8 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
         app = create_app()
         
         with app.app_context():
+            await update.message.reply_text("📄 Processing your resume...")
+            
             # Save resume file
             file = await update.message.document.get_file()
             resume_path = await save_resume(file, str(update.effective_user.id))
@@ -116,6 +118,20 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("Error processing resume. Please try again.")
                 return RESUME
 
+            # Extract skills and info
+            skills = await extract_skills(resume_path)
+            
+            # Show extracted information
+            await update.message.reply_text(
+                "📋 Extracted Information:\n\n"
+                f"🔧 Technical Skills: {', '.join(skills.get('technical_skills', []))}\n"
+                f"🤝 Soft Skills: {', '.join(skills.get('soft_skills', []))}\n"
+                f"💼 Experience: {', '.join(skills.get('experience', []))}\n"
+                f"📚 Education: {', '.join(skills.get('education', []))}\n"
+                f"🌐 Languages: {', '.join(skills.get('languages', []))}\n"
+                f"⏳ Total Years: {skills.get('total_years', 0)}"
+            )
+
             # Create new job seeker
             job_seeker = JobSeeker(
                 telegram_id=str(update.effective_user.id),
@@ -123,7 +139,8 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 phone_number=context.user_data['phone_number'],
                 resume_path=resume_path,
                 latitude=context.user_data['latitude'],
-                longitude=context.user_data['longitude']
+                longitude=context.user_data['longitude'],
+                skills=skills
             )
 
             try:
@@ -131,8 +148,7 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 db.session.commit()
                 
                 await update.message.reply_text(
-                    "Registration complete! 🎉\n"
-                    "Use /search to find jobs in your area."
+                    "✅ Registration complete! Use /search to find jobs in your area."
                 )
                 return ConversationHandler.END
                 
@@ -140,14 +156,14 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 db.session.rollback()
                 logger.error(f"Database error: {e}")
                 await update.message.reply_text(
-                    "Error saving registration. Please try again."
+                    "❌ Error saving registration. Please try again."
                 )
                 return ConversationHandler.END
 
     except Exception as e:
         logger.error(f"Error in handle_resume: {e}")
         await update.message.reply_text(
-            "Error processing registration. Please try again."
+            "❌ Error processing registration. Please try again."
         )
         return ConversationHandler.END
 
