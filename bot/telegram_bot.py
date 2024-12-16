@@ -125,10 +125,11 @@ async def start_bot():
             # Add handlers
             application.add_handler(CommandHandler("start", start))
             application.add_handler(conv_handler)
-            application.add_handler(CommandHandler("search",
-                                                   handle_job_search))
-            application.add_handler(CommandHandler("apply",
-                                                   handle_application))
+            application.add_handler(CommandHandler("search", handle_job_search))
+            application.add_handler(CommandHandler("apply", handle_application))
+
+            # Add error handler before starting polling
+            application.add_error_handler(error_handler)
 
             async def error_handler(update: Update,
                                     context: ContextTypes.DEFAULT_TYPE):
@@ -172,11 +173,8 @@ async def start_bot():
             await _instance.initialize()
             await _instance.start()
             await _instance.updater.start_polling(
-                allowed_updates=['message', 'callback_query'],
-                drop_pending_updates=True,
-                timeout=60,
-                read_timeout=60,
-                write_timeout=60
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True
             )
             logger.info("Bot successfully started and polling for updates")
             # Keep the polling running
