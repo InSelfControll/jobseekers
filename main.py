@@ -6,7 +6,7 @@ from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('httpx').setLevel(logging.ERROR)
 logging.getLogger('httpcore').setLevel(logging.ERROR) 
 logging.getLogger('telegram').setLevel(logging.ERROR)
@@ -19,6 +19,7 @@ async def run_web_server():
     app = create_app()
     config = Config()
     config.bind = ["0.0.0.0:3000"]
+    config.worker_class = "asyncio"
     return await serve(app, config)
 
 async def main():
@@ -28,8 +29,10 @@ async def main():
         app = create_app()
         with app.app_context():
             db.create_all()
+            logger.info("Database initialized")
         
         # Start both web server and bot concurrently
+        logger.info("Starting web server and bot...")
         await asyncio.gather(
             run_web_server(),
             start_bot()
