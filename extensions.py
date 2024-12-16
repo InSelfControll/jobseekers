@@ -37,7 +37,6 @@ def create_app():
         SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_NAME='session',
         SESSION_COOKIE_DOMAIN=None,
-        SESSION_COOKIE_PATH='/',
         PERMANENT_SESSION_LIFETIME=3600,
         SESSION_TYPE='filesystem',
         MIME_TYPES={
