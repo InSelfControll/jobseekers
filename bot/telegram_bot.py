@@ -140,10 +140,12 @@ async def start_bot():
                 return True
 
             # Add handlers
+            # Add handlers in specific order
+            application.add_handler(conv_handler)  # Registration conversation handler first
             application.add_handler(CommandHandler("start", start))
-            application.add_handler(conv_handler)
             application.add_handler(CommandHandler("search", handle_job_search))
             application.add_handler(CommandHandler("apply", handle_application))
+            # Default handlers last
             application.add_handler(MessageHandler(filters.COMMAND, start))  # Fallback for unknown commands
             application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))  # Handle regular messages
 

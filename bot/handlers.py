@@ -13,13 +13,21 @@ FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
     try:
-        await update.message.reply_text(
-            "Welcome to the Job Application Bot! 🎯\n"
-            "Use /register to create your profile and start applying for jobs."
+        message = (
+            "Welcome to the Job Application Bot! 🎯\n\n"
+            "Available commands:\n"
+            "/register - Create your profile\n"
+            "/search - Find jobs near you\n"
+            "/apply - Apply for a job\n"
+            "/cancel - Cancel current operation"
         )
+        await update.message.reply_text(message)
     except Exception as e:
-        logger.error(f"Error in start handler: {e}")
-        await update.message.reply_text("An error occurred. Please try again.")
+        logger.error(f"Error in start handler: {e}", exc_info=True)
+        try:
+            await update.message.reply_text("An error occurred. Please try again.")
+        except Exception as send_error:
+            logger.error(f"Failed to send error message: {send_error}")
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
