@@ -1,4 +1,3 @@
-
 import os
 import time
 from datetime import datetime, timedelta
@@ -11,13 +10,15 @@ from flask import current_app
 
 
 class SSLService:
+
     def __init__(self, domain, email):
         self.domain = domain
         self.email = email
         base_path = os.path.abspath(os.path.dirname(current_app.root_path))
         self.cert_dir = os.path.join(os.path.dirname(base_path), 'letsencrypt')
         self.webroot_path = os.path.join(base_path, 'static')
-        self.acme_path = os.path.join(self.webroot_path, '.well-known', 'acme-challenge')
+        self.acme_path = os.path.join(self.webroot_path, '.well-known',
+                                      'acme-challenge')
 
         # Ensure challenge directory exists with correct permissions
         os.makedirs(self.acme_path, exist_ok=True)
@@ -25,7 +26,10 @@ class SSLService:
         os.chmod(self.webroot_path, 0o755)
 
         # Create directories with proper permissions
-        for path in [self.cert_dir, self.webroot_path, os.path.join(self.webroot_path, '.well-known'), self.acme_path]:
+        for path in [
+                self.cert_dir, self.webroot_path,
+                os.path.join(self.webroot_path, '.well-known'), self.acme_path
+        ]:
             os.makedirs(path, exist_ok=True)
             os.chmod(path, 0o755)
 
@@ -33,46 +37,33 @@ class SSLService:
         """Generate a new Let's Encrypt SSL certificate using Cloudflare DNS challenge"""
         try:
             logging.info(f"Starting certificate generation for {self.domain}")
-            
-            # Create secrets directory
-            os.makedirs('/home/runner/secrets/', exist_ok=True)
-            
-            # Write Cloudflare credentials
+
+            # Get Cloudflare API token from Replit secrets
             cloudflare_token = os.getenv('CLOUDFLARE_API_TOKEN')
             if not cloudflare_token:
-                logging.error("Cloudflare API token not found in environment variables")
+                logging.error("Cloudflare API token not found in secrets")
                 return False, "Cloudflare API token not configured"
-                
-            config_path = '/home/runner/secrets/cloudflare.ini'
-            with open(config_path, 'w') as f:
-                f.write(f"dns_cloudflare_api_token = {cloudflare_token}\n")
-            os.chmod(config_path, 0o600)
-            
+
+            # Set token as environment variable for certbot plugin
+            os.environ['CLOUDFLARE_DNS_API_TOKEN'] = cloudflare_token
+
             logging.info("Cloudflare credentials configured")
-            
+
             cmd = [
-                'certbot', 'certonly',
-                '--dns-cloudflare',
-                '--dns-cloudflare-credentials', config_path,
-                '--non-interactive',
-                '--agree-tos',
-                '--email', self.email,
-                '-d', self.domain,
-                '--config-dir', '/home/runner/letsencrypt/',
-                '--work-dir', '/home/runner/letsencrypt/',
-                '--logs-dir', '/home/runner/letsencrypt/',
-                '--preferred-challenges', 'dns-01',
-                '-v'
+                'certbot', 'certonly', '--dns-cloudflare',
+                '--non-interactive', '--agree-tos', '--email', self.email,
+                '-d', self.domain, '--config-dir', '/home/runner/letsencrypt/',
+                '--work-dir', '/home/runner/letsencrypt/', '--logs-dir',
+                '/home/runner/letsencrypt/', '--preferred-challenges',
+                'dns-01', '-v'
             ]
 
             logging.info(f"Executing certbot command: {' '.join(cmd)}")
 
-            process = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False
-            )
+            process = subprocess.run(cmd,
+                                     capture_output=True,
+                                     text=True,
+                                     check=False)
 
             if process.stdout:
                 logging.info(f"Certbot output: {process.stdout}")
@@ -87,8 +78,10 @@ class SSLService:
             if not employer:
                 return False, "Employer not found"
 
-            cert_path = os.path.join('/home/runner/letsencrypt/live', self.domain, 'fullchain.pem')
-            key_path = os.path.join('/home/runner/letsencrypt/live', self.domain, 'privkey.pem')
+            cert_path = os.path.join('/home/runner/letsencrypt/live',
+                                     self.domain, 'fullchain.pem')
+            key_path = os.path.join('/home/runner/letsencrypt/live',
+                                    self.domain, 'privkey.pem')
 
             if not os.path.exists(cert_path) or not os.path.exists(key_path):
                 return False, "Certificate files not generated"
@@ -98,18 +91,21 @@ class SSLService:
             employer.ssl_enabled = True
             employer.ssl_expiry = self._get_cert_expiry()
             employer.domain_verified = True
-            
+
             db.session.commit()
-            logging.info("SSL certificate generated and configured successfully")
+            logging.info(
+                "SSL certificate generated and configured successfully")
             return True, "Certificate generated and configured successfully"
 
         except Exception as e:
-            logging.error(f"Certificate generation failed with error: {str(e)}")
+            logging.error(
+                f"Certificate generation failed with error: {str(e)}")
             return False, str(e)
 
     def _get_cert_expiry(self):
         """Get certificate expiry date"""
-        cert_path = os.path.join('/home/runner/letsencrypt/live', self.domain, 'cert.pem')
+        cert_path = os.path.join('/home/runner/letsencrypt/live', self.domain,
+                                 'cert.pem')
         try:
             output = subprocess.check_output(
                 ['openssl', 'x509', '-enddate', '-noout', '-in', cert_path],
