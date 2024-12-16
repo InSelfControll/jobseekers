@@ -8,13 +8,14 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logging.getLogger('httpx').setLevel(logging.ERROR)
-logging.getLogger('httpcore').setLevel(logging.ERROR)
-logging.getLogger('telegram').setLevel(logging.WARNING)
-logging.getLogger('telegram.ext').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.ERROR) 
+logging.getLogger('telegram').setLevel(logging.ERROR)
+logging.getLogger('telegram.ext').setLevel(logging.ERROR)
+logging.getLogger('bot.telegram_bot').setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def run_web_server():
