@@ -122,6 +122,23 @@ async def start_bot():
                 },
                 fallbacks=[CommandHandler("cancel", cancel)])
 
+            async def error_handler(update: Update,
+                                    context: ContextTypes.DEFAULT_TYPE):
+                error = context.error
+                logger.error(f"Update {update} caused error: {error}",
+                             exc_info=context.error)
+
+                if isinstance(error, Exception):
+                    error_message = "An unexpected error occurred. Please try again later."
+                    if update and update.message:
+                        try:
+                            await update.message.reply_text(error_message)
+                        except Exception as e:
+                            logger.error(f"Failed to send error message: {e}")
+
+                # Prevent the error from propagating
+                return True
+
             # Add handlers
             application.add_handler(CommandHandler("start", start))
             application.add_handler(conv_handler)
@@ -130,9 +147,6 @@ async def start_bot():
 
             # Add error handler before starting polling
             application.add_error_handler(error_handler)
-
-            async def error_handler(update: Update,
-                                    context: ContextTypes.DEFAULT_TYPE):
                 error = context.error
                 logger.error(f"Update {update} caused error: {error}",
                              exc_info=context.error)
