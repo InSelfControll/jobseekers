@@ -147,22 +147,6 @@ async def start_bot():
 
             # Add error handler before starting polling
             application.add_error_handler(error_handler)
-                error = context.error
-                logger.error(f"Update {update} caused error: {error}",
-                             exc_info=context.error)
-
-                if isinstance(error, Exception):
-                    error_message = "An unexpected error occurred. Please try again later."
-                    if update and update.message:
-                        try:
-                            await update.message.reply_text(error_message)
-                        except Exception as e:
-                            logger.error(f"Failed to send error message: {e}")
-
-                # Prevent the error from propagating
-                return True
-
-            application.add_error_handler(error_handler)
             _instance = application
             # Initialize bot monitoring
             bot_monitor.set_status("running")
