@@ -179,6 +179,21 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
+            # Calculate match scores for all jobs
+            job_matches = []
+            for job in nearby_jobs:
+                match_score = calculate_job_match(
+                    job_seeker.skills,
+                    {
+                        'required_skills': job.required_skills,
+                        'required_years': job.required_experience
+                    }
+                )
+                job_matches.append((job, match_score))
+            
+            # Sort by match score
+            job_matches.sort(key=lambda x: x[1], reverse=True)
+
             await update.message.reply_text(
                 f"🎉 Found {len(nearby_jobs)} jobs near you!"
             )

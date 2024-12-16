@@ -39,6 +39,63 @@
                     <tr>
                         <th>Job Title</th>
                         <th>Applicant</th>
+
+<!-- Chat Widget -->
+<div class="chat-widget" id="chatWidget">
+    <div class="chat-header">
+        <h5>Candidate Chat</h5>
+        <button class="minimize-btn" onclick="toggleChat()">-</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+let chatSocket = null;
+
+function connectChat() {
+    const employerId = '{{ current_user.id }}';
+    chatSocket = new WebSocket(`wss://${window.location.host}/ws/chat/${employerId}`);
+    
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        appendMessage(data.sender, data.message);
+    };
+}
+
+function appendMessage(sender, message) {
+    const messagesDiv = document.getElementById('chatMessages');
+    messagesDiv.innerHTML += `
+        <div class="message ${sender === 'employer' ? 'sent' : 'received'}">
+            <span>${message}</span>
+        </div>
+    `;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    if (input.value && chatSocket) {
+        chatSocket.send(JSON.stringify({
+            message: input.value,
+            sender: 'employer'
+        }));
+        input.value = '';
+    }
+}
+
+function toggleChat() {
+    const widget = document.getElementById('chatWidget');
+    widget.classList.toggle('minimized');
+}
+
+// Connect when page loads
+document.addEventListener('DOMContentLoaded', connectChat);
+</script>
+
                         <th>Status</th>
                         <th>Date</th>
                     </tr>
