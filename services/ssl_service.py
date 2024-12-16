@@ -10,6 +10,37 @@ from certbot import main as certbot_main
 from flask import current_app
 import shutil
 
+def setup_cert_renewal_check():
+    """Set up periodic SSL certificate renewal checks"""
+    from extensions import db
+    from models import Employer
+    import schedule
+    import time
+    import threading
+
+    def check_and_renew():
+        with create_app().app_context():
+            employers = Employer.query.filter_by(ssl_enabled=True).all()
+            for employer in employers:
+                if employer.sso_domain and employer.ssl_expiry:
+                    # Check if cert expires in less than 30 days
+                    if employer.ssl_expiry - timedelta(days=30) <= datetime.now():
+                        ssl_service = SSLService(employer.sso_domain, employer.email)
+                        success, message = ssl_service.generate_certificate()
+                        if success:
+                            logging.info(f"Renewed certificate for {employer.sso_domain}")
+                        else:
+                            logging.error(f"Failed to renew certificate for {employer.sso_domain}: {message}")
+
+    def run_scheduler():
+        schedule.every().day.do(check_and_renew)
+        while True:
+            schedule.run_pending()
+            time.sleep(3600)  # Check every hour
+
+    thread = threading.Thread(target=run_scheduler, daemon=True)
+    thread.start()
+
 class SSLService:
     def __init__(self, domain, email):
         self.domain = domain
