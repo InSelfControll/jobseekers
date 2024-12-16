@@ -14,24 +14,11 @@ class SSLService:
     def __init__(self, domain, email):
         self.domain = domain
         self.email = email
-        base_path = os.path.abspath(os.path.dirname(current_app.root_path))
-        self.cert_dir = os.path.join(os.path.dirname(base_path), 'letsencrypt')
-        self.webroot_path = os.path.join(base_path, 'static')
-        self.acme_path = os.path.join(self.webroot_path, '.well-known',
-                                      'acme-challenge')
-
-        # Ensure challenge directory exists with correct permissions
-        os.makedirs(self.acme_path, exist_ok=True)
-        os.chmod(self.acme_path, 0o755)
-        os.chmod(self.webroot_path, 0o755)
-
-        # Create directories with proper permissions
-        for path in [
-                self.cert_dir, self.webroot_path,
-                os.path.join(self.webroot_path, '.well-known'), self.acme_path
-        ]:
-            os.makedirs(path, exist_ok=True)
-            os.chmod(path, 0o755)
+        self.cert_dir = '/home/runner/letsencrypt'
+        
+        # Create cert directory
+        os.makedirs(self.cert_dir, exist_ok=True)
+        os.chmod(self.cert_dir, 0o755)
 
     def generate_certificate(self):
         """Generate a new Let's Encrypt SSL certificate using Cloudflare DNS challenge"""
