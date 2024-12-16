@@ -1,12 +1,14 @@
 import os
 import logging
 import asyncio
+import time
 from telegram import Update
 from telegram.ext import (ApplicationBuilder, CommandHandler, MessageHandler,
-                          ConversationHandler, filters, ContextTypes, Updater)
+                           ConversationHandler, filters, ContextTypes, Updater)
 from bot.handlers import (start, register, handle_full_name,
-                          handle_phone_number, handle_location, handle_resume,
-                          handle_job_search, handle_application, cancel)
+                           handle_phone_number, handle_location, handle_resume,
+                           handle_job_search, handle_application, cancel)
+from services.monitoring_service import bot_monitor
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -145,6 +147,8 @@ async def start_bot():
 
             application.add_error_handler(error_handler)
             _instance = application
+            #Start monitoring the bot
+            asyncio.create_task(bot_monitor(_instance))
 
         return _instance
 

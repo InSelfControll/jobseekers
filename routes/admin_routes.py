@@ -8,6 +8,9 @@ import dns.resolver
 from models import Employer
 from flask import abort
 from datetime import datetime
+import json
+from services.monitoring_service import bot_monitor
+from flask import Response, stream_with_context
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -329,6 +332,35 @@ def save_sso_settings():
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
     employer.domain_verified = False
+@admin_bp.route('/bot-monitoring')
+@login_required
+@admin_required
+def bot_monitoring():
+    return render_template('admin/bot_monitoring.html')
+
+@admin_bp.route('/bot-metrics-stream')
+@login_required
+@admin_required
+def bot_metrics_stream():
+    def generate():
+        while True:
+            metrics = bot_monitor.get_metrics()
+            data = json.dumps({
+                'status': metrics.status,
+                'uptime': metrics.uptime,
+                'message_count': metrics.message_count,
+                'error_count': metrics.error_count,
+                'memory_usage': metrics.memory_usage,
+                'cpu_usage': metrics.cpu_usage,
+                'last_message_time': metrics.last_message_time.isoformat() if metrics.last_message_time else None,
+                'recent_errors': metrics.recent_errors,
+                'response_times': metrics.response_times
+            })
+            yield f"data: {data}\n\n"
+            time.sleep(2)  # Update every 2 seconds
+
+    return Response(stream_with_context(generate()),
+                   mimetype='text/event-stream')
     db.session.commit()
     
     return jsonify({'success': True})
