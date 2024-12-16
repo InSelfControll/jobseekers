@@ -181,7 +181,8 @@ async def start_bot():
             logger.info("Bot successfully started and polling for updates")
             # Keep the polling running
             try:
-                await _instance.updater.running
+                while True:
+                    await asyncio.sleep(1)
             except Exception as e:
                 logger.error(f"Error in polling: {e}")
                 raise
