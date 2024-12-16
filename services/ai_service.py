@@ -24,7 +24,7 @@ def extract_text_from_pdf(pdf_path):
         logger.error(f"Error extracting text from PDF: {e}")
         return ""
 
-def extract_skills(resume_path):
+async def extract_skills(resume_path):
     """Extract skills from resume using AbacusAI"""
     try:
         resume_text = extract_text_from_pdf(resume_path)
