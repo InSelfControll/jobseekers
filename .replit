@@ -19,6 +19,10 @@ args = "JobSeeker Platform"
 task = "workflow.run"
 args = "SSL Certificate Renewal"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot"
+
 [[workflows.workflow]]
 name = "JobSeeker Platform"
 author = "agent"
@@ -48,8 +52,23 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python3 -c 'from services.ssl_service import setup_cert_renewal_check; setup_cert_renewal_check()'"
 
+[[workflows.workflow]]
+name = "Telegram Bot"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c 'import asyncio; from bot.telegram_bot import start_bot; asyncio.run(start_bot())'"
+
 [deployment]
 run = ["sh", "-c", "python app.py"]
+deploymentTarget = "cloudrun"
 
 [[ports]]
 localPort = 80

@@ -117,27 +117,39 @@ def verify_domain_records(domain, provider):
 def generate_ssl():
     try:
         from services.ssl_service import SSLService
+        import logging
         
         if not current_user.sso_domain:
-            return jsonify({'success': False, 'error': 'Please configure domain first'})
+            return jsonify({'success': False, 'error': 'Please configure and verify domain first'})
             
+        if not current_user.domain_verified:
+            return jsonify({'success': False, 'error': 'Domain must be verified before generating SSL certificate'})
+            
+        logging.info(f"Starting SSL certificate generation for domain: {current_user.sso_domain}")
+        
         ssl_service = SSLService(current_user.sso_domain, current_user.email)
         success, message = ssl_service.generate_certificate()
         
         if success:
-            # Update UI elements after successful SSL setup
+            # Get certificate expiry for display
+            expiry = current_user.ssl_expiry.strftime('%Y-%m-%d') if current_user.ssl_expiry else 'Unknown'
+            
+            logging.info(f"SSL certificate generated successfully for {current_user.sso_domain}")
             return jsonify({
                 'success': True,
                 'message': message,
                 'domain': current_user.sso_domain,
-                'ssl_enabled': True
+                'ssl_enabled': True,
+                'cert_expiry': expiry
             })
         
+        logging.error(f"SSL certificate generation failed for {current_user.sso_domain}: {message}")
         return jsonify({
             'success': False,
             'message': message
         })
     except Exception as e:
+        logging.error(f"Error in SSL certificate generation: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/save-domain', methods=['POST'])
