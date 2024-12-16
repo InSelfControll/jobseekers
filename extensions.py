@@ -37,8 +37,6 @@ def create_app():
                       SESSION_FILE_DIR='flask_session',
                       SESSION_FILE_THRESHOLD=500,
                       PERMANENT_SESSION_LIFETIME=3600,
-                      SESSION_COOKIE_SAMESITE='Lax',
-                      SESSION_COOKIE_HTTPONLY=True,
                       MIME_TYPES={
                           '.js': 'application/javascript',
                           '.css': 'text/css',
