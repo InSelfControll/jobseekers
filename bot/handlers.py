@@ -97,72 +97,57 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return LOCATION
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the resume upload and complete registration"""
-    from app import create_app
-    app = create_app()
-    
+    """Handle resume upload and complete registration"""
     try:
-        if not update.message.document:
-            await update.message.reply_text("Please send your resume as a PDF file.")
-            return RESUME
+        from services.file_service import save_resume
+        from services.ai_service import extract_skills
+        from models import JobSeeker
+        from extensions import db
+        from app import create_app
 
+        app = create_app()
+        
         with app.app_context():
+            # Save resume file
             file = await update.message.document.get_file()
-            resume_path = await save_resume(file, update.effective_user.id)
+            resume_path = await save_resume(file, str(update.effective_user.id))
             
-            # First extract skills
-            await update.message.reply_text("Processing your resume...")
-            skills = await extract_skills(resume_path)
-            
-            if not skills:
+            if not resume_path:
                 await update.message.reply_text("Error processing resume. Please try again.")
                 return RESUME
 
-            # First check if user already exists
-            existing_seeker = JobSeeker.query.filter_by(telegram_id=str(update.effective_user.id)).first()
-            if existing_seeker:
-                # Update existing record
-                existing_seeker.full_name = context.user_data['full_name']
-                existing_seeker.phone_number = context.user_data['phone_number']
-                existing_seeker.resume_path = resume_path
-                existing_seeker.latitude = context.user_data['latitude']
-                existing_seeker.longitude = context.user_data['longitude']
-                existing_seeker.skills = skills
-                job_seeker = existing_seeker
-            else:
-                # Create new record
-                job_seeker = JobSeeker(
-                    telegram_id=str(update.effective_user.id),
-                    full_name=context.user_data['full_name'],
-                    phone_number=context.user_data['phone_number'],
-                    resume_path=resume_path,
-                    latitude=context.user_data['latitude'],
-                    longitude=context.user_data['longitude'],
-                    skills=skills
-                )
-            
+            # Create new job seeker
+            job_seeker = JobSeeker(
+                telegram_id=str(update.effective_user.id),
+                full_name=context.user_data['full_name'],
+                phone_number=context.user_data['phone_number'],
+                resume_path=resume_path,
+                latitude=context.user_data['latitude'],
+                longitude=context.user_data['longitude']
+            )
+
             try:
                 db.session.add(job_seeker)
                 db.session.commit()
-
+                
                 await update.message.reply_text(
                     "Registration complete! 🎉\n"
-                    f"Found {len(skills.get('technical_skills', []))} technical skills and {len(skills.get('soft_skills', []))} soft skills.\n"
                     "Use /search to find jobs in your area."
                 )
                 return ConversationHandler.END
+                
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Database error: {e}")
                 await update.message.reply_text(
-                    "There was an error completing your registration. Please try again."
+                    "Error saving registration. Please try again."
                 )
                 return ConversationHandler.END
-            
+
     except Exception as e:
-        logging.error(f"Error in handle_resume: {e}")
+        logger.error(f"Error in handle_resume: {e}")
         await update.message.reply_text(
-            "Sorry, an error occurred while processing your registration. Please try again."
+            "Error processing registration. Please try again."
         )
         return ConversationHandler.END
 
@@ -388,3 +373,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Registration cancelled. Use /register to start again."
     )
     return ConversationHandler.END
+
+def calculate_job_match(seeker_skills, job_requirements):
+    """Calculates a match score between a job seeker's skills and a job's requirements."""
+    seeker_technical = seeker_skills.get('technical_skills', [])
+    seeker_soft = seeker_skills.get('soft_skills', [])
+    required_technical = job_requirements.get('required_skills', [])
+    required_experience = job_requirements.get('required_years', 0)
+
+    #Simple matching score
+    technical_match = len(set(seeker_technical) & set(required_technical))
+    soft_match = len(set(seeker_soft) & set(required_technical)) #Allow soft skills to match technical as well
+
+    return technical_match + soft_match #+ (10 if seeker_experience >= required_experience else 0)
