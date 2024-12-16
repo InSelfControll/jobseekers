@@ -144,12 +144,19 @@ async def start_bot():
             application.add_handler(conv_handler)
             application.add_handler(CommandHandler("search", handle_job_search))
             application.add_handler(CommandHandler("apply", handle_application))
+            application.add_handler(MessageHandler(filters.COMMAND, start))  # Fallback for unknown commands
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))  # Handle regular messages
 
             # Add error handler before starting polling
             application.add_error_handler(error_handler)
             _instance = application
             # Initialize bot monitoring
             bot_monitor.set_status("running")
+
+            # Send ready message
+            async def post_init(app: Application) -> None:
+                logger.info("Bot is ready and responding to messages")
+            application.post_init = post_init
             # Add message handler wrapper
             original_process_update = _instance.process_update
 
