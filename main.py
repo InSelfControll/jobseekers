@@ -11,7 +11,6 @@ app = create_app()
 async def run_web_server():
     config = Config()
     config.bind = ["0.0.0.0:3000"]
-    config.use_reloader = True
     config.use_reloader = False
     await serve(app, config)
 
