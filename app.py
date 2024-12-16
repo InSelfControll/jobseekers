@@ -80,4 +80,8 @@ def create_app():
             else:
                 g.custom_domain = False
 
+    if __name__ == '__main__':
+        with app.app_context():
+            db.create_all()  # Create database tables
+        app.run(host='0.0.0.0', port=80)
     return app
