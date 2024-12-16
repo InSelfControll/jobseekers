@@ -37,6 +37,9 @@ def create_app():
         SESSION_FILE_THRESHOLD=500,
         PERMANENT_SESSION_LIFETIME=3600,
         SESSION_FILE_MODE=0o600,
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
         MIME_TYPES={
             '.js': 'application/javascript',
             '.css': 'text/css',
