@@ -85,14 +85,21 @@ def create_app():
     def handle_custom_domain():
         host = request.headers.get('Host', '').lower()
         if host != app.config['PRIMARY_DOMAIN']:
-            from models import Employer #Import here to avoid circular import
+            from models import Employer
             employer = Employer.query.filter_by(sso_domain=host, domain_verified=True).first()
             if employer:
                 g.custom_domain = True
                 g.domain_config = {
                     'sso_provider': employer.sso_provider,
-                    'sso_config': employer.sso_config
+                    'sso_config': employer.sso_config,
+                    'ssl_enabled': employer.ssl_enabled,
+                    'domain': employer.sso_domain
                 }
+                if employer.ssl_enabled:
+                    app.config.update(
+                        SSL_CERTIFICATE=f'/home/runner/letsencrypt/live/{employer.sso_domain}/fullchain.pem',
+                        SSL_PRIVATE_KEY=f'/home/runner/letsencrypt/live/{employer.sso_domain}/privkey.pem'
+                    )
             else:
                 g.custom_domain = False
 

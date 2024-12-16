@@ -41,8 +41,14 @@ app = create_app()
 async def run_web_server():
     """Run the web server"""
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = ["0.0.0.0:443"]
     config.use_reloader = False
+    
+    # Check if SSL is configured for the domain
+    if app.config.get('SSL_CERTIFICATE') and app.config.get('SSL_PRIVATE_KEY'):
+        config.certfile = app.config['SSL_CERTIFICATE']
+        config.keyfile = app.config['SSL_PRIVATE_KEY']
+    
     await serve(app, config)
 
 
