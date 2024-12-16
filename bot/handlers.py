@@ -1,3 +1,4 @@
+
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler
 from models import JobSeeker, Job, Application
@@ -11,38 +12,17 @@ FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
-    try:
-        message = (
-            "Welcome to the Job Application Bot! 🎯\n\n"
-            "Available commands:\n"
-            "/register - Create your profile\n"
-            "/search - Find jobs near you\n"
-            "/apply - Apply for a job\n"
-            "/cancel - Cancel current operation"
-        )
-        await update.message.reply_text(message)
-    except Exception as e:
-        logger.error(f"Error in start handler: {e}", exc_info=True)
-        try:
-            await update.message.reply_text("An error occurred. Please try again.")
-        except Exception as send_error:
-            logger.error(f"Failed to send error message: {send_error}")
+    await update.message.reply_text(
+        "Welcome to the Job Application Bot! 🎯\n"
+        "Use /register to create your profile and start applying for jobs."
+    )
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
-    try:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Let's create your profile! First, please send me your full name."
-        )
-        return FULL_NAME
-    except Exception as e:
-        logger.error(f"Error in register handler: {e}")
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="An error occurred. Please try again."
-        )
-        return ConversationHandler.END
+    await update.message.reply_text(
+        "Let's create your profile! First, please send me your full name."
+    )
+    return FULL_NAME
 
 async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the full name input"""
@@ -97,73 +77,48 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return LOCATION
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle resume upload and complete registration"""
+    """Handle the resume upload"""
+    from app import create_app
+    app = create_app()
+    
     try:
-        from services.file_service import save_resume
-        from services.ai_service import extract_skills
-        from models import JobSeeker
-        from extensions import db
-        from app import create_app
+        if not update.message.document:
+            await update.message.reply_text("Please send your resume as a PDF file.")
+            return ConversationHandler.END
 
-        app = create_app()
-        
         with app.app_context():
-            await update.message.reply_text("📄 Processing your resume...")
-            
-            # Save resume file
             file = await update.message.document.get_file()
-            resume_path = await save_resume(file, str(update.effective_user.id))
+            resume_path = await save_resume(file, update.effective_user.id)
             
-            if not resume_path:
-                await update.message.reply_text("Error processing resume. Please try again.")
-                return RESUME
-
-            # Extract skills and info
-            skills = await extract_skills(resume_path)
+            # Extract skills using AI
+            skills = extract_skills(resume_path)
             
-            # Show extracted information
-            await update.message.reply_text(
-                "📋 Extracted Information:\n\n"
-                f"🔧 Technical Skills: {', '.join(skills.get('technical_skills', []))}\n"
-                f"🤝 Soft Skills: {', '.join(skills.get('soft_skills', []))}\n"
-                f"💼 Experience: {', '.join(skills.get('experience', []))}\n"
-                f"📚 Education: {', '.join(skills.get('education', []))}\n"
-                f"🌐 Languages: {', '.join(skills.get('languages', []))}\n"
-                f"⏳ Total Years: {skills.get('total_years', 0)}"
-            )
-
-            # Create new job seeker
+            # Create job seeker profile
             job_seeker = JobSeeker(
                 telegram_id=str(update.effective_user.id),
                 full_name=context.user_data['full_name'],
                 phone_number=context.user_data['phone_number'],
                 resume_path=resume_path,
+                skills=skills,
                 latitude=context.user_data['latitude'],
-                longitude=context.user_data['longitude'],
-                skills=skills
+                longitude=context.user_data['longitude']
             )
-
-            try:
-                db.session.add(job_seeker)
-                db.session.commit()
-                
-                await update.message.reply_text(
-                    "✅ Registration complete! Use /search to find jobs in your area."
-                )
-                return ConversationHandler.END
-                
-            except Exception as e:
-                db.session.rollback()
-                logger.error(f"Database error: {e}")
-                await update.message.reply_text(
-                    "❌ Error saving registration. Please try again."
-                )
-                return ConversationHandler.END
-
-    except Exception as e:
-        logger.error(f"Error in handle_resume: {e}")
+            
+            db.session.add(job_seeker)
+            db.session.commit()
+            logging.info(f"Successfully registered job seeker: {job_seeker.telegram_id}")
+            
+            await update.message.reply_text(
+                "Registration complete! 🎉\n"
+                "Use /search to find jobs in your area."
+            )
+            return ConversationHandler.END
+    except Exception as db_error:
+        if 'db' in locals():
+            db.session.rollback()
+        logging.error(f"Database error in handle_resume: {db_error}")
         await update.message.reply_text(
-            "❌ Error processing registration. Please try again."
+            "Error saving your profile. Please try registering again with /register"
         )
         return ConversationHandler.END
 
@@ -173,31 +128,15 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     app = create_app()
     
     try:
+        radius = float(context.args[0]) if context.args else 15
+    except (ValueError, IndexError):
+        radius = 15
+    
+    try:
         with app.app_context():
-            # First check if user exists with proper string conversion
-            telegram_id = str(update.effective_user.id)
             job_seeker = JobSeeker.query.filter_by(
-                telegram_id=telegram_id
+                telegram_id=str(update.effective_user.id)
             ).first()
-
-            if not job_seeker:
-                await update.message.reply_text(
-                    "⚠️ You need to register first! Please use /register to create your profile."
-                )
-                return
-            
-            if not job_seeker:
-                await update.message.reply_text(
-                    "⚠️ Please register first using /register command before searching for jobs.\n"
-                    "This will help us find jobs matching your profile!"
-                )
-                return
-                
-            # Get search radius from command arguments
-            try:
-                radius = float(context.args[0]) if context.args else 15
-            except (ValueError, IndexError):
-                radius = 15
             
             if not job_seeker:
                 await update.message.reply_text(
@@ -226,27 +165,11 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
-            # Calculate match scores for all jobs
-            job_matches = []
-            for job in nearby_jobs:
-                match_score = calculate_job_match(
-                    job_seeker.skills,
-                    {
-                        'required_skills': job.required_skills,
-                        'required_years': job.required_experience
-                    }
-                )
-                job_matches.append((job, match_score))
-            
-            # Sort by match score
-            job_matches.sort(key=lambda x: x[1], reverse=True)
-
             await update.message.reply_text(
                 f"🎉 Found {len(nearby_jobs)} jobs near you!"
             )
-
+            
             for job in nearby_jobs[:5]:  # Limit to 5 jobs per search
-                # Load employer relationship within context
                 employer_name = db.session.merge(job).employer.company_name
                 await update.message.reply_text(
                     f"🏢 *{job.title}*\n"
@@ -262,36 +185,7 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"🔍 {len(nearby_jobs) - 5} more jobs available.\n"
                     "Use /search again to see more results!"
                 )
-            return
-            
-        await update.message.reply_text(
-            f"😔 No jobs found within {radius}km of your location.\n"
-            "We'll notify you when new positions become available!\n\n"
-            "💡 Tip: Try expanding your search radius using /search <radius>\n"
-            "Example: /search 25 to search within 25km"
-        )
-        return
-
-        await update.message.reply_text(
-            f"🎉 Found {len(nearby_jobs)} jobs near you!"
-        )
-        
-        for job in nearby_jobs[:5]:  # Limit to 5 jobs per search
-            await update.message.reply_text(
-                f"🏢 *{job.title}*\n"
-                f"🏗 _{job.employer.company_name}_\n"
-                f"📍 {job.location} ({job.distance:.1f}km away)\n"
-                f"💼 {job.description[:150]}...\n\n"
-                f"📝 To apply, use /apply {job.id}",
-                parse_mode='Markdown'
-            )
-            
-        if len(nearby_jobs) > 5:
-            await update.message.reply_text(
-                f"🔍 {len(nearby_jobs) - 5} more jobs available.\n"
-                "Use /search again to see more results!"
-            )
-            
+                
     except Exception as e:
         logging.error(f"Error in handle_job_search: {e}")
         await update.message.reply_text(
@@ -389,16 +283,3 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Registration cancelled. Use /register to start again."
     )
     return ConversationHandler.END
-
-def calculate_job_match(seeker_skills, job_requirements):
-    """Calculates a match score between a job seeker's skills and a job's requirements."""
-    seeker_technical = seeker_skills.get('technical_skills', [])
-    seeker_soft = seeker_skills.get('soft_skills', [])
-    required_technical = job_requirements.get('required_skills', [])
-    required_experience = job_requirements.get('required_years', 0)
-
-    #Simple matching score
-    technical_match = len(set(seeker_technical) & set(required_technical))
-    soft_match = len(set(seeker_soft) & set(required_technical)) #Allow soft skills to match technical as well
-
-    return technical_match + soft_match #+ (10 if seeker_experience >= required_experience else 0)
