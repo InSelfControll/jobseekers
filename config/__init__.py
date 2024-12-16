@@ -1,5 +1,5 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class Config:
@@ -12,4 +12,4 @@ class Config:
     WTF_CSRF_SECRET_KEY: str = "your-csrf-secret-key"  # Change in production
     WTF_CSRF_TIME_LIMIT: int = 3600
     WTF_CSRF_SSL_STRICT: bool = True
-    WTF_CSRF_METHODS: set = {'POST', 'PUT', 'PATCH', 'DELETE'}
+    WTF_CSRF_METHODS: set = field(default_factory=lambda: {'POST', 'PUT', 'PATCH', 'DELETE'})
