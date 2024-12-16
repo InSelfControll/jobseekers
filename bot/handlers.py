@@ -119,14 +119,26 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 longitude=context.user_data['longitude']
             )
             
-            db.session.add(job_seeker)
-            db.session.commit()
+            try:
+                db.session.add(job_seeker)
+                db.session.commit()
+                
+                # Extract skills from resume after saving
+                job_seeker.skills = await extract_skills(resume_path)
+                db.session.commit()
 
-            await update.message.reply_text(
-                "Registration complete! 🎉\n"
-                "Use /search to find jobs in your area."
-            )
-            return ConversationHandler.END
+                await update.message.reply_text(
+                    "Registration complete! 🎉\n"
+                    "Use /search to find jobs in your area."
+                )
+                return ConversationHandler.END
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Database error: {e}")
+                await update.message.reply_text(
+                    "There was an error completing your registration. Please try again."
+                )
+                return ConversationHandler.END
             
     except Exception as e:
         logging.error(f"Error in handle_resume: {e}")
