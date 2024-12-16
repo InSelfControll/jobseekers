@@ -36,7 +36,8 @@ def create_app():
                       SESSION_TYPE='filesystem',
                       SESSION_FILE_DIR='flask_session',
                       SESSION_FILE_THRESHOLD=500,
-                      PERMANENT_SESSION_LIFETIME=3600,
+                      PERMANENT_SESSION_LIFETIME=1209600,  # 14 days in seconds
+                      SESSION_PERMANENT=True,
                       MIME_TYPES={
                           '.js': 'application/javascript',
                           '.css': 'text/css',

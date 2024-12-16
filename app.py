@@ -17,6 +17,8 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
+    app.permanent_session_lifetime = 1209600  # 14 days in seconds
+    app.config['SESSION_PERMANENT'] = True
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
