@@ -21,24 +21,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "/apply - Apply for a job\n"
             "/cancel - Cancel current operation"
         )
-        await update.message.reply_text(message)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message
+        )
     except Exception as e:
         logger.error(f"Error in start handler: {e}", exc_info=True)
         try:
-            await update.message.reply_text("An error occurred. Please try again.")
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="An error occurred. Please try again."
+            )
         except Exception as send_error:
             logger.error(f"Failed to send error message: {send_error}")
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
     try:
-        await update.message.reply_text(
-            "Let's create your profile! First, please send me your full name."
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Let's create your profile! First, please send me your full name."
         )
         return FULL_NAME
     except Exception as e:
         logger.error(f"Error in register handler: {e}")
-        await update.message.reply_text("An error occurred. Please try again.")
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="An error occurred. Please try again."
+        )
         return ConversationHandler.END
 
 async def handle_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
