@@ -17,7 +17,15 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
-    csrf = CSRFProtect(app)
+    
+    # Initialize CSRF protection
+    csrf = CSRFProtect()
+    csrf.init_app(app)
+    
+    # Ensure CSRF token is available in all templates
+    @app.context_processor
+    def inject_csrf_token():
+        return dict(csrf_token=csrf._get_token())
     
     @app.after_request
     def add_security_headers(response):
@@ -30,7 +38,10 @@ def create_app():
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
-        return jsonify({'error': 'CSRF token validation failed'}), 400
+        if request.is_xhr:
+            return jsonify({'error': 'CSRF token validation failed', 'code': 'CSRF_ERROR'}), 400
+        flash('Security validation failed. Please try again.', 'error')
+        return redirect(url_for('auth.login'))
 
     # Register blueprints
     app.register_blueprint(auth_bp)
