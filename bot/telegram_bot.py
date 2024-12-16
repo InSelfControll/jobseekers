@@ -2,9 +2,11 @@ import os
 import logging
 import asyncio
 import time
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler,
+    ConversationHandler, CallbackContext, filters
+)
 from telegram import Update
-from telegram.ext import (ApplicationBuilder, CommandHandler, MessageHandler,
-                           ConversationHandler, filters, ContextTypes, Updater)
 from bot.handlers import (start, register, handle_full_name,
                            handle_phone_number, handle_location, handle_resume,
                            handle_job_search, handle_application, cancel)
@@ -147,8 +149,23 @@ async def start_bot():
 
             application.add_error_handler(error_handler)
             _instance = application
-            #Start monitoring the bot
-            asyncio.create_task(bot_monitor(_instance))
+            # Initialize bot monitoring
+            bot_monitor.set_status("running")
+            # Add message handler wrapper
+            original_process_update = _instance.process_update
+            
+            async def monitored_process_update(update: Update, context: CallbackContext):
+                start_time = time.time()
+                try:
+                    result = await original_process_update(update, context)
+                    execution_time = time.time() - start_time
+                    bot_monitor.record_message(execution_time)
+                    return result
+                except Exception as e:
+                    bot_monitor.record_error(str(e))
+                    raise
+                    
+            _instance.process_update = monitored_process_update
 
         return _instance
 
