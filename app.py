@@ -21,6 +21,8 @@ def create_app():
     app.permanent_session_lifetime = timedelta(days=14)
     app.config['SESSION_PERMANENT'] = True
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_FILE_DIR'] = 'flask_session'
+    app.config['SESSION_FILE_THRESHOLD'] = 500
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
