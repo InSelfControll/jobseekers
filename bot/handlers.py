@@ -1,4 +1,3 @@
-
 import logging
 from datetime import datetime
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, error as telegram_error
@@ -95,10 +94,16 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return LOCATION
 
 async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the resume upload with proper async database operations"""
+    """Handle the resume upload with proper database operations"""
     from app import create_app
-    from extensions import async_session
+    from extensions import db
     logger = logging.getLogger(__name__)
+    
+    app = create_app()
+    if not app:
+        logger.error("Failed to create application context")
+        await update.message.reply_text("An error occurred. Please try again later.")
+        return ConversationHandler.END
     
     try:
         # Initial validation
@@ -124,89 +129,69 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return ConversationHandler.END
 
-        # Create app context
-        app = create_app()
-        async with app.app_context():
+        # Save resume file
+        file = await update.message.document.get_file()
+        logger.info(f"Got file object for user {update.effective_user.id}")
+        resume_path = await save_resume(file, update.effective_user.id)
+        logger.info(f"Resume saved at {resume_path}")
+        
+        # Extract skills with better error handling
+        skills = {"default_skills": ["general"]}  # Default skills
+        try:
+            extracted_skills = await extract_skills(resume_path)
+            if extracted_skills:
+                if isinstance(extracted_skills, str):
+                    skills = {"extracted_skills": [extracted_skills]}
+                elif isinstance(extracted_skills, (list, dict)):
+                    skills = extracted_skills
+                logger.info(f"Skills extracted successfully: {skills}")
+        except Exception as skill_error:
+            logger.error(f"Error extracting skills: {str(skill_error)}")
+            # Continue with default skills
+
+        # Database operations
+        with app.app_context():
             try:
-                # Save resume file
-                file = await update.message.document.get_file()
-                logger.info(f"Got file object for user {update.effective_user.id}")
-                resume_path = await save_resume(file, update.effective_user.id)
-                logger.info(f"Resume saved at {resume_path}")
+                # Check for existing profile
+                existing_profile = JobSeeker.query.filter_by(
+                    telegram_id=str(update.effective_user.id)
+                ).first()
                 
-                # Extract skills with better error handling
-                skills = {"default_skills": ["general"]}  # Default skills
-                try:
-                    extracted_skills = await extract_skills(resume_path)
-                    if extracted_skills:
-                        if isinstance(extracted_skills, str):
-                            skills = {"extracted_skills": [extracted_skills]}
-                        elif isinstance(extracted_skills, (list, dict)):
-                            skills = extracted_skills
-                        logger.info(f"Skills extracted successfully: {skills}")
-                except Exception as skill_error:
-                    logger.error(f"Error extracting skills: {str(skill_error)}")
-                    # Continue with default skills
-                
-                # Database operations with proper async handling
-                try:
-                    async with async_session() as session:
-                        # Check for existing profile
-                        result = await session.execute(
-                            JobSeeker.__table__.select().where(
-                                JobSeeker.telegram_id == str(update.effective_user.id)
-                            )
-                        )
-                        existing_profile = result.first()
-                        
-                        if existing_profile:
-                            logger.info(f"Updating existing profile for user {update.effective_user.id}")
-                            update_values = {
-                                'full_name': context.user_data['full_name'],
-                                'phone_number': context.user_data['phone_number'],
-                                'resume_path': resume_path,
-                                'skills': skills,
-                                'latitude': context.user_data['latitude'],
-                                'longitude': context.user_data['longitude']
-                            }
-                            await session.execute(
-                                JobSeeker.__table__.update()
-                                .where(JobSeeker.telegram_id == str(update.effective_user.id))
-                                .values(**update_values)
-                            )
-                        else:
-                            logger.info(f"Creating new profile for user {update.effective_user.id}")
-                            new_job_seeker = JobSeeker(
-                                telegram_id=str(update.effective_user.id),
-                                full_name=context.user_data['full_name'],
-                                phone_number=context.user_data['phone_number'],
-                                resume_path=resume_path,
-                                skills=skills,
-                                latitude=context.user_data['latitude'],
-                                longitude=context.user_data['longitude']
-                            )
-                            session.add(new_job_seeker)
-                        
-                        await session.commit()
-                        logger.info(f"Successfully saved profile for user {update.effective_user.id}")
-                    
-                    await update.message.reply_text(
-                        "Registration complete! 🎉\n"
-                        "Use /search to find jobs in your area."
+                if existing_profile:
+                    logger.info(f"Updating existing profile for user {update.effective_user.id}")
+                    existing_profile.full_name = context.user_data['full_name']
+                    existing_profile.phone_number = context.user_data['phone_number']
+                    existing_profile.resume_path = resume_path
+                    existing_profile.skills = skills
+                    existing_profile.latitude = context.user_data['latitude']
+                    existing_profile.longitude = context.user_data['longitude']
+                else:
+                    logger.info(f"Creating new profile for user {update.effective_user.id}")
+                    new_job_seeker = JobSeeker(
+                        telegram_id=str(update.effective_user.id),
+                        full_name=context.user_data['full_name'],
+                        phone_number=context.user_data['phone_number'],
+                        resume_path=resume_path,
+                        skills=skills,
+                        latitude=context.user_data['latitude'],
+                        longitude=context.user_data['longitude']
                     )
-                    return ConversationHandler.END
-                    
-                except Exception as db_error:
-                    logger.error(f"Database error: {str(db_error)}")
-                    await db.session.rollback()
-                    raise
-                    
-            except Exception as inner_error:
-                logger.error(f"Inner error processing resume: {str(inner_error)}")
-                if 'db' in locals():
-                    await db.session.rollback()
-                raise
+                    db.session.add(new_job_seeker)
                 
+                db.session.commit()
+                logger.info(f"Successfully saved profile for user {update.effective_user.id}")
+                
+                await update.message.reply_text(
+                    "Registration complete! 🎉\n"
+                    "Use /search to find jobs in your area."
+                )
+                return ConversationHandler.END
+                
+            except Exception as db_error:
+                logger.error(f"Database error: {str(db_error)}")
+                db.session.rollback()
+                raise
+                    
     except Exception as e:
         logger.error(f"Error in handle_resume for user {update.effective_user.id}: {str(e)}")
         await update.message.reply_text(
@@ -360,8 +345,7 @@ async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 f"Your cover letter has been generated based on your skills.\n"
                 "We'll notify you of any updates from the employer!"
             )
-            return
-        
+            
     except ValueError:
         await update.message.reply_text(
             "❌ Invalid job ID. Please use a number.\n"
@@ -380,6 +364,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Registration cancelled. Use /register to start again."
     )
     return ConversationHandler.END
+
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Centralized error handler for bot updates"""
     logger.error(f"Update {update} caused error {context.error}")

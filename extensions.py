@@ -25,8 +25,32 @@ migrate = Migrate()
 login_manager = LoginManager()
 socketio = SocketIO(cors_allowed_origins="*", async_mode='asgi', manage_session=False)
 
-# Create async session factory
-async_session = db.create_async_session()
+# Configure async session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import sessionmaker
+
+def setup_async_session(app):
+    """Create async session factory after app is created"""
+    try:
+        database_url = app.config['SQLALCHEMY_DATABASE_URI']
+        if not database_url.startswith('postgresql+asyncpg://'):
+            database_url = database_url.replace('postgresql://', 'postgresql+asyncpg://')
+        
+        engine = create_async_engine(
+            database_url,
+            echo=True,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=20
+        )
+        return async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
+    except Exception as e:
+        logger.error(f"Failed to setup async session: {str(e)}")
+        raise
 
 def init_db(app):
     """Initialize database with SQLAlchemy and Flask-Migrate"""

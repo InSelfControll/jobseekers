@@ -1,6 +1,7 @@
 from flask import Flask
-from flask_migrate import upgrade
+from flask_migrate import Migrate, upgrade
 from app import create_app
+from extensions import db
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +11,7 @@ def run_migrations():
     """Run database migrations programmatically"""
     try:
         app = create_app()
+        Migrate(app, db)
         with app.app_context():
             logger.info("Starting database migration...")
             upgrade()

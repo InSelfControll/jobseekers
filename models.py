@@ -3,13 +3,22 @@ from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON
 
-class Employer(UserMixin, db.Model):
-    __tablename__ = 'employer'
+class Base(db.Model):
+    """Base model class for all entities"""
+    __abstract__ = True
+
+    @classmethod
+    def __declare_last__(cls):
+        """Called after mappings are configured"""
+        pass
+
+class Employer(UserMixin, Base):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     company_name = db.Column(db.String(120), nullable=False)
     sso_domain = db.Column(db.String(255), unique=True)
     sso_provider = db.Column(db.String(50))
+    sso_config = db.Column(JSON)
     company_domain = db.Column(db.String(120))
     password_hash = db.Column(db.String(256))
     is_admin = db.Column(db.Boolean, default=False)
@@ -26,8 +35,7 @@ class Employer(UserMixin, db.Model):
     domain_verified = db.Column(db.Boolean, default=False)
     jobs = db.relationship('Job', backref='employer', lazy='select')
 
-class Job(db.Model):
-    __tablename__ = 'job'
+class Job(Base):
     id = db.Column(db.Integer, primary_key=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'), nullable=False)
     title = db.Column(db.String(128), nullable=False)
@@ -39,8 +47,7 @@ class Job(db.Model):
     status = db.Column(db.String(20), default='active')
     applications = db.relationship('Application', backref='job', lazy='select')
 
-class JobSeeker(db.Model):
-    __tablename__ = 'job_seeker'
+class JobSeeker(Base):
     id = db.Column(db.Integer, primary_key=True)
     telegram_id = db.Column(db.String(128), unique=True, nullable=False)
     full_name = db.Column(db.String(128), nullable=False)
@@ -51,10 +58,11 @@ class JobSeeker(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    applications = db.relationship('Application', backref='job_seeker', lazy='select')
+    applications = db.relationship('Application', 
+                               backref=db.backref('job_seeker', lazy='select'),
+                               lazy='select')
 
-class Application(db.Model):
-    __tablename__ = 'application'
+class Application(Base):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
     job_seeker_id = db.Column(db.Integer, db.ForeignKey('job_seeker.id'), nullable=False)
@@ -63,8 +71,7 @@ class Application(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship('Message', backref='application', lazy='select')
 
-class Message(db.Model):
-    __tablename__ = 'message'
+class Message(Base):
     id = db.Column(db.Integer, primary_key=True)
     application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
     sender_type = db.Column(db.String(20))  # 'employer' or 'job_seeker'
