@@ -37,15 +37,17 @@ def create_app():
         SESSION_TYPE='filesystem',
         SESSION_FILE_DIR='flask_session',
         SESSION_FILE_THRESHOLD=500,
-        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SECURE=False,  # Set to False for development
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Lax'
+        SESSION_COOKIE_SAMESITE='Lax',
+        WTF_CSRF_TIME_LIMIT=3600,
+        WTF_CSRF_SSL_STRICT=False  # Set to False for development
     )
     
     Session(app)
     
     # Initialize CSRF protection
-    csrf = CSRFProtect()
+    csrf = CSRFProtect(app)
     csrf.init_app(app)
     
     # Ensure CSRF token is available in all templates
