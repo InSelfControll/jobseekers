@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins="*", async_mode='asgi')
 
 def init_db(app):
     """Initialize database with SQLAlchemy"""

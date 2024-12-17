@@ -10,7 +10,9 @@ from hypercorn.asyncio import serve
 app = create_app()
 
 async def run_web_server():
-    socketio.run(app, host='0.0.0.0', port=3000, allow_unsafe_werkzeug=True)
+    config = Config()
+    config.bind = ["0.0.0.0:3000"]
+    await serve(app, config)
 
 async def run_telegram_bot():
     try:
