@@ -31,11 +31,11 @@ args = "JobSeeker Platform"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
+args = "Telegram Bot"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Telegram Bot"
+args = "Flask Server"
 
 [[workflows.workflow]]
 name = "JobSeeker Platform"
@@ -53,21 +53,6 @@ args = "hypercorn 'app:create_app()' --bind 0.0.0.0:5000"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m hypercorn app:create_app --bind 0.0.0.0:5000"
-waitForPort = 5000
-
-[[workflows.workflow]]
 name = "Telegram Bot"
 author = "agent"
 
@@ -80,3 +65,18 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 -m bot.telegram_bot"
+
+[[workflows.workflow]]
+name = "Flask Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m hypercorn 'app:create_app()' --bind 0.0.0.0:5000"
+waitForPort = 5000

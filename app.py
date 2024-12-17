@@ -1,9 +1,10 @@
 
+import logging
 from datetime import timedelta
 from flask import Flask, redirect, url_for, jsonify, request, g, send_from_directory
 from flask_session import Session
 from flask_wtf.csrf import CSRFProtect, CSRFError
-from extensions import db, login_manager, logger
+from extensions import db, login_manager
 from routes.auth_routes import auth_bp
 from routes.employer_routes import employer_bp
 from routes.job_routes import job_bp
@@ -13,6 +14,7 @@ from models import Employer
 import os
 
 def create_app():
+    """Create and configure the Flask application."""
     app = Flask(__name__)
     app.config.from_object('config.Config')
     
@@ -20,6 +22,7 @@ def create_app():
     app.config['PREFERRED_URL_SCHEME'] = 'https'
     app.config['SERVER_NAME'] = None  # Let Hypercorn handle the binding
     app.config['APPLICATION_ROOT'] = '/'
+    app.config['DEBUG'] = True  # Enable debug mode for better error tracking
     
     # Enable debug logging
     if app.debug:
