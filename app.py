@@ -1,6 +1,7 @@
 
 from datetime import timedelta
 from flask import Flask, redirect, url_for, jsonify, request, g, send_from_directory
+from flask_session import Session
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from extensions import db, login_manager, logger
 from routes.auth_routes import auth_bp
@@ -19,10 +20,17 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     app.permanent_session_lifetime = timedelta(days=14)
-    app.config['SESSION_PERMANENT'] = True
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SESSION_FILE_DIR'] = 'flask_session'
-    app.config['SESSION_FILE_THRESHOLD'] = 500
+    app.config.update(
+        SESSION_PERMANENT=True,
+        SESSION_TYPE='filesystem',
+        SESSION_FILE_DIR='flask_session',
+        SESSION_FILE_THRESHOLD=500,
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax'
+    )
+    
+    Session(app)
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
