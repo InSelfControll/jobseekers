@@ -11,18 +11,36 @@ from datetime import timedelta
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Initialize extensions
-db = SQLAlchemy()
+# Initialize extensions with async support
+db = SQLAlchemy(
+    engine_options={
+        'pool_pre_ping': True,
+        'pool_size': 10,
+        'max_overflow': 20,
+        'pool_recycle': 300,
+        'echo': True  # Enable SQL logging
+    }
+)
 migrate = Migrate()
 login_manager = LoginManager()
 socketio = SocketIO(cors_allowed_origins="*", async_mode='asgi', manage_session=False)
 
+# Create async session factory
+async_session = db.create_async_session()
+
 def init_db(app):
-    """Initialize database with SQLAlchemy"""
+    """Initialize database with SQLAlchemy and Flask-Migrate"""
     try:
         db.init_app(app)
-        migrate.init_app(app, db)
-        logger.info("Database initialized successfully")
+        migrate.init_app(app, db, directory='migrations')
+        with app.app_context():
+            try:
+                db.engine.connect()
+                logger.info("Successfully connected to database")
+            except Exception as conn_error:
+                logger.error(f"Failed to connect to database: {conn_error}")
+                raise
+        logger.info("Database and migrations initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise RuntimeError(f"Failed to initialize database: {str(e)}")
