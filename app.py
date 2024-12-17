@@ -31,6 +31,14 @@ def create_app():
     logger.info("Loading configuration...")
     app.config.from_object('config.Config')
     
+    # Initialize SSL service
+    try:
+        from services.ssl_service import setup_cert_renewal_check
+        setup_cert_renewal_check()
+        logger.info("SSL certificate renewal service initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize SSL service: {e}")
+    
     # Register error handlers
     @app.errorhandler(500)
     def internal_error(error):
