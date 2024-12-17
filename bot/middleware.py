@@ -2,6 +2,7 @@ import time
 import logging
 import functools
 import asyncio
+from datetime import datetime
 from services.monitoring_service import bot_monitor
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -16,7 +17,7 @@ def monitor_handler(func):
         try:
             # Record incoming message
             bot_monitor.message_count += 1
-            bot_monitor.last_message_time = time.time()
+            bot_monitor.last_message_time = datetime.now()
             
             # Execute handler
             result = await func(update, context, *args, **kwargs)

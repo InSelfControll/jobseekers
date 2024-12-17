@@ -1,21 +1,39 @@
 
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import ContextTypes, ConversationHandler
+import logging
+from datetime import datetime
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, error as telegram_error
+from telegram.ext import (
+    ContextTypes, 
+    ConversationHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    CallbackContext
+)
 from models import JobSeeker, Job, Application
 from services.ai_service import extract_skills, generate_cover_letter
 from services.geo_service import get_nearby_jobs
 from services.file_service import save_resume
 from extensions import db
-import logging
+from .middleware import monitor_handler, async_error_handler
+
+logger = logging.getLogger(__name__)
 
 FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
+@monitor_handler
+@async_error_handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
-    await update.message.reply_text(
-        "Welcome to the Job Application Bot! 🎯\n"
-        "Use /register to create your profile and start applying for jobs."
-    )
+    try:
+        await update.message.reply_text(
+            "Welcome to the Job Application Bot! 🎯\n"
+            "Use /register to create your profile and start applying for jobs."
+        )
+        logger.info(f"Start command used by user {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Error in start command: {e}")
+        await update.message.reply_text("Sorry, something went wrong. Please try again.")
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the registration process"""
@@ -122,8 +140,10 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
+@monitor_handler
+@async_error_handler
 async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle job search command"""
+    """Handle job search command with proper monitoring and error handling"""
     from app import create_app
     app = create_app()
     
@@ -154,7 +174,7 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             await update.message.reply_text("🔍 Searching for jobs in your area...")
             
-            nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, radius)
+            nearby_jobs = get_nearby_jobs(job_seeker.latitude, job_seeker.longitude, int(radius))
             
             if not nearby_jobs:
                 await update.message.reply_text(
@@ -193,8 +213,10 @@ async def handle_job_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Please try again later."
         )
 
+@monitor_handler
+@async_error_handler
 async def handle_application(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle job application"""
+    """Handle job application with monitoring and error handling"""
     from app import create_app
     app = create_app()
     

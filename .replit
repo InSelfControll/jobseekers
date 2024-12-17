@@ -29,6 +29,10 @@ author = "agent"
 task = "workflow.run"
 args = "Flask Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -43,3 +47,17 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python -m hypercorn 'app:create_app()' --bind 0.0.0.0:5000"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Telegram Bot"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PYTHONPATH=. python -m bot"
