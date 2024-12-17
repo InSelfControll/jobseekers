@@ -67,7 +67,7 @@ def create_app():
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
-        if request.is_xhr:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'error': 'CSRF token validation failed', 'code': 'CSRF_ERROR'}), 400
         return jsonify({'error': 'Security validation failed. Please try again.'}), 400
 
