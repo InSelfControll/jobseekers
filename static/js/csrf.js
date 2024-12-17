@@ -1,8 +1,8 @@
 
 // CSRF Token handling
 function getCSRFToken() {
-    return document.querySelector('input[name="csrf_token"]')?.value || 
-           document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    return metaToken || '';
 }
 
 // Add CSRF token to all AJAX requests

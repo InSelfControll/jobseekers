@@ -8,8 +8,7 @@
                 <h3 class="card-title text-center mb-4">Employer Login</h3>
                 
                 <form method="POST" action="{{ url_for('auth.login') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ csrf_token() }}
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         <input type="email" class="form-control" name="email" required>
