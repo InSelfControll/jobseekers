@@ -32,6 +32,9 @@ def prepare_flask_request(request):
         'post_data': request.form.copy()
     }
 
+from flask_wtf.csrf import CSRFProtect
+
+csrf = CSRFProtect()
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])

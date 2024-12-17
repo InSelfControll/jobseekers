@@ -1,4 +1,3 @@
-
 import logging
 from datetime import timedelta
 from flask import Flask, redirect, url_for, jsonify, request, g, send_from_directory
@@ -23,6 +22,9 @@ def create_app():
     )
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
+
+    # Log startup information
+    logger.info("Starting Flask application...")
     
     # Log startup information
     logger.info("Starting Flask application...")
