@@ -2,6 +2,7 @@
 import asyncio
 import os
 from app import create_app, db
+from extensions import socketio
 from bot.telegram_bot import start_bot
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
@@ -9,10 +10,7 @@ from hypercorn.asyncio import serve
 app = create_app()
 
 async def run_web_server():
-    config = Config()
-    config.bind = ["0.0.0.0:3000"]
-    config.use_reloader = False
-    await serve(app, config)
+    socketio.run(app, host='0.0.0.0', port=3000, allow_unsafe_werkzeug=True)
 
 async def run_telegram_bot():
     try:
