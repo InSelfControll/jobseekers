@@ -1,4 +1,0 @@
-
-schedule==1.2.1
-Flask-Migrate==4.0.5
-python-telegram-bot==20.7

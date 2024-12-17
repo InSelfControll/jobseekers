@@ -7,10 +7,11 @@ import hashlib
 import dns.resolver
 from models import Employer
 from flask import abort
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from services.monitoring_service import bot_monitor
 from flask import Response, stream_with_context
+import time #added import for time.sleep
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -342,25 +343,42 @@ def bot_monitoring():
 @login_required
 @admin_required
 def bot_metrics_stream():
+    from services.ai_health_service import AIHealthAnalyzer #added import
+    health_analyzer = AIHealthAnalyzer() #instantiate health analyzer
+
     def generate():
         while True:
-            metrics = bot_monitor.get_metrics()
-            data = json.dumps({
-                'status': metrics.status,
-                'uptime': metrics.uptime,
-                'message_count': metrics.message_count,
-                'error_count': metrics.error_count,
-                'memory_usage': metrics.memory_usage,
-                'cpu_usage': metrics.cpu_usage,
-                'last_message_time': metrics.last_message_time.isoformat() if metrics.last_message_time else None,
-                'recent_errors': metrics.recent_errors,
-                'response_times': metrics.response_times
-            })
-            yield f"data: {data}\n\n"
-            time.sleep(2)  # Update every 2 seconds
+            try:
+                metrics = bot_monitor.get_metrics()
+                # Add metrics to AI analyzer
+                health_analyzer.add_metrics_snapshot(metrics)
+                
+                # Get AI health analysis every 5 minutes
+                health_analysis = {}
+                if (not health_analyzer.last_analysis_time or 
+                    datetime.now() - health_analyzer.last_analysis_time > timedelta(minutes=5)):
+                    health_analysis = health_analyzer.analyze_health() #removed await, assuming analyze_health is synchronous
+                    health_analyzer.last_analysis_time = datetime.now()
+
+                data = json.dumps({
+                    'status': metrics.status,
+                    'uptime': metrics.uptime,
+                    'message_count': metrics.message_count,
+                    'error_count': metrics.error_count,
+                    'memory_usage': metrics.memory_usage,
+                    'cpu_usage': metrics.cpu_usage,
+                    'last_message_time': metrics.last_message_time.isoformat() if metrics.last_message_time else None,
+                    'recent_errors': metrics.recent_errors,
+                    'response_times': metrics.response_times,
+                    'health_analysis': health_analysis
+                })
+                yield f"data: {data}\n\n"
+                time.sleep(2)  # Update every 2 seconds
+            except Exception as e:
+                print(f"Error in bot-metrics-stream: {e}")
+                yield f"data: {{'error': '{str(e)}'}}\n\n"
+                time.sleep(10) #wait longer before trying again
+
 
     return Response(stream_with_context(generate()),
                    mimetype='text/event-stream')
-    db.session.commit()
-    
-    return jsonify({'success': True})

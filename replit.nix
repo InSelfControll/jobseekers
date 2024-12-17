@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.sysvinit
     pkgs.dialog
     pkgs.certbot
     pkgs.psmisc

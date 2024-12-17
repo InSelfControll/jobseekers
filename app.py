@@ -16,6 +16,15 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
     
+    # Configure for ASGI server
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
+    app.config['SERVER_NAME'] = None  # Let Hypercorn handle the binding
+    app.config['APPLICATION_ROOT'] = '/'
+    
+    # Enable debug logging
+    if app.debug:
+        app.logger.setLevel(logging.DEBUG)
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
