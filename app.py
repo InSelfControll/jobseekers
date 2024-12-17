@@ -15,8 +15,32 @@ import os
 
 def create_app():
     """Create and configure the Flask application."""
+    # Configure logging
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        force=True
+    )
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    # Log startup information
+    logger.info("Starting Flask application...")
+    
     app = Flask(__name__)
+    logger.info("Loading configuration...")
     app.config.from_object('config.Config')
+    
+    # Register error handlers
+    @app.errorhandler(500)
+    def internal_error(error):
+        logger.error(f'Server Error: {error}')
+        return jsonify(error="Internal Server Error"), 500
+        
+    @app.errorhandler(404)
+    def not_found_error(error):
+        logger.error(f'Not Found: {error}')
+        return jsonify(error="Not Found"), 404
     
     # Configure for ASGI server
     app.config['PREFERRED_URL_SCHEME'] = 'https'

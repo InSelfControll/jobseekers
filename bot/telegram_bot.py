@@ -1,7 +1,8 @@
 
 import logging
 import os
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
+import asyncio
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -10,43 +11,76 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
-from bot.handlers import handle_job_search, handle_application
+from bot.handlers import handle_job_search, handle_application, error_handler
+from services.monitoring_service import bot_monitor
 
 logger = logging.getLogger(__name__)
 _instance = None
+_lock = asyncio.Lock()
 
-async def start_bot():
+async def init_bot():
+    """Initialize bot instance with proper error handling and monitoring"""
     try:
-        global _instance
-        if _instance:
-            return _instance
-            
-        if not os.environ.get('TELEGRAM_BOT_TOKEN'):
-            logger.error("No bot token provided")
+        token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not token:
+            logger.error("TELEGRAM_BOT_TOKEN not found in environment variables")
             return None
-            
-        token = os.environ['TELEGRAM_BOT_TOKEN']
-        
-        if os.path.exists("bot.lock"):
-            logger.warning("Bot is already running")
-            return None
-            
-        with open("bot.lock", "w") as f:
-            f.write("1")
-            
+
         application = ApplicationBuilder().token(token).build()
         
+        # Register command handlers
         application.add_handler(CommandHandler("search", handle_job_search))
         application.add_handler(CommandHandler("apply", handle_application))
-        
-        from bot.handlers import error_handler
         application.add_error_handler(error_handler)
-        _instance = application
         
-        return _instance
-                
+        # Initialize bot monitor
+        bot_monitor.set_status("initializing")
+        
+        return application
     except Exception as e:
-        logger.error(f"Error initializing bot: {e}")
-        if os.path.exists("bot.lock"):
-            os.remove("bot.lock")
+        logger.error(f"Failed to initialize bot: {e}")
+        bot_monitor.record_error(f"Bot initialization failed: {e}")
         return None
+
+async def start_bot():
+    """Start the bot with proper locking and monitoring"""
+    try:
+        global _instance
+        async with _lock:
+            if _instance:
+                logger.info("Bot instance already exists")
+                return _instance
+
+            # Initialize new bot instance
+            logger.info("Initializing new bot instance")
+            _instance = await init_bot()
+            
+            if not _instance:
+                bot_monitor.set_status("error")
+                return None
+            
+            # Update monitor status
+            bot_monitor.set_status("running")
+            logger.info("Bot successfully started")
+            return _instance
+
+    except Exception as e:
+        logger.error(f"Error in start_bot: {e}")
+        bot_monitor.record_error(f"Bot startup failed: {e}")
+        bot_monitor.set_status("error")
+        return None
+
+async def stop_bot():
+    """Gracefully stop the bot"""
+    try:
+        global _instance
+        async with _lock:
+            if _instance:
+                logger.info("Stopping bot")
+                await _instance.stop()
+                _instance = None
+                bot_monitor.set_status("stopped")
+                logger.info("Bot stopped successfully")
+    except Exception as e:
+        logger.error(f"Error stopping bot: {e}")
+        bot_monitor.record_error(f"Bot shutdown failed: {e}")

@@ -1,17 +1,20 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+import logging
+import time
+from datetime import datetime, timedelta
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort, Response, stream_with_context, g
 from flask_login import login_required, current_user
 from extensions import db
 from functools import wraps
 import os
-import hashlib
 import dns.resolver
+import socket
 from models import Employer
-from flask import abort
-from datetime import datetime, timedelta
 import json
 from services.monitoring_service import bot_monitor
-from flask import Response, stream_with_context
-import time #added import for time.sleep
+from services.ai_health_service import health_analyzer
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -59,60 +62,63 @@ def remove_admin(admin_id):
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error removing admin: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 def verify_domain_records(domain, provider):
     try:
-        print(f"Verifying domain: {domain} for provider: {provider}")
+        logger.info(f"Verifying domain: {domain} for provider: {provider}")
         expected_host = request.host.lower()
 
         # Try CNAME first
         try:
             cname_answers = dns.resolver.resolve(domain, 'CNAME')
-            print(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
-            print(f"Expected host: {expected_host}")
+            logger.info(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
+            logger.info(f"Expected host: {expected_host}")
             
             for rdata in cname_answers:
                 target = str(rdata.target).rstrip('.').lower()
                 if target == expected_host:
-                    print("CNAME verification successful")
+                    logger.info("CNAME verification successful")
                     return True
                 # Check if target contains the expected host (for wildcard/subdomain cases)
                 if expected_host in target or target in expected_host:
-                    print("CNAME verification successful (partial match)")
+                    logger.info("CNAME verification successful (partial match)")
                     return True
-        except Exception as e:
-            print(f"CNAME lookup failed: {str(e)}")
+        except dns.resolver.NoAnswer:
+            logger.warning(f"No CNAME records found for {domain}")
+        except dns.exception.DNSException as e:
+            logger.error(f"CNAME lookup failed: {str(e)}")
         
-        # Check A record if CNAME fails
-        if not cname_valid:
+        # Try A record lookup
+        try:
+            # Get all possible IPs for the host
+            expected_ips = []
             try:
-                import socket
-                # Get all possible IPs for the host
-                expected_ips = []
-                try:
-                    host_info = socket.getaddrinfo(request.host.split(':')[0], None)
-                    expected_ips = [info[4][0] for info in host_info if info[0] == socket.AF_INET]
-                except Exception as e:
-                    print(f"Failed to resolve host IPs: {str(e)}")
-                    expected_ips = [request.host.split(':')[0]]
-
-                print(f"Checking A record. Expected IPs: {expected_ips}")
-                a_answers = dns.resolver.resolve(domain, 'A')
-                print(f"A records found: {[str(rdata) for rdata in a_answers]}")
-                
-                for rdata in a_answers:
-                    if str(rdata).rstrip('.') in expected_ips:
-                        print("A record verification successful")
-                        return True
-                        
+                host_info = socket.getaddrinfo(request.host.split(':')[0], None)
+                expected_ips = [info[4][0] for info in host_info if info[0] == socket.AF_INET]
             except Exception as e:
-                print(f"A record lookup failed: {str(e)}")
+                logger.error(f"Failed to resolve host IPs: {str(e)}")
+                expected_ips = [request.host.split(':')[0]]
+
+            logger.info(f"Checking A record. Expected IPs: {expected_ips}")
+            a_answers = dns.resolver.resolve(domain, 'A')
+            logger.info(f"A records found: {[str(rdata) for rdata in a_answers]}")
+                
+            for rdata in a_answers:
+                if str(rdata).rstrip('.') in expected_ips:
+                    logger.info("A record verification successful")
+                    return True
+                        
+        except dns.resolver.NoAnswer:
+            logger.warning(f"No A records found for {domain}")
+        except dns.exception.DNSException as e:
+            logger.error(f"A record lookup failed: {str(e)}")
         
-        print("Domain verification failed - no matching records found")
+        logger.warning("Domain verification failed - no matching records found")
         return False
     except Exception as e:
-        print(f"Domain verification error: {str(e)}")
+        logger.error(f"Domain verification error: {str(e)}")
         return False
 
 @admin_bp.route('/generate-ssl', methods=['POST'])
@@ -121,7 +127,6 @@ def verify_domain_records(domain, provider):
 def generate_ssl():
     try:
         from services.ssl_service import SSLService
-        import logging
         
         if not current_user.sso_domain:
             return jsonify({'success': False, 'error': 'Please configure and verify domain first'})
@@ -129,7 +134,7 @@ def generate_ssl():
         if not current_user.domain_verified:
             return jsonify({'success': False, 'error': 'Domain must be verified before generating SSL certificate'})
             
-        logging.info(f"Starting SSL certificate generation for domain: {current_user.sso_domain}")
+        logger.info(f"Starting SSL certificate generation for domain: {current_user.sso_domain}")
         
         ssl_service = SSLService(current_user.sso_domain, current_user.email)
         success, message = ssl_service.generate_certificate()
@@ -138,7 +143,7 @@ def generate_ssl():
             # Get certificate expiry for display
             expiry = current_user.ssl_expiry.strftime('%Y-%m-%d') if current_user.ssl_expiry else 'Unknown'
             
-            logging.info(f"SSL certificate generated successfully for {current_user.sso_domain}")
+            logger.info(f"SSL certificate generated successfully for {current_user.sso_domain}")
             return jsonify({
                 'success': True,
                 'message': message,
@@ -147,13 +152,13 @@ def generate_ssl():
                 'cert_expiry': expiry
             })
         
-        logging.error(f"SSL certificate generation failed for {current_user.sso_domain}: {message}")
+        logger.error(f"SSL certificate generation failed for {current_user.sso_domain}: {message}")
         return jsonify({
             'success': False,
             'message': message
         })
     except Exception as e:
-        logging.error(f"Error in SSL certificate generation: {str(e)}")
+        logger.exception(f"Error in SSL certificate generation: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 @admin_bp.route('/save-domain', methods=['POST'])
@@ -189,6 +194,7 @@ def save_domain():
         })
     except Exception as e:
         db.session.rollback()
+        logger.exception(f"Error saving domain: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
     
     return jsonify({
@@ -224,6 +230,7 @@ def update_email_settings():
         flash('Email settings updated successfully', 'success')
     except Exception as e:
         db.session.rollback()
+        logger.exception(f"Error updating email settings: {str(e)}")
         flash(f'Error updating email settings: {str(e)}', 'danger')
     
     return redirect(url_for('admin.email_settings'))
@@ -248,6 +255,7 @@ def update_domain():
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
+        logger.exception(f"Error updating domain: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @admin_bp.route('/verify-domain', methods=['POST'])
@@ -325,6 +333,7 @@ def save_sso_settings():
         
     except Exception as e:
         db.session.rollback()
+        logger.exception(f"Error saving SSO settings: {str(e)}")
         if request.is_json:
             return jsonify({'success': False, 'error': str(e)})
         flash(f'Error saving SSO settings: {str(e)}', 'error')
@@ -333,6 +342,7 @@ def save_sso_settings():
     employer = Employer.query.get(current_user.id)
     employer.sso_domain = domain
     employer.domain_verified = False
+
 @admin_bp.route('/bot-monitoring')
 @login_required
 @admin_required
@@ -343,8 +353,8 @@ def bot_monitoring():
 @login_required
 @admin_required
 def bot_metrics_stream():
-    from services.ai_health_service import AIHealthAnalyzer #added import
-    health_analyzer = AIHealthAnalyzer() #instantiate health analyzer
+    logger.info("Starting bot metrics stream for admin user...")
+    
 
     def generate():
         while True:
@@ -357,7 +367,7 @@ def bot_metrics_stream():
                 health_analysis = {}
                 if (not health_analyzer.last_analysis_time or 
                     datetime.now() - health_analyzer.last_analysis_time > timedelta(minutes=5)):
-                    health_analysis = health_analyzer.analyze_health() #removed await, assuming analyze_health is synchronous
+                    health_analysis = health_analyzer.analyze_health() 
                     health_analyzer.last_analysis_time = datetime.now()
 
                 data = json.dumps({
@@ -375,7 +385,7 @@ def bot_metrics_stream():
                 yield f"data: {data}\n\n"
                 time.sleep(2)  # Update every 2 seconds
             except Exception as e:
-                print(f"Error in bot-metrics-stream: {e}")
+                logger.exception(f"Error in bot-metrics-stream: {e}")
                 yield f"data: {{'error': '{str(e)}'}}\n\n"
                 time.sleep(10) #wait longer before trying again
 

@@ -50,6 +50,38 @@
         </div>
     </div>
     
+    <!-- Health Analysis -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Health Analysis</h5>
+                    <div class="health-status mb-3">
+                        <span>Status: </span>
+                        <span id="health-status" class="badge"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Predictions</h6>
+                            <div id="predictions-list" class="list-group">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Recommendations</h6>
+                            <div id="recommendations-list" class="list-group">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Alerts</h6>
+                            <div id="alerts-list" class="list-group">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Response Time Chart -->
     <div class="row mt-4">
         <div class="col-md-8">
@@ -97,6 +129,51 @@ function formatUptime(seconds) {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${days}d ${hours}h ${minutes}m`;
+}
+
+function updateHealthAnalysis(analysis) {
+    // Update health status
+    const statusElem = document.getElementById('health-status');
+    statusElem.textContent = analysis.status.toUpperCase();
+    statusElem.className = 'badge ' + 
+        (analysis.status === 'healthy' ? 'bg-success' : 
+         analysis.status === 'warning' ? 'bg-warning' : 'bg-danger');
+    
+    // Update predictions
+    const predictionsList = document.getElementById('predictions-list');
+    predictionsList.innerHTML = analysis.predictions.map(pred => `
+        <div class="list-group-item">
+            <h6 class="mb-1">${pred.issue}</h6>
+            <p class="mb-1">Impact: ${pred.impact}</p>
+            <small>Probability: ${(pred.probability * 100).toFixed(1)}%</small>
+        </div>
+    `).join('');
+    
+    // Update recommendations
+    const recommendationsList = document.getElementById('recommendations-list');
+    recommendationsList.innerHTML = analysis.recommendations.map(rec => `
+        <div class="list-group-item">
+            <h6 class="mb-1">${rec.action}</h6>
+            <p class="mb-1">${rec.rationale}</p>
+            <span class="badge bg-${rec.priority === 'high' ? 'danger' : 
+                                   rec.priority === 'medium' ? 'warning' : 'info'}">
+                ${rec.priority}
+            </span>
+        </div>
+    `).join('');
+    
+    // Update alerts
+    const alertsList = document.getElementById('alerts-list');
+    alertsList.innerHTML = analysis.alerts.map(alert => `
+        <div class="list-group-item">
+            <h6 class="mb-1">${alert.type}</h6>
+            <p class="mb-1">${alert.message}</p>
+            <span class="badge bg-${alert.severity === 'error' ? 'danger' : 
+                                   alert.severity === 'warning' ? 'warning' : 'info'}">
+                ${alert.severity}
+            </span>
+        </div>
+    `).join('');
 }
 
 function updateDashboard(metrics) {
@@ -150,10 +227,22 @@ function updateDashboard(metrics) {
     }
 }
 
+function updateHealthAnalysis(analysis) {
+    //  Add logic to display the health analysis here.  For example:
+    const healthAnalysisContainer = document.createElement('div');
+    healthAnalysisContainer.innerHTML = `<h3>AI Health Analysis</h3><pre>${JSON.stringify(analysis, null, 2)}</pre>`;
+    document.getElementById('error-list').appendChild(healthAnalysisContainer);
+}
+
+
 // Set up SSE connection
 const evtSource = new EventSource("/admin/bot-metrics-stream");
 evtSource.onmessage = function(event) {
     const metrics = JSON.parse(event.data);
+    // Update health analysis if available
+    if (metrics.health_analysis) {
+        updateHealthAnalysis(metrics.health_analysis);
+    }
     updateDashboard(metrics);
 };
 
