@@ -68,55 +68,55 @@ def remove_admin(admin_id):
 def verify_domain_records(domain, provider):
     try:
         logger.info(f"Verifying domain: {domain} for provider: {provider}")
-        expected_host = request.host.lower()
-
-        # Try CNAME first
-        try:
-            cname_answers = dns.resolver.resolve(domain, 'CNAME')
-            logger.info(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
-            logger.info(f"Expected host: {expected_host}")
-            
-            for rdata in cname_answers:
-                target = str(rdata.target).rstrip('.').lower()
-                if target == expected_host:
-                    logger.info("CNAME verification successful")
-                    return True
-                # Check if target contains the expected host (for wildcard/subdomain cases)
-                if expected_host in target or target in expected_host:
-                    logger.info("CNAME verification successful (partial match)")
-                    return True
-        except dns.resolver.NoAnswer:
-            logger.warning(f"No CNAME records found for {domain}")
-        except dns.exception.DNSException as e:
-            logger.error(f"CNAME lookup failed: {str(e)}")
+        host = request.host.split(':')[0].lower()
         
-        # Try A record lookup
+        # Check if host is an IP address
         try:
-            # Get all possible IPs for the host
-            expected_ips = []
+            socket.inet_aton(host)
+            is_ip = True
+        except socket.error:
+            is_ip = False
+            
+        if is_ip:
+            # For IP-based setup, verify A record
             try:
-                host_info = socket.getaddrinfo(request.host.split(':')[0], None)
-                expected_ips = [info[4][0] for info in host_info if info[0] == socket.AF_INET]
-            except Exception as e:
-                logger.error(f"Failed to resolve host IPs: {str(e)}")
-                expected_ips = [request.host.split(':')[0]]
-
-            logger.info(f"Checking A record. Expected IPs: {expected_ips}")
-            a_answers = dns.resolver.resolve(domain, 'A')
-            logger.info(f"A records found: {[str(rdata) for rdata in a_answers]}")
+                a_answers = dns.resolver.resolve(domain, 'A')
+                logger.info(f"A records found: {[str(rdata) for rdata in a_answers]}")
                 
-            for rdata in a_answers:
-                if str(rdata).rstrip('.') in expected_ips:
-                    logger.info("A record verification successful")
-                    return True
+                for rdata in a_answers:
+                    if str(rdata).rstrip('.') == host:
+                        logger.info("A record verification successful")
+                        return True
                         
-        except dns.resolver.NoAnswer:
-            logger.warning(f"No A records found for {domain}")
-        except dns.exception.DNSException as e:
-            logger.error(f"A record lookup failed: {str(e)}")
+            except dns.resolver.NoAnswer:
+                logger.warning(f"No A records found for {domain}")
+            except dns.exception.DNSException as e:
+                logger.error(f"A record lookup failed: {str(e)}")
+        else:
+            # For domain-based setup, verify CNAME record
+            try:
+                cname_answers = dns.resolver.resolve(domain, 'CNAME')
+                logger.info(f"CNAME records found: {[str(rdata.target) for rdata in cname_answers]}")
+                logger.info(f"Expected host: {host}")
+                
+                for rdata in cname_answers:
+                    target = str(rdata.target).rstrip('.').lower()
+                    if target == host:
+                        logger.info("CNAME verification successful")
+                        return True
+                    # Check if target contains the expected host (for wildcard/subdomain cases)
+                    if host in target or target in host:
+                        logger.info("CNAME verification successful (partial match)")
+                        return True
+                        
+            except dns.resolver.NoAnswer:
+                logger.warning(f"No CNAME records found for {domain}")
+            except dns.exception.DNSException as e:
+                logger.error(f"CNAME lookup failed: {str(e)}")
         
         logger.warning("Domain verification failed - no matching records found")
         return False
+        
     except Exception as e:
         logger.error(f"Domain verification error: {str(e)}")
         return False
@@ -185,13 +185,26 @@ def save_domain():
         employer.domain_verified = False
         employer.ssl_enabled = False
         db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'records': [
-                {'type': 'CNAME', 'name': domain, 'value': request.host}
-            ]
-        })
+
+        # Check if the host is an IP address
+        host = request.host.split(':')[0]
+        try:
+            socket.inet_aton(host)
+            # It's an IP address, return A record
+            return jsonify({
+                'success': True,
+                'records': [
+                    {'type': 'A', 'name': domain, 'value': host}
+                ]
+            })
+        except socket.error:
+            # It's a domain name, return CNAME record
+            return jsonify({
+                'success': True,
+                'records': [
+                    {'type': 'CNAME', 'name': domain, 'value': request.host}
+                ]
+            })
     except Exception as e:
         db.session.rollback()
         logger.exception(f"Error saving domain: {str(e)}")
@@ -262,28 +275,53 @@ def update_domain():
 @login_required
 @admin_required
 def verify_domain():
-    data = request.get_json()
-    domain = data.get('domain', '').lower()
-    
-    if not domain:
-        return jsonify({'success': False, 'error': 'Domain is required'})
-
-    # Check if domain is already verified
-    employer = Employer.query.filter_by(sso_domain=domain).first()
-    if employer and employer.domain_verified:
-        return jsonify({'success': True, 'domain': domain, 'already_verified': True})
+    try:
+        data = request.get_json()
+        domain = data.get('domain', '').lower()
         
-    # Update user's domain
-    current_user.sso_domain = domain
-    
-    # Verify domain records
-    if verify_domain_records(domain, current_user.sso_provider):
-        current_user.domain_verified = True
-        current_user.domain_verification_date = datetime.utcnow()
-        db.session.commit()
-        return jsonify({'success': True, 'domain': domain})
-    else:
-        return jsonify({'success': False, 'error': 'Domain verification failed'})
+        if not domain:
+            return jsonify({'success': False, 'error': 'Domain is required'})
+
+        # Check if domain is already verified
+        employer = Employer.query.filter_by(sso_domain=domain).first()
+        if employer and employer.domain_verified:
+            return jsonify({
+                'success': True,
+                'domain': domain,
+                'already_verified': True,
+                'message': 'Domain is already verified'
+            })
+            
+        # Update user's domain
+        current_user.sso_domain = domain
+        
+        # Verify domain records
+        success, message, record_type = verify_domain_records(domain, current_user.sso_provider)
+        
+        if success:
+            current_user.domain_verified = True
+            current_user.domain_verification_date = datetime.utcnow()
+            current_user.dns_record_type = record_type
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'domain': domain,
+                'message': message,
+                'record_type': record_type
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': message,
+                'record_type': record_type
+            })
+    except Exception as e:
+        logger.exception(f"Error verifying domain: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f"An error occurred while verifying the domain: {str(e)}"
+        }), 500
 
 @admin_bp.route('/save-sso-settings', methods=['POST'])
 @login_required

@@ -1,4 +1,3 @@
-
 import logging
 import os
 from flask import Flask
@@ -85,14 +84,21 @@ def create_app():
         }
     )
 
-    # Configure database
-    if os.environ.get("DATABASE_URL"):
-        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
-    else:
-        app.config[
-            'SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
+    # Configure database with proper connection handling
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        database_url = f"postgresql://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
 
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 10,
+        'pool_recycle': 300,
+        'pool_pre_ping': True
+    }
 
     try:
         init_db(app)

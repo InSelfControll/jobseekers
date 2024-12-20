@@ -3,7 +3,7 @@
 name = "jobseekrbot"
 version = "0.1.0"
 description = "Job Hunter Bot with AI-powered features"
-authors = ["Ofir Hamami admin@hostme.co.il"]
+authors = ["Ofir Hamami <admin@hostme.co.il>"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -32,3 +32,4 @@ schedule = "^1.2.2"
 flask-session = "^0.8.0"
 flask-socketio = "^5.4.1"
 httpx = ">=0.27.0"
+pypdf2 = "^3.0.1"

@@ -1,7 +1,15 @@
 
 // CSRF Token handling
 function getCSRFToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    // Try to get token from meta tag first
+    let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    // If not found in meta, try to get from DNS records component
+    if (!token) {
+        token = document.querySelector('.dns-records')?.getAttribute('data-csrf-token');
+    }
+    
+    return token || '';
 }
 
 // Add CSRF token to all AJAX requests
@@ -14,7 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!options.headers) {
                 options.headers = {};
             }
-            options.headers['X-CSRFToken'] = token;
+            if (options.method && ['POST', 'PUT', 'PATCH','DELETE'].includes(options.method.toUpperCase())) {
+		    options.headers['X-CSRFToken'] = token;
+	    }
             return originalFetch(url, options);
         };
 

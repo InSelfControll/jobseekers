@@ -6,7 +6,7 @@ modules = ["python-3.11"]
 channel = "stable-23_05"
 
 [deployment]
-run = ["sh", "-c", "python -m hypercorn 'app:create_app()' --bind 0.0.0.0:5000"]
+run = ["sh", "-c", "python main.py"]
 deploymentTarget = "cloudrun"
 
 [[ports]]
@@ -49,8 +49,8 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -m hypercorn 'app:create_app()' --bind 0.0.0.0:5000"
-waitForPort = 5000
+args = "python main.py"
+waitForPort = 3000
 
 [[workflows.workflow]]
 name = "Telegram Bot"

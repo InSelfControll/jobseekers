@@ -1,13 +1,15 @@
 
 import os
 
-SAML_SETTINGS = {
+def get_saml_settings(domain_config=None):
+    """Get SAML settings with optional domain-specific configuration"""
+    settings = {
     'strict': True,
     'debug': True,
     'sp': {
-        'entityId': os.environ.get('SAML_SP_ENTITY_ID', 'jobseekr-app'),
+        'entityId': domain_config.get('domain', os.environ.get('SAML_SP_ENTITY_ID', 'jobseekr-app')) if domain_config else os.environ.get('SAML_SP_ENTITY_ID', 'jobseekr-app'),
         'assertionConsumerService': {
-            'url': os.environ.get('SAML_ACS_URL', 'https://jobseekr.example.com/auth/saml/callback'),
+            'url': f"https://{domain_config['domain']}/auth/saml/callback" if domain_config else os.environ.get('SAML_ACS_URL', 'https://jobseekr.example.com/auth/saml/callback'),
             'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
         },
         'singleLogoutService': {

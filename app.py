@@ -127,11 +127,11 @@ def create_app():
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     
     @app.before_request
-    def handle_custom_domain():
+    async def handle_custom_domain():
         host = request.headers.get('Host', '').lower()
         if host != app.config.get('PRIMARY_DOMAIN'):
-            employer = Employer.query.filter_by(sso_domain=host, domain_verified=True).first()
-            if employer:
+            employer = Employer.query.filter_by(sso_domain=host).first()
+            if employer and employer.domain_verified:
                 g.custom_domain = True
                 g.domain_config = {
                     'sso_provider': employer.sso_provider,
@@ -139,6 +139,14 @@ def create_app():
                     'ssl_enabled': employer.ssl_enabled,
                     'domain': employer.sso_domain
                 }
+                
+                # Setup domain if not already configured
+                if not employer.ssl_enabled:
+                    from services.domain_service import DomainService
+                    domain_service = DomainService()
+                    success, message = await domain_service.setup_custom_domain(employer.id)
+                    if not success:
+                        logger.error(f"Domain setup failed: {message}")
             else:
                 g.custom_domain = False
 
