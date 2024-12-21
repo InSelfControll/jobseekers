@@ -10,17 +10,9 @@ from datetime import timedelta
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Initialize extensions with async support
-db = SQLAlchemy(
-    engine_options={
-        'pool_pre_ping': True,
-        'pool_size': 10,
-        'max_overflow': 20,
-        'pool_recycle': 300,
-        'echo': True  # Enable SQL logging
-    }
-)
-migrate = Migrate()
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate(directory='migrations')
 login_manager = LoginManager()
 socketio = SocketIO(cors_allowed_origins="*", async_mode='asgi', manage_session=False)
 
@@ -56,17 +48,55 @@ def init_db(app):
     try:
         db.init_app(app)
         migrate.init_app(app, db, directory='migrations')
+        
         with app.app_context():
             try:
+                # Connect to main database
                 db.engine.connect()
-                logger.info("Successfully connected to database")
+                logger.info("Successfully connected to main database")
+                
+                # Create or verify main tables
+                db.create_all()
+                
+                # Initialize tenant databases
+                from models import Employer
+                employers = Employer.query.all()
+                for employer in employers:
+                    if employer.tenant_id:
+                        tenant_db_url = app.config['SQLALCHEMY_DATABASE_URI'].replace(
+                            app.config['SQLALCHEMY_DATABASE_NAME'],
+                            f"tenant_{employer.tenant_id}"
+                        )
+                        tenant_engine = db.create_engine(tenant_db_url)
+                        try:
+                            tenant_engine.connect()
+                            logger.info(f"Connected to tenant database for {employer.company_name}")
+                        except Exception as tenant_error:
+                            logger.error(f"Failed to connect to tenant database for {employer.company_name}: {tenant_error}")
+                            
             except Exception as conn_error:
                 logger.error(f"Failed to connect to database: {conn_error}")
                 raise
+                
         logger.info("Database and migrations initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise RuntimeError(f"Failed to initialize database: {str(e)}")
+
+def get_tenant_db_session(tenant_id):
+    """Get a database session for a specific tenant"""
+    try:
+        from flask import current_app
+        tenant_db_url = current_app.config['SQLALCHEMY_DATABASE_URI'].replace(
+            current_app.config['SQLALCHEMY_DATABASE_NAME'],
+            f"tenant_{tenant_id}"
+        )
+        tenant_engine = db.create_engine(tenant_db_url)
+        Session = sessionmaker(bind=tenant_engine)
+        return Session()
+    except Exception as e:
+        logger.error(f"Failed to get tenant database session: {e}")
+        raise
 
 def create_app():
     """Create and configure Flask application"""

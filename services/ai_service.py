@@ -151,3 +151,78 @@ def calculate_job_match(candidate_skills, job_requirements):
     except Exception as e:
         logger.error(f"Error calculating job match: {e}")
         return 50
+async def analyze_bot_health(metrics):
+    """Analyze bot health metrics and provide insights"""
+    try:
+        # Calculate basic health indicators
+        response_times = metrics.response_times[-100:] if metrics.response_times else []
+        avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+        error_rate = metrics.error_count / max(metrics.message_count, 1)
+        
+        # Determine overall health status
+        if error_rate > 0.1 or avg_response_time > 5:
+            status = "unhealthy"
+        elif error_rate > 0.05 or avg_response_time > 2:
+            status = "warning"
+        else:
+            status = "healthy"
+            
+        # Generate predictions
+        predictions = [
+            {
+                "issue": "High Memory Usage" if metrics.memory_usage > 500 else "Normal Memory Usage",
+                "impact": "May cause crashes or slowdowns" if metrics.memory_usage > 500 else "No impact expected",
+                "probability": min(metrics.memory_usage / 1000, 1.0)
+            },
+            {
+                "issue": "High Response Time" if avg_response_time > 2 else "Normal Response Time",
+                "impact": "Users may experience delays" if avg_response_time > 2 else "Good user experience",
+                "probability": min(avg_response_time / 5, 1.0)
+            }
+        ]
+        
+        # Generate recommendations
+        recommendations = []
+        if metrics.memory_usage > 500:
+            recommendations.append({
+                "action": "Consider restarting bot",
+                "rationale": "Memory usage is high",
+                "priority": "high"
+            })
+        if error_rate > 0.05:
+            recommendations.append({
+                "action": "Review error logs",
+                "rationale": "Error rate is above threshold",
+                "priority": "medium"
+            })
+            
+        # Generate alerts
+        alerts = []
+        if metrics.status == "error":
+            alerts.append({
+                "type": "Bot Status Error",
+                "message": "Bot is in error state",
+                "severity": "error"
+            })
+        if metrics.cpu_usage > 80:
+            alerts.append({
+                "type": "High CPU Usage",
+                "message": f"CPU usage is {metrics.cpu_usage}%",
+                "severity": "warning"
+            })
+            
+        return {
+            "status": status,
+            "predictions": predictions,
+            "recommendations": recommendations,
+            "alerts": alerts
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing bot health: {e}")
+        return {
+            "status": "error",
+            "predictions": [],
+            "recommendations": [{"action": "Check logs", "rationale": "Analysis failed", "priority": "high"}],
+            "alerts": [{"type": "Analysis Error", "message": str(e), "severity": "error"}]
+        }

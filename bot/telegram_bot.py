@@ -29,6 +29,9 @@ async def init_bot():
         # Check for token
         token = os.environ.get('TELEGRAM_BOT_TOKEN')
         if not token:
+            logger.warning("TELEGRAM_BOT_TOKEN not found, skipping bot initialization")
+            return None
+        if not token:
             logger.error("TELEGRAM_BOT_TOKEN not found in environment variables")
             return None
 
@@ -98,8 +101,11 @@ async def start_bot():
             _instance = await init_bot()
             
             if not _instance:
-                bot_monitor.set_status("error")
+                logger.info("Bot initialization skipped or failed")
                 return None
+            
+            # Start polling in background
+            asyncio.create_task(_instance.run_polling(close_loop=False))
             
             # Update monitor status
             bot_monitor.set_status("running")

@@ -1,8 +1,10 @@
 import logging
 from datetime import timedelta
-from flask import Flask, redirect, url_for, jsonify, request, g, send_from_directory
+from flask import Flask, redirect, url_for, jsonify, request, g, send_from_directory, abort
+from flask_login import current_user
 from flask_session import Session
-from flask_wtf.csrf import CSRFProtect, CSRFError
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
+from flask_migrate import Migrate
 from extensions import db, login_manager
 from routes.auth_routes import auth_bp
 from routes.employer_routes import employer_bp
@@ -11,8 +13,14 @@ from routes.admin_routes import admin_bp
 from routes.sso_routes import sso_bp
 from models import Employer
 import os
+import asyncio
+from bot.telegram_bot import start_bot
+from services.monitoring_service import bot_monitor
 
 def create_app():
+    # Create an event loop for async operations
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     """Create and configure the Flask application."""
     # Configure logging
     logging.basicConfig(
@@ -23,9 +31,6 @@ def create_app():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    # Log startup information
-    logger.info("Starting Flask application...")
-    
     # Log startup information
     logger.info("Starting Flask application...")
     
@@ -52,10 +57,6 @@ def create_app():
         logger.error(f'Not Found: {error}')
         return jsonify(error="Not Found"), 404
     
-    # Configure for ASGI server
-    app.config['PREFERRED_URL_SCHEME'] = 'https'
-    app.config['SERVER_NAME'] = None  # Let Hypercorn handle the binding
-    app.config['APPLICATION_ROOT'] = '/'
     app.config['DEBUG'] = True  # Enable debug mode for better error tracking
     
     # Enable debug logging
@@ -63,7 +64,9 @@ def create_app():
         app.logger.setLevel(logging.DEBUG)
     
     # Initialize extensions
+    # Initialize database and migrations
     db.init_app(app)
+    migrate = Migrate(app, db)
     login_manager.init_app(app)
     app.permanent_session_lifetime = timedelta(days=14)
     app.config.update(
@@ -80,30 +83,20 @@ def create_app():
     
     Session(app)
     
-    # Initialize CSRF protection
-    csrf = CSRFProtect(app)
-    csrf.init_app(app)
-    
-    # Ensure CSRF token is available in all templates
-    @app.context_processor
-    def inject_csrf_token():
-        from flask_wtf.csrf import generate_csrf
-        return dict(csrf_token=generate_csrf)
+    # Initialize security components
+    from secops.sec import init_csrf
+    init_csrf(app)
     
     @app.after_request
     def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        response.headers['Content-Security-Policy'] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://*.browser-intake-us5-datadoghq.com"
+        response.headers.update({
+            'X-Content-Type-Options': 'nosniff',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; connect-src 'self' https://*.browser-intake-us5-datadoghq.com"
+        })
         return response
-
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(e):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': 'CSRF token validation failed', 'code': 'CSRF_ERROR'}), 400
-        return jsonify({'error': 'Security validation failed. Please try again.'}), 400
 
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -126,10 +119,44 @@ def create_app():
 
     app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key"
     
+    # Initialize Telegram bot asynchronously
+    async def init_telegram_bot():
+        try:
+            await start_bot()
+            app.logger.info("Telegram bot initialized successfully")
+            bot_monitor.set_status("running")
+        except Exception as e:
+            app.logger.error(f"Failed to initialize Telegram bot: {e}")
+            bot_monitor.set_status("error")
+            bot_monitor.record_error(f"Bot initialization failed: {e}")
+
+    @app.before_first_request
+    def start_telegram_bot():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.create_task(init_telegram_bot())
+
+    def is_admin_user():
+        if not current_user.is_authenticated:
+            return False
+        allowed_admins = ['admin@hostme.co.il', 'admin@aijobsearch.tech']
+        return current_user.email in allowed_admins
+
     @app.before_request
-    async def handle_custom_domain():
+    def restrict_admin_access():
+        if request.path.startswith('/admin/bot-monitoring'):
+            if not is_admin_user():
+                abort(403)  # Forbidden
+    
+    @app.before_request
+    def handle_custom_domain():
         host = request.headers.get('Host', '').lower()
         if host != app.config.get('PRIMARY_DOMAIN'):
+            # For development: Handle localhost testing
+            if host.startswith('localhost') or host.startswith('127.0.0.1'):
+                g.custom_domain = False
+                return
+
             employer = Employer.query.filter_by(sso_domain=host).first()
             if employer and employer.domain_verified:
                 g.custom_domain = True
@@ -144,9 +171,15 @@ def create_app():
                 if not employer.ssl_enabled:
                     from services.domain_service import DomainService
                     domain_service = DomainService()
-                    success, message = await domain_service.setup_custom_domain(employer.id)
-                    if not success:
-                        logger.error(f"Domain setup failed: {message}")
+                    try:
+                        # Use A record instead of CNAME
+                        domain_service.dns_record_type = 'A'
+                        domain_service.dns_target = '127.0.0.1'  # Replace with actual IP in production
+                        success, message = domain_service.setup_custom_domain(employer.id)
+                        if not success:
+                            logger.error(f"Domain setup failed: {message}")
+                    except Exception as e:
+                        logger.error(f"Domain setup failed with exception: {e}")
             else:
                 g.custom_domain = False
 

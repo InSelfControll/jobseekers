@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session, g
 from flask_login import login_user, logout_user, login_required, current_user
-from flask_wtf.csrf import CSRFProtect
+from secops.sec import csrf_protected
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Employer
 from extensions import db
@@ -32,12 +32,11 @@ def prepare_flask_request(request):
         'post_data': request.form.copy()
     }
 
-from flask_wtf.csrf import CSRFProtect
-
-csrf = CSRFProtect()
+from secops.sec import csrf_protected
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@csrf_protected
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('employer.dashboard'))
@@ -61,6 +60,7 @@ def login():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@csrf_protected
 def register():
     if request.method == 'POST':
         email = request.form.get('email')

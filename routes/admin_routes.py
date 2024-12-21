@@ -11,7 +11,7 @@ import socket
 from models import Employer
 import json
 from services.monitoring_service import bot_monitor
-from services.ai_health_service import health_analyzer
+from services.ai_service import analyze_bot_health
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -86,12 +86,14 @@ def verify_domain_records(domain, provider):
                 for rdata in a_answers:
                     if str(rdata).rstrip('.') == host:
                         logger.info("A record verification successful")
-                        return True
+                        return True, "A record verified successfully", "A"
                         
             except dns.resolver.NoAnswer:
                 logger.warning(f"No A records found for {domain}")
+                return False, f"No A records found for {domain}", "A"
             except dns.exception.DNSException as e:
                 logger.error(f"A record lookup failed: {str(e)}")
+                return False, f"A record lookup failed: {str(e)}", "A"
         else:
             # For domain-based setup, verify CNAME record
             try:
@@ -103,23 +105,25 @@ def verify_domain_records(domain, provider):
                     target = str(rdata.target).rstrip('.').lower()
                     if target == host:
                         logger.info("CNAME verification successful")
-                        return True
+                        return True, "CNAME record verified successfully", "CNAME"
                     # Check if target contains the expected host (for wildcard/subdomain cases)
                     if host in target or target in host:
                         logger.info("CNAME verification successful (partial match)")
-                        return True
+                        return True, "CNAME record verified (partial match)", "CNAME"
                         
             except dns.resolver.NoAnswer:
                 logger.warning(f"No CNAME records found for {domain}")
+                return False, f"No CNAME records found for {domain}", "CNAME"
             except dns.exception.DNSException as e:
                 logger.error(f"CNAME lookup failed: {str(e)}")
+                return False, f"CNAME lookup failed: {str(e)}", "CNAME"
         
         logger.warning("Domain verification failed - no matching records found")
-        return False
+        return False, "Domain verification failed - no matching records", "UNKNOWN"
         
     except Exception as e:
         logger.error(f"Domain verification error: {str(e)}")
-        return False
+        return False, f"Domain verification error: {str(e)}", "ERROR"
 
 @admin_bp.route('/generate-ssl', methods=['POST'])
 @login_required
@@ -161,7 +165,10 @@ def generate_ssl():
         logger.exception(f"Error in SSL certificate generation: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
+from secops.sec import csrf_protected
+
 @admin_bp.route('/save-domain', methods=['POST'])
+@csrf_protected
 @login_required
 @admin_required
 def save_domain():
@@ -278,13 +285,13 @@ def verify_domain():
     try:
         data = request.get_json()
         domain = data.get('domain', '').lower()
+        provider = data.get('provider') or current_user.sso_provider
         
         if not domain:
             return jsonify({'success': False, 'error': 'Domain is required'})
 
-        # Check if domain is already verified
-        employer = Employer.query.filter_by(sso_domain=domain).first()
-        if employer and employer.domain_verified:
+        # Check if domain is already verified for this user
+        if current_user.sso_domain == domain and current_user.domain_verified:
             return jsonify({
                 'success': True,
                 'domain': domain,
@@ -292,11 +299,24 @@ def verify_domain():
                 'message': 'Domain is already verified'
             })
             
+        # Check if domain is verified by another user
+        existing = Employer.query.filter(
+            Employer.sso_domain == domain,
+            Employer.id != current_user.id,
+            Employer.domain_verified == True
+        ).first()
+        if existing:
+            return jsonify({
+                'success': False,
+                'error': 'Domain is already verified by another user'
+            })
+            
         # Update user's domain
         current_user.sso_domain = domain
+        db.session.commit()  # Save the domain first
         
         # Verify domain records
-        success, message, record_type = verify_domain_records(domain, current_user.sso_provider)
+        success, message, record_type = verify_domain_records(domain, provider)
         
         if success:
             current_user.domain_verified = True
@@ -304,6 +324,7 @@ def verify_domain():
             current_user.dns_record_type = record_type
             db.session.commit()
             
+            logger.info(f"Domain {domain} verified successfully with {record_type} record")
             return jsonify({
                 'success': True,
                 'domain': domain,
@@ -311,12 +332,14 @@ def verify_domain():
                 'record_type': record_type
             })
         else:
+            logger.warning(f"Domain {domain} verification failed: {message}")
             return jsonify({
                 'success': False,
                 'error': message,
                 'record_type': record_type
             })
     except Exception as e:
+        db.session.rollback()
         logger.exception(f"Error verifying domain: {str(e)}")
         return jsonify({
             'success': False,
@@ -324,6 +347,7 @@ def verify_domain():
         }), 500
 
 @admin_bp.route('/save-sso-settings', methods=['POST'])
+@csrf_protected
 @login_required
 @admin_required
 def save_sso_settings():
@@ -398,15 +422,13 @@ def bot_metrics_stream():
         while True:
             try:
                 metrics = bot_monitor.get_metrics()
-                # Add metrics to AI analyzer
-                health_analyzer.add_metrics_snapshot(metrics)
-                
                 # Get AI health analysis every 5 minutes
                 health_analysis = {}
-                if (not health_analyzer.last_analysis_time or 
-                    datetime.now() - health_analyzer.last_analysis_time > timedelta(minutes=5)):
-                    health_analysis = health_analyzer.analyze_health() 
-                    health_analyzer.last_analysis_time = datetime.now()
+                current_time = datetime.now()
+                if not hasattr(generate, 'last_analysis_time') or \
+                   current_time - generate.last_analysis_time > timedelta(minutes=5):
+                    health_analysis = analyze_bot_health(metrics)
+                    generate.last_analysis_time = current_time
 
                 data = json.dumps({
                     'status': metrics.status,

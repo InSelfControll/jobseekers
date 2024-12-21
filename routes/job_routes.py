@@ -1,30 +1,32 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
+from flask_login import login_required, current_user
+from secops.sec import csrf_protected
+import json
+from extensions import db
 from models import Job
-from services.geo_service import get_nearby_jobs
 
 job_bp = Blueprint('job', __name__)
 
-@job_bp.route('/api/jobs/nearby')
-def nearby_jobs():
-    """API endpoint for nearby jobs search"""
+@job_bp.route('/api/jobs')
+@login_required
+def list_jobs():
+    """API endpoint for jobs search"""
     try:
-        latitude = float(request.args.get('lat'))
-        longitude = float(request.args.get('lng'))
-        radius = float(request.args.get('radius', 15))
-        
-        jobs = get_nearby_jobs(latitude, longitude, radius)
+        jobs = Job.query.all()
         return jsonify([{
-            'id': job.id,
-            'title': job.title,
-            'description': job.description,
-            'location': job.location,
-            'distance': job.distance,
-            'company': job.employer.company_name
-        } for job in jobs])
-    
-    except (ValueError, TypeError):
-        return jsonify({'error': 'Invalid parameters'}), 400
+        'id': job.id,
+        'title': job.title,
+        'description': job.description,
+        'location': job.location,
+        'company': job.employer.company_name
+    } for job in jobs]), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in list_jobs: {str(e)}")
+        return jsonify({'error': 'Failed to fetch jobs'}), 500
+from secops.sec import csrf_protected
+
 @job_bp.route('/api/jobs/import', methods=['POST'])
+@csrf_protected
 def import_jobs():
     """Import jobs from Atlassian or JSON file"""
     try:
@@ -38,9 +40,7 @@ def import_jobs():
                         employer_id=current_user.id,
                         title=job_data['title'],
                         description=job_data['description'],
-                        location=job_data['location'],
-                        latitude=job_data.get('latitude', 0),
-                        longitude=job_data.get('longitude', 0)
+                        location=job_data['location']
                     )
                     db.session.add(job)
                 db.session.commit()
@@ -62,9 +62,7 @@ def import_jobs():
                             employer_id=current_user.id,
                             title=issue['fields']['summary'],
                             description=issue['fields']['description'],
-                            location=issue['fields'].get('customfield_location', 'Remote'),
-                            latitude=0,
-                            longitude=0
+                            location=issue['fields'].get('customfield_location', 'Remote')
                         )
                         db.session.add(job)
                 db.session.commit()

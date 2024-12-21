@@ -1,5 +1,5 @@
-
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app, jsonify
+from secops.sec import csrf_protected, exempt_csrf
 from flask_login import login_user
 from werkzeug.security import generate_password_hash
 from models import Employer
@@ -20,6 +20,7 @@ GITHUB_USER_INFO_URL = 'https://api.github.com/user'
 GITHUB_USER_EMAIL_URL = 'https://api.github.com/user/emails'
 
 @sso_bp.route('/github/login')
+@exempt_csrf
 def github_login():
     domain = request.headers.get('Host')
     employer = Employer.query.filter_by(sso_domain=domain).first()
@@ -37,6 +38,7 @@ def github_login():
     return redirect(url_for('auth.login'))
 
 @sso_bp.route('/github/callback')
+@exempt_csrf
 def github_callback():
     github = OAuth2Session(GITHUB_CLIENT_ID, state=session.get('oauth_state'))
     token = github.fetch_token(
