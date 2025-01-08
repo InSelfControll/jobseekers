@@ -1,0 +1,87 @@
+<nav class="main-nav">
+    <div class="nav-container">
+        <div class="nav-brand">
+            <a href="{{ url_for('employer.dashboard') }}">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Job Hunter" class="nav-logo">
+                <span class="brand-text">Job Hunter</span>
+            </a>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="nav-links">
+            <a href="{{ url_for('employer.dashboard') }}" class="nav-item {% if request.endpoint == 'employer.dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{{ url_for('employer.jobs') }}" class="nav-item {% if request.endpoint == 'employer.jobs' %}active{% endif %}">
+                <i class="fas fa-briefcase"></i> Jobs
+            </a>
+            <a href="{{ url_for('employer.applications') }}" class="nav-item {% if request.endpoint == 'employer.applications' %}active{% endif %}">
+                <i class="fas fa-users"></i> Applications
+            </a>
+
+            {% if current_user.is_admin %}
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog"></i> Admin
+                </a>
+                <div class="dropdown-menu">
+                    <!-- SSO & Domain Settings Dropdown -->
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle" href="#">
+                            <i class="fas fa-key"></i> SSO & Domain Settings
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{{ url_for('admin.sso_config') }}">
+                                <i class="fas fa-sign-in-alt"></i> SSO Configuration
+                            </a>
+                            <a class="dropdown-item" href="{{ url_for('admin.domain_config') }}">
+                                <i class="fas fa-globe"></i> Domain Management
+                            </a>
+                            <a class="dropdown-item" href="{{ url_for('admin.dns_settings') }}">
+                                <i class="fas fa-network-wired"></i> DNS Settings
+                            </a>
+                            {% if current_user.domain_verified %}
+                            <a class="dropdown-item" href="{{ url_for('admin.ssl_config') }}">
+                                <i class="fas fa-shield-alt"></i> SSL Configuration
+                            </a>
+                            <a class="dropdown-item" href="{{ url_for('admin.email_settings') }}">
+                                <i class="fas fa-envelope"></i> Email Settings
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="dropdown-divider"></div>
+
+                    <a class="dropdown-item" href="{{ url_for('admin.bot_monitoring') }}">
+                        <i class="fas fa-robot"></i> Bot Monitoring
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="nav-user">
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+            <div class="user-dropdown">
+                <button class="user-menu-btn" data-bs-toggle="dropdown">
+                    <div class="user-avatar">{{ current_user.company_name[0] | upper }}</div>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <div class="dropdown-header">
+                        <small class="text-muted">Signed in as</small>
+                        <div class="fw-bold">{{ current_user.company_name }}</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</nav>

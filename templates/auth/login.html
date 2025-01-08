@@ -1,26 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center min-vh-100">
-    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">Employer Login</h3>
-                
-                <form method="POST" action="{{ url_for('auth.login') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="auth-container animate__animated animate__fadeIn">
+    <div class="auth-card">
+        <div class="auth-header text-center">
+            <i data-feather="user" class="auth-icon mb-4"></i>
+            <h3 class="gradient-text">Welcome Back</h3>
+            <p class="text-muted">Sign in to your employer account</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('auth.login') }}" accept-charset="UTF-8" class="auth-form">
+                    {{ form.csrf_token }}
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" required>
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control") }}
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" required>
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control") }}
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Login</button>
+                        {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
                 

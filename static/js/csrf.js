@@ -22,9 +22,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!options.headers) {
                 options.headers = {};
             }
-            if (options.method && ['POST', 'PUT', 'PATCH','DELETE'].includes(options.method.toUpperCase())) {
-		    options.headers['X-CSRFToken'] = token;
-	    }
+            // Add token for any non-GET/HEAD/OPTIONS request
+            if (options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) {
+                options.headers['X-CSRFToken'] = token;
+            }
+            // Add token for JSON content type
+            if (options.headers['Content-Type'] === 'application/json') {
+                options.headers['X-CSRFToken'] = token;
+            }
             return originalFetch(url, options);
         };
 

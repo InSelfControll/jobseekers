@@ -1,96 +1,149 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<div class="container">
+    <h2 class="mb-4">Job Applications</h2>
 
-{% block content %}
-<h2>Job Applications</h2>
+    <div class="applications-container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Job Title</th>
+                                        <th>Applicant</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Test Score</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications %}
+                                    <tr>
+                                        <td>{{ application.job.title }}</td>
+                                        <td>{{ application.job_seeker.full_name }}</td>
+                                        <td>{{ application.job_seeker.phone_number }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('employer.update_application', app_id=application.id) }}" class="d-inline">
+                                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                    <option value="pending" {% if application.status == 'pending' %}selected{% endif %}>Pending</option>
+                                                    <option value="test_sent" {% if application.status == 'test_sent' %}selected{% endif %}>Test Sent</option>
+                                                    <option value="accepted" {% if application.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                                                    <option value="rejected" {% if application.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                                </select>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            {% if application.test_score %} {{ application.test_score }}% {% else %} - {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ application.id }}">
+                                                    View Details
+                                                </button> {% if application.job_seeker.resume_path %}
+                                                <a href="{{ url_for('employer.download_resume', application_id=application.id) }}" class="btn btn-sm btn-outline-info">
+                                                    Download CV
+                                                </a> {% endif %}
+                                                <button class="btn btn-sm btn-outline-success send-test" data-application-id="{{ application.id }}" {% if application.test_sent %}disabled{% endif %}>
+                                                    Send Test
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
 
-<div class="table-responsive">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Job Title</th>
-                <th>Applicant</th>
-                <th>Phone Number</th>
-                <th>Status</th>
-                <th>Application Date</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for application in applications %}
-            <tr>
-                <td>{{ application.job.title }}</td>
-                <td>{{ application.job_seeker.full_name }}</td>
-                <td>{{ application.job_seeker.phone_number }}</td>
-                <td>
-                    <form method="POST" action="{{ url_for('employer.update_application', app_id=application.id) }}"
-                          class="d-inline">
-                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="pending" {% if application.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="accepted" {% if application.status == 'accepted' %}selected{% endif %}>Accepted</option>
-                            <option value="rejected" {% if application.status == 'rejected' %}selected{% endif %}>Rejected</option>
-                        </select>
-                    </form>
-                </td>
-                <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" 
-                            data-bs-target="#viewModal{{ application.id }}">
-                        View Details
-                    </button>
-                    {% if application.job_seeker.resume_path %}
-                    <a href="{{ url_for('static', filename='uploads/' + application.job_seeker.resume_path) }}" 
-                       class="btn btn-sm btn-info" target="_blank">
-                        View CV
-                    </a>
-                    {% endif %}
-                    <a href="https://t.me/{{ application.job_seeker.telegram_id }}?text=Hello, I'm from {{ application.job.employer.company_name }}!" 
-                       class="btn btn-sm btn-success" target="_blank">
-                        Message on Telegram
-                    </a>
-                </td>
-            </tr>
-            
-            <!-- View Modal -->
-            <div class="modal fade" id="viewModal{{ application.id }}" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Application Details</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <h6>Cover Letter</h6>
-                            <div class="mb-4">{{ application.cover_letter }}</div>
-                            
-                            <h6>Skills</h6>
-                            <div class="mb-4">
-                                {% for category, skills in application.job_seeker.skills.items() %}
-                                <strong>{{ category }}:</strong> {{ skills|join(', ') }}<br>
-                                {% endfor %}
-                            </div>
-                            
-                            <h6>Messages</h6>
-                            <div class="messages-container mb-3">
-                                {% for message in application.messages %}
-                                <div class="message {% if message.sender_type == 'employer' %}text-end{% endif %}">
-                                    <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                    <div class="message-content">{{ message.content }}</div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            
-                            <form method="POST" action="{{ url_for('employer.send_message', app_id=application.id) }}">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="message" placeholder="Type a message...">
-                                    <button type="submit" class="btn btn-primary">Send</button>
-                                </div>
-                            </form>
+                                    <!-- View Modal -->
+                                    <div class="modal fade" id="viewModal{{ application.id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Application Details</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <h6>Cover Letter</h6>
+                                                    <div class="mb-4">{{ application.cover_letter }}</div>
+
+                                                    <h6>Skills</h6>
+                                                    <div class="mb-4">
+                                                        {% for category, skills in application.job_seeker.skills.items() %}
+                                                        <strong>{{ category }}:</strong> {{ skills|join(', ') }}<br> {% endfor %}
+                                                    </div>
+
+                                                    <h6>Messages</h6>
+                                                    <div class="messages-container mb-3">
+                                                        {% for message in application.messages %}
+                                                        <div class="message {% if message.sender_type == 'employer' %}text-end{% endif %}">
+                                                            <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                                            <div class="message-content">{{ message.content }}</div>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+
+                                                    <form method="POST" action="{{ url_for('employer.send_message', app_id=application.id) }}">
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control" name="message" placeholder="Type a message...">
+                                                            <button type="submit" class="btn btn-primary">Send</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        </tbody>
-    </table>
+
+            <div class="col-md-4">
+                <div class="chat-widget card">
+                    <div class="card-header">
+                        <h5><i data-feather="message-square"></i> Conversation</h5>
+                    </div>
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
+                            <button class="btn btn-primary" id="sendMessage">
+                                <i data-feather="send"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Test Modal -->
+<div class="modal fade" id="sendTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Test to Candidate</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="testForm">
+                    <div class="mb-3">
+                        <label class="form-label">Passing Score (%)</label>
+                        <input type="number" class="form-control" name="passing_score" min="65" max="90" value="75" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Instructions (Optional)</label>
+                        <textarea class="form-control" name="instructions" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendTestBtn">Send Test</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

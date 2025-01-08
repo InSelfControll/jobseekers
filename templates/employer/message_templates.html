@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Application Message Templates</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4>Response Templates</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('employer.save_message_templates') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-4">
+                    <label class="form-label">Accepted Application Message</label>
+                    <textarea class="form-control" name="accepted_message" rows="4" required>{{ templates.accepted_message }}</textarea>
+                    <small class="text-muted">Use {candidate_name} and {company_name} as placeholders</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Rejected Application Message</label>
+                    <textarea class="form-control" name="rejected_message" rows="4" required>{{ templates.rejected_message }}</textarea>
+                    <small class="text-muted">Use {candidate_name} and {company_name} as placeholders</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Pending Review Message</label>
+                    <textarea class="form-control" name="pending_message" rows="4" required>{{ templates.pending_message }}</textarea>
+                    <small class="text-muted">Use {candidate_name} and {company_name} as placeholders</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Test Instructions Template</label>
+                    <textarea class="form-control" name="test_message" rows="4" required>{{ templates.test_message }}</textarea>
+                    <small class="text-muted">Use {candidate_name}, {test_link}, and {passing_score} as placeholders</small>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Default Passing Score (%)</label>
+                    <input type="number" class="form-control" name="default_passing_score" 
+                           min="65" max="90" value="{{ templates.default_passing_score }}" required>
+                    <small class="text-muted">Set the default passing score for tests (65-90%)</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save Templates</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

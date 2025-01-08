@@ -1,3 +1,4 @@
+from builtins import Exception, bool, str
 import os
 import logging
 from typing import Dict, Optional, Tuple
@@ -104,7 +105,6 @@ class DomainService:
         except Exception as e:
             logger.exception("Error in _deploy_nginx_config")
             return False, str(e)
-
     def _configure_sso(self, employer: Employer) -> Tuple[bool, str]:
         """
         Configure SSO settings for the custom domain
@@ -113,8 +113,8 @@ class DomainService:
             if not employer.sso_provider:
                 return True, "No SSO provider configured"
 
-            if employer.sso_provider == 'AZURE':
-                return self._configure_azure_sso(employer)
+            if employer.sso_provider == 'AUTH0':
+                return self._configure_auth0_sso(employer)
             elif employer.sso_provider == 'GITHUB':
                 return self._configure_github_sso(employer)
             else:
@@ -123,7 +123,6 @@ class DomainService:
         except Exception as e:
             logger.exception("Error in _configure_sso")
             return False, str(e)
-
     def _configure_azure_sso(self, employer: Employer) -> Tuple[bool, str]:
         """
         Configure Azure AD SSO settings
@@ -144,7 +143,7 @@ class DomainService:
             logger.exception("Error in _configure_azure_sso")
             return False, str(e)
 
-    def _configure_github_sso(self, employer: Employer) -> Tuple[bool, str]:
+    def _configure_github_sso(self, employer: Employer) -> Tuple[bool, str]: # type: ignore
         """
         Configure GitHub SSO settings
         """
@@ -162,4 +161,21 @@ class DomainService:
 
         except Exception as e:
             logger.exception("Error in _configure_github_sso")
+            return False, str(e)
+
+    def _configure_auth0_sso(self, employer: Employer) -> Tuple[bool, str]:
+        """Configure Auth0 SSO settings"""
+        try:
+            if not employer.sso_config or not all(k in employer.sso_config for k in ['domain', 'client_id', 'client_secret']):
+                return False, "Missing required Auth0 configuration"
+
+            employer.sso_config.update({
+                'callback_url': f"https://{employer.sso_domain}/auth/auth0/callback",
+                'logout_url': f"https://{employer.sso_domain}/auth/auth0/logout"
+            })
+
+            return True, "Auth0 SSO configured successfully"
+
+        except Exception as e:
+            logger.exception("Error in _configure_auth0_sso")
             return False, str(e)

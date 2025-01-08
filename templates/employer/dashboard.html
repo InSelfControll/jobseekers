@@ -1,125 +1,227 @@
-
-{% extends "base.html" %}
-
-{% block content %}
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <h2>Welcome, {{ current_user.company_name }}!</h2>
-        <div class="d-flex gap-3 mb-3">
-            <a href="{{ url_for('employer.jobs') }}" class="btn btn-primary flex-1" style="flex: 1; padding: 8px 16px">Manage Jobs</a>
-            <a href="{{ url_for('employer.applications') }}" class="btn btn-success flex-1" style="flex: 1; padding: 8px 16px">View Applications</a>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">Active Jobs</h5>
-                <h2 class="card-text">{{ active_jobs }}</h2>
+{% extends "base.html" %} {% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="gradient-text">Welcome, {{ current_user.company_name }}!</h2>
+            <div class="action-buttons">
+                <a href="{{ url_for('employer.jobs') }}" class="btn btn-primary">
+                    <i data-feather="plus-circle"></i> Post New Job
+                </a>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">Total Applications</h5>
-                <h2 class="card-text">{{ total_applications }}</h2>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card gradient-border">
+            <div class="stat-icon pulse">
+                <i data-feather="briefcase"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value gradient-text">{{ active_jobs }}</div>
+                <div class="stat-label">Active Jobs</div>
+                <div class="stat-trend">
+                    {% if jobs_trend is defined %}
+                        {% if jobs_trend > 0 %}
+                        <i data-feather="trending-up" class="text-success"></i>
+                        <span class="text-success">+{{ jobs_trend }}%</span>
+                        {% else %}
+                        <i data-feather="trending-down" class="text-danger"></i>
+                        <span class="text-danger">{{ jobs_trend }}%</span>
+                        {% endif %}
+                    {% else %}
+                        <i data-feather="minus"></i>
+                        <span class="text-muted">No trend data</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i data-feather="users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_applications }}</div>
+                <div class="stat-label">Total Applications</div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-md-12">
-        <h3>Recent Applications</h3>
+    <!-- Recent Applications -->
+    <div class="applications-section">
+        <div class="section-header">
+            <h3>Recent Applications</h3>
+            <a href="{{ url_for('employer.jobs') }}" class="btn btn-outline-primary btn-sm">
+                View All
+            </a>
+        </div>
+
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
                         <th>Job Title</th>
                         <th>Applicant</th>
-
-<!-- Chat Widget -->
-<div class="chat-widget" id="chatWidget">
-    <div class="chat-header">
-        <h5>Candidate Chat</h5>
-        <button class="minimize-btn" onclick="toggleChat()">-</button>
-    </div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input">
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button onclick="sendMessage()">Send</button>
-    </div>
-</div>
-
-<script>
-let chatSocket = null;
-
-function connectChat() {
-    const employerId = '{{ current_user.id }}';
-    chatSocket = new WebSocket(`wss://${window.location.host}/ws/chat/${employerId}`);
-    
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        appendMessage(data.sender, data.message);
-    };
-}
-
-function appendMessage(sender, message) {
-    const messagesDiv = document.getElementById('chatMessages');
-    messagesDiv.innerHTML += `
-        <div class="message ${sender === 'employer' ? 'sent' : 'received'}">
-            <span>${message}</span>
-        </div>
-    `;
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function sendMessage() {
-    const input = document.getElementById('messageInput');
-    if (input.value && chatSocket) {
-        chatSocket.send(JSON.stringify({
-            message: input.value,
-            sender: 'employer'
-        }));
-        input.value = '';
-    }
-}
-
-function toggleChat() {
-    const widget = document.getElementById('chatWidget');
-    widget.classList.toggle('minimized');
-}
-
-// Connect when page loads
-document.addEventListener('DOMContentLoaded', connectChat);
-</script>
-
                         <th>Status</th>
                         <th>Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for job in jobs %}
-                        {% for application in job.applications[:5] %}
-                        <tr>
-                            <td>{{ job.title }}</td>
-                            <td>{{ application.job_seeker.full_name }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'success' if application.status == 'accepted' 
-                                    else 'danger' if application.status == 'rejected' 
-                                    else 'warning' }}">
+                    {% for job in jobs %} {% for application in job.applications[:5] %}
+                    <tr>
+                        <td>{{ job.title }}</td>
+                        <td>{{ application.job_seeker.full_name }}</td>
+                        <td>
+                            <span class="status-badge status-{{ application.status }}">
                                     {{ application.status }}
                                 </span>
-                            </td>
-                            <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
-                        </tr>
-                        {% endfor %}
+                        </td>
+                        <td>{{ application.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openChat('{{ application.id }}')">
+                                    <i data-feather="message-square"></i>
+                                    Chat
+                                </button>
+                        </td>
+                    </tr>
+                    {% endfor %} {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            No applications yet
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget" id="chatWidget">
+        <div class="chat-header">
+            <h5><i data-feather="message-circle"></i> Candidate Chat</h5>
+            <div class="chat-controls">
+                <button class="btn btn-icon" onclick="minimizeChat()">
+                    <i data-feather="minus"></i>
+                </button>
+                <button class="btn btn-icon" onclick="closeChat()">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+            <button class="btn btn-primary" onclick="sendMessage()">
+                <i data-feather="send"></i>
+            </button>
+        </div>
+    </div>
 </div>
+
+{% endblock %} {% block scripts %}
+<script>
+    // Initialize Feather icons after content loads
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+        initializeChat();
+    });
+
+    // Chat functionality
+    let chatSocket = null;
+    let currentChatId = null;
+
+    function initializeChat() {
+        const employerId = '{{ current_user.id }}';
+        chatSocket = new WebSocket(`wss://${window.location.host}/ws/chat/${employerId}`);
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            appendMessage(data.sender, data.message);
+        };
+
+        chatSocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+            showErrorMessage('Chat connection failed');
+        };
+    }
+
+    function openChat(applicationId) {
+        currentChatId = applicationId;
+        const widget = document.getElementById('chatWidget');
+        widget.classList.remove('minimized');
+        widget.classList.add('active');
+        loadChatHistory(applicationId);
+    }
+
+    function minimizeChat() {
+        const widget = document.getElementById('chatWidget');
+        widget.classList.toggle('minimized');
+    }
+
+    function closeChat() {
+        const widget = document.getElementById('chatWidget');
+        widget.classList.remove('active');
+        currentChatId = null;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+
+        if (message && chatSocket && currentChatId) {
+            chatSocket.send(JSON.stringify({
+                message: message,
+                sender: 'employer',
+                application_id: currentChatId
+            }));
+            input.value = '';
+        }
+    }
+
+    function appendMessage(sender, message) {
+        const messagesDiv = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender === 'employer' ? 'sent' : 'received'}`;
+        messageDiv.innerHTML = `<span>${message}</span>`;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function loadChatHistory(applicationId) {
+        try {
+            const response = await fetch(`/api/chat-history/${applicationId}`);
+            const messages = await response.json();
+
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML = '';
+
+            messages.forEach(msg => {
+                appendMessage(msg.sender, msg.content);
+            });
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+            showErrorMessage('Failed to load chat history');
+        }
+    }
+
+    function showErrorMessage(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.dashboard-container').prepend(alertDiv);
+    }
+</script>
 {% endblock %}

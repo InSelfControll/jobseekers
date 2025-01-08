@@ -1,0 +1,151 @@
+2025-01-04 20:05:32,295 [INFO] bot.handlers: Resume saved at 542185571/3ff5cb6f-578a-458f-b61d-18b4e24c7d94_file_29.pdf
+2025-01-04 20:05:34,847 [ERROR] services.file_service: Abacus AI API error: <!doctype html>
+<html class="no-js" lang="">
+  <head>
+    <title>
+      Abacus.AI - Effortlessly Embed Cutting Edge AI In Your Applications.
+    </title>
+    <meta
+      name="description"
+      content="Abacus.AI is a foundational AI research company that  solves the hard problems that enterprises face in the AI/ML space, and packages that research into easy-to-use cloud services."
+    />
+
+    <link id="iconFav1" rel="shortcut icon" href="/icon2/favicon.ico" />
+    <link
+      id="iconFav2"
+      rel="icon"
+      type="image/x-icon"
+      sizes="16x16 32x32"
+      href="/icon2/favicon.ico"
+    />
+    <link rel="icon" sizes="192x192" href="/icon2/favicon-192.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/favicon-180-precomposed.png"
+    />
+    <meta name="msapplication-TileColor" content="#FFFFFF" />
+    <meta name="msapplication-TileImage" content="/icon2/favicon-144.png" />
+
+    <meta
+      name="viewport"
+      content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"
+    />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css?family=Lato:100,100i,300,300i,400,400i,700,700i,900,900i"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/static/css/uikit.min.css" />
+    <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/uikit-icons.min.js"></script>
+
+    <link rel="stylesheet" href="/css/general.css" />
+
+    <script src="/static/js/jquery-3.7.1.min.js"></script>
+    <script src="/static/js/anime.min.js"></script>
+    <script src="/static/js/lodash-4.17.21.min.js"></script>
+    <script src="/static/js/velocity.min.js"></script>
+    <script src="/static/js/store.everything.min.js"></script>
+    <script src="/static/js/js.storage.min.js"></script>
+    <script
+      src="https://browser.sentry-cdn.com/6.2.0/bundle.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="/static/css/semantic.css" />
+    <script src="/static/js/semantic.min.js"></script>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-NM4YZNYB7G"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date(), { cookie_flags: "secure;samesite=none" });
+
+      gtag("config", "G-NM4YZNYB7G", { cookie_flags: "secure;samesite=none" });
+    </script>
+    <script>
+      var cancelAnim = false;
+      var isRunMobile = false;
+      var tokenLand = null;
+    </script>
+  </head>
+  <body style="margin: 0; padding: 0" class="backBlue">
+    <div
+      style="
+        margin: 0;
+        padding: 0;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: 0;
+        z-index: 1;
+      "
+      class="backBlue"
+    >
+      <div class="backCircles" style="z-index: 2"></div>
+      <div style="overflow: hidden; position: relative; background: inherit">
+        <div
+          id="main"
+          class="contentBody"
+          style="position: relative; margin: 0 auto 80px auto; z-index: 4"
+        >
+          <img
+            src="/static/imgs/logo_text80.webp"
+            style="width: 338px; position: absolute; top: 45px; left: 50px"
+            onclick="goTab('/')"
+          />
+          <div style="text-align: center">
+            <img
+              src="/static/imgs/404.webp"
+              style="margin-top: 190px; width: 500px"
+              alt=""
+            />
+            <h2 style="margin-top: 70px">This page doesn't exist!</h2>
+            <div
+              class="getInvited"
+              style="
+                cursor: pointer;
+                margin-top: 50px;
+                display: inline-block;
+                padding: 13px 24px;
+                border-radius: 44px;
+                color: #f1f1f1;
+                font-size: 23px;
+                font-weight: 400;
+                font-family: Matter, sans-serif;
+              "
+              onclick="goTab('/')"
+            >
+              Go Home
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/general.js?t=6"></script>
+  </body>
+</html>
+
+2025-01-04 20:05:34,848 [INFO] bot.handlers: Skills extracted successfully: {'extracted_skills': ['communication', 'teamwork']}
+2025-01-04 20:05:34,850 [ERROR] bot.handlers: Database error: Mapper 'Mapper[Employer(employer)]' has no property 'jobs'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
+2025-01-04 20:05:34,850 [ERROR] bot.handlers: Error in handle_resume for user 542185571: Mapper 'Mapper[Employer(employer)]' has no property 'jobs'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
+

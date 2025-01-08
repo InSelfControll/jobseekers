@@ -1,26 +1,22 @@
-
+# Standard library imports
 import os
 import time
-from datetime import datetime, timedelta
-import subprocess
-import logging
-from models import Employer
-from extensions import db, create_app
-from certbot import main as certbot_main
-from flask import current_app
 import shutil
+import threading
+import subprocess
+from datetime import datetime, timedelta
+
+# Third-party imports
+import schedule
+from certbot import main as certbot_main
+from .logging_service import logging_service
+
+# Get structured logger
+logger = logging_service.get_structured_logger(__name__)
 
 def setup_cert_renewal_check():
     """Set up periodic SSL certificate renewal checks with enhanced monitoring and error handling"""
-    from extensions import db, create_app
-    from models import Employer
-    import schedule
-    import time
-    import threading
-    import logging
-    from datetime import datetime, timedelta
 
-    logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
     def notify_admin(employer, message, level='info'):
@@ -41,6 +37,7 @@ def setup_cert_renewal_check():
     def check_and_renew():
         """Check and renew certificates with enhanced error handling and monitoring"""
         try:
+            from app import create_app
             app = create_app()
             with app.app_context():
                 logger.info("Starting certificate renewal check")
@@ -125,13 +122,21 @@ def setup_cert_renewal_check():
     thread.start()
     logger.info("SSL certificate renewal checker initialized with enhanced monitoring")
 
-class SSLService:
+# Local application imports
+from models import Employer
+from core.service_interface import ServiceInterface
+from core.service_registry import service_registry
+from services.logging_service import logging_service
+
+class SSLService(ServiceInterface):
     def __init__(self, domain, email):
+        super().__init__()
         self.domain = domain
         self.email = email
         self.cert_dir = '/home/runner/letsencrypt'
         self.live_cert_dir = f'{self.cert_dir}/live/{domain}'
-        self.logger = logging.getLogger(__name__)
+        self.register_required_service('certificate_management')
+        self.register_required_service('database')
         
         try:
             # Create cert directory with proper permissions
@@ -152,39 +157,67 @@ class SSLService:
         except Exception as e:
             self.logger.error(f"Error initializing SSL service: {str(e)}")
             raise
-
     def check_existing_certificate(self):
-        """Check if valid certificate exists for domain"""
+        """Check if valid certificate exists for domain with enhanced validation"""
         if not os.path.exists(self.live_cert_dir):
+            self.logger.warning(f"Certificate directory not found: {self.live_cert_dir}")
             return False
             
         try:
-            # Check certificate expiry
             cert_path = os.path.join(self.live_cert_dir, 'cert.pem')
             if not os.path.exists(cert_path):
+                self.logger.warning(f"Certificate file not found: {cert_path}")
+                return False
+
+            # Verify certificate file permissions
+            cert_stat = os.stat(cert_path)
+            if cert_stat.st_mode & 0o077:  # Check if group/others have any access
+                self.logger.error(f"Certificate has unsafe permissions: {oct(cert_stat.st_mode)}")
                 return False
                 
+            # Check certificate validity
             output = subprocess.check_output(
                 ['openssl', 'x509', '-enddate', '-noout', '-in', cert_path],
                 universal_newlines=True)
             expiry_str = output.split('=')[1].strip()
             expiry_date = datetime.strptime(expiry_str, '%b %d %H:%M:%S %Y %Z')
             
-            # Return True if certificate is still valid (not expired)
-            return expiry_date > datetime.now()
+            # Check certificate start date
+            validity_output = subprocess.check_output(
+                ['openssl', 'x509', '-startdate', '-noout', '-in', cert_path],
+                universal_newlines=True)
+            start_str = validity_output.split('=')[1].strip()
+            start_date = datetime.strptime(start_str, '%b %d %H:%M:%S %Y %Z')
+            
+            now = datetime.now()
+            
+            # Certificate must be:
+            # 1. Already valid (start date in past)
+            # 2. Not expired (end date in future) 
+            # 3. Not expiring within 14 days
+            if start_date > now:
+                self.logger.warning("Certificate not yet valid")
+                return False
+                
+            if expiry_date <= now:
+                self.logger.warning("Certificate has expired")
+                return False
+                
+            days_until_expiry = (expiry_date - now).days
+            if days_until_expiry <= 14:
+                self.logger.warning(f"Certificate expiring soon ({days_until_expiry} days)")
+                return False
+                
+            self.logger.info(f"Certificate valid until {expiry_date}")
+            return True
         except Exception as e:
             logging.error(f"Error checking certificate: {str(e)}")
             return False
 
-    def configure_certificate(self):
-        """Configure existing certificate for the domain"""
+    def _update_employer_certificate(self, cert_path, key_path):
+        """Update employer certificate information in database"""
         try:
-            cert_path = os.path.join(self.live_cert_dir, 'fullchain.pem')
-            key_path = os.path.join(self.live_cert_dir, 'privkey.pem')
-            
-            if not os.path.exists(cert_path) or not os.path.exists(key_path):
-                return False, "Certificate files not found"
-
+            db = service_registry.get_service('database')
             employer = Employer.query.filter_by(sso_domain=self.domain).first()
             if not employer:
                 return False, "Employer not found"
@@ -196,12 +229,25 @@ class SSLService:
             employer.domain_verified = True
 
             db.session.commit()
-            logging.info("SSL certificate configured successfully")
+            self.logger.info("SSL certificate configured successfully")
             return True, "Certificate configured successfully"
         except Exception as e:
-            logging.error(f"Certificate configuration failed: {str(e)}")
+            self.logger.error(f"Certificate configuration failed: {str(e)}")
             return False, str(e)
 
+    def configure_certificate(self):
+        """Configure existing certificate for the domain"""
+        try:
+            cert_path = os.path.join(self.live_cert_dir, 'fullchain.pem')
+            key_path = os.path.join(self.live_cert_dir, 'privkey.pem')
+            
+            if not os.path.exists(cert_path) or not os.path.exists(key_path):
+                return False, "Certificate files not found"
+
+            return self._update_employer_certificate(cert_path, key_path)
+        except Exception as e:
+            self.logger.error(f"Certificate configuration failed: {str(e)}")
+            return False, str(e)
     def generate_certificate(self):
         """Generate or renew Let's Encrypt SSL certificate with enhanced error handling and cleanup"""
         credentials_path = None
@@ -320,4 +366,102 @@ class SSLService:
             return None
         except Exception as e:
             self.logger.error(f"Failed to get certificate expiry: {str(e)}")
-            return None
+import os
+import logging
+from datetime import datetime, timedelta
+import schedule
+import threading
+import time
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+
+logger = logging.getLogger(__name__)
+
+def check_cert_expiry(cert_path):
+    """Check if a certificate is nearing expiration"""
+    try:
+        with open(cert_path, 'rb') as cert_file:
+            cert_data = cert_file.read()
+            cert = x509.load_pem_x509_certificate(cert_data, default_backend())
+            
+            # Get expiration date
+            expiry_date = cert.not_valid_after
+            
+            # Check if cert expires within 30 days
+            if expiry_date - datetime.now() < timedelta(days=30):
+                logger.warning(f"Certificate {cert_path} expires soon: {expiry_date}")
+                return False
+            return True
+    except Exception as e:
+        logger.error(f"Error checking certificate {cert_path}: {e}")
+        return False
+
+    async def initialize(self) -> bool:
+        """Initialize the SSL service"""
+        try:
+            # Ensure database service is ready
+            if not service_registry.status.is_service_ready('database'):
+                await service_registry._initialize_service('database')
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to initialize SSL service: {str(e)}")
+            return False
+
+    async def cleanup(self) -> bool:
+        """Clean up SSL service resources"""
+        try:
+            # Cleanup any temporary files or resources
+            if os.path.exists(self.cert_dir):
+                shutil.rmtree(self.cert_dir)
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup SSL service: {str(e)}")
+            return False
+
+    async def health_check(self) -> Dict[str, Any]:
+        """Check SSL service health"""
+        return {
+            'status': 'healthy' if os.path.exists(self.cert_dir) else 'unhealthy',
+            'cert_dir_exists': os.path.exists(self.cert_dir),
+            'domain': self.domain
+        }
+
+def renew_certificates():
+    """Renew SSL certificates"""
+    try:
+        from flask import current_app
+        cert_dir = current_app.config['SSL_CERT_DIR']
+        
+        # Check each certificate in the directory
+        for filename in os.listdir(cert_dir):
+            if filename.endswith('.pem'):
+                cert_path = os.path.join(cert_dir, filename)
+                if not check_cert_expiry(cert_path):
+                    # Implement certificate renewal logic here
+                    logger.info(f"Certificate renewal needed for {cert_path}")
+                    
+    except Exception as e:
+        logger.error(f"Certificate renewal check failed: {e}")
+
+def run_schedule():
+    """Run the scheduler"""
+    while True:
+        schedule.run_pending()
+        time.sleep(3600)  # Check every hour
+
+def setup_cert_renewal_check():
+    """Setup the certificate renewal check schedule"""
+    try:
+        # Schedule daily certificate checks
+        schedule.every().day.at("00:00").do(renew_certificates)
+        
+        # Run scheduler in background thread
+        scheduler_thread = threading.Thread(target=run_schedule)
+        scheduler_thread.daemon = True
+        scheduler_thread.start()
+        
+        logger.info("Certificate renewal check scheduled successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to setup certificate renewal check: {e}")
+        return False

@@ -8,7 +8,7 @@
         <div class="row">
             <div class="col-md-6">
                 <h6>From JSON File</h6>
-                <form action="{{ url_for('job.import_jobs') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ url_for('employer.import_jobs') }}" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="file" name="job_file" accept=".json" class="form-control mb-2">
                     <button type="submit" class="btn btn-primary">Import JSON</button>
@@ -25,7 +25,7 @@
         </div>
     </div>
 </div>
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
 
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newJobModal">
         <i data-feather="plus"></i> Post New Job
@@ -113,7 +113,7 @@
 <!-- New Job Modal -->
 <div class="modal fade" id="newJobModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark text-light">
+        <div class="modal-content">
             <form method="POST" action="{{ url_for('employer.new_job') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header border-secondary">
@@ -121,18 +121,17 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label text-light">Job Title</label>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" name="title" placeholder="Enter job title" required>
+                    <div class="modal-form-group">
+                        <label class="form-label">Job Title</label>
+                        <input type="text" class="form-control" name="title" placeholder="Enter job title" required>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label text-light">Description</label>
-                        <textarea class="form-control bg-dark text-light border-secondary" name="description" rows="4" placeholder="Enter job description" required></textarea>
+                    <div class="modal-form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="4" placeholder="Enter job description" required></textarea>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label text-light">Location</label>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" 
-                               name="location" placeholder="e.g. New York, NY or Remote" required>
+                    <div class="modal-form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-control" name="location" placeholder="e.g. New York, NY or Remote" required>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">

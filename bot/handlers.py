@@ -1,34 +1,46 @@
 import logging
-from datetime import datetime
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, error as telegram_error
-from telegram.ext import (ContextTypes, ConversationHandler, CommandHandler,
-                          MessageHandler, filters, CallbackContext)
-from models import JobSeeker, Job, Application
-from services.ai_service import extract_skills, generate_cover_letter
-from services.geo_service import get_nearby_jobs
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
+from telegram.ext import ContextTypes, ConversationHandler, filters
+from models import JobSeeker, Job, Application, Employer
+from .decorators import monitor_handler, async_error_handler
 from services.file_service import save_resume
-from extensions import db
-from .middleware import monitor_handler, async_error_handler
 
 logger = logging.getLogger(__name__)
 
+# Define conversation states
 FULL_NAME, PHONE_NUMBER, LOCATION, RESUME = range(4)
 
-
-@monitor_handler
-@async_error_handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send welcome message when /start command is issued"""
+    logger.info("Start command received")
+    if not update or not update.effective_user:
+        logger.error("Invalid update object received")
+        return
+    
+    logger.info(f"Processing start command for user {update.effective_user.id}")
+
     try:
-        await update.message.reply_text(
-            "Welcome to the Job Application Bot! 🎯\n"
-            "Use /register to create your profile and start applying for jobs."
+        user_id = update.effective_user.id
+        logger.info(f"Start command received from user {user_id}")
+        
+        welcome_message = (
+            "👋 Welcome to the Job Application Bot! 🎯\n\n"
+            "I can help you find and apply for jobs near you.\n\n"
+            "Available commands:\n"
+            "🔹 /register - Create your profile\n"
+            "🔹 /search - Find jobs near you\n"
+            "🔹 /apply <job_id> - Apply for a specific job\n"
+            "🔹 /cancel - Cancel current operation\n\n"
+            "Let's get started! Use /register to create your profile."
         )
-        logger.info(f"Start command used by user {update.effective_user.id}")
+        
+        await update.message.reply_text(welcome_message)
+        logger.info(f"Start command response sent to user {user_id}")
+        
     except Exception as e:
         logger.error(f"Error in start command: {e}")
         await update.message.reply_text(
-            "Sorry, something went wrong. Please try again.")
+            "😔 Sorry, something went wrong. Please try /start again.")
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -96,9 +108,10 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the resume upload with proper database operations"""
     from app import create_app
     from extensions import db
+    from services.file_service import extract_skills
     logger = logging.getLogger(__name__)
 
-    app = create_app()
+    app = await create_app()
     if not app:
         logger.error("Failed to create application context")
         await update.message.reply_text(
@@ -162,7 +175,14 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Continue with default skills
 
         # Database operations
-        with app.app_context():
+        if not app:
+            logger.error("Failed to create application context")
+            await update.message.reply_text(
+                "System error: Unable to access application context. "
+                "Please try again later.")
+            return ConversationHandler.END
+
+        with app.app_context():  # Use regular context manager
             try:
                 # Check for existing profile
                 existing_profile = JobSeeker.query.filter_by(
@@ -209,12 +229,19 @@ async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 raise
 
     except Exception as e:
+        error_msg = str(e)
         logger.error(
-            f"Error in handle_resume for user {update.effective_user.id}: {str(e)}"
+            f"Error in handle_resume for user {update.effective_user.id}: {error_msg}"
         )
-        await update.message.reply_text(
-            "Sorry, there was an error processing your registration. "
-            "Please try again with /register")
+        
+        if "app_context" in error_msg:
+            await update.message.reply_text(
+                "System error: Unable to access application context. "
+                "Please try again later.")
+        else:
+            await update.message.reply_text(
+                "Sorry, there was an error processing your registration. "
+                "Please try again with /register")
         return ConversationHandler.END
 
 
@@ -224,7 +251,7 @@ async def handle_job_search(update: Update,
                             context: ContextTypes.DEFAULT_TYPE):
     """Handle job search command with proper monitoring and error handling"""
     from app import create_app
-    app = create_app()
+    app = await create_app()
 
     try:
         radius = float(context.args[0]) if context.args else 15
@@ -293,7 +320,7 @@ async def handle_application(update: Update,
                              context: ContextTypes.DEFAULT_TYPE):
     """Handle job application with monitoring and error handling"""
     from app import create_app
-    app = create_app()
+    app = await create_app()
 
     try:
         if not context.args:
@@ -368,9 +395,37 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Centralized error handler for bot updates"""
-    logger.error(f"Update {update} caused error {context.error}")
-    if update and update.message:
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle unknown commands"""
+    try:
+        logger.info(f"Unknown command received: {update.message.text}")
         await update.message.reply_text(
-            "Sorry, something went wrong. Please try again later.")
+            "Sorry, I don't understand that command.\n"
+            "Available commands:\n"
+            "/start - Start using the bot\n"
+            "/register - Create your profile\n"
+            "/search - Find jobs near you\n"
+            "/apply <job_id> - Apply for a job\n"
+            "/cancel - Cancel current operation"
+        )
+    except Exception as e:
+        logger.error(f"Error in unknown_command handler: {e}")
+        await update.message.reply_text("An error occurred. Please try /start")
+
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle errors in bot updates"""
+    logger.error(f"Error handling update {update}: {context.error}")
+    try:
+        if update and update.effective_message:
+            await update.effective_message.reply_text(
+                "Sorry, something went wrong. Please try again later."
+            )
+    except Exception as e:
+        logger.error(f"Error in error handler: {e}")
+        
+# Export error_handler at module level
+__all__ = ['error_handler', 'start', 'register', 'handle_full_name',
+           'handle_phone_number', 'handle_location', 'handle_resume',
+           'handle_job_search', 'handle_application', 'cancel',
+           'unknown_command', 'FULL_NAME', 'PHONE_NUMBER', 'LOCATION', 'RESUME']
+

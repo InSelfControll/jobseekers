@@ -246,9 +246,35 @@ evtSource.onmessage = function(event) {
     updateDashboard(metrics);
 };
 
+// Enhanced SSE error handling
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY = 1000; // Start with 1 second
+
 evtSource.onerror = function(err) {
     console.error("EventSource failed:", err);
     updateStatus('error');
+    
+    // Attempt to reconnect with exponential backoff
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        const delay = RECONNECT_DELAY * Math.pow(2, reconnectAttempts);
+        console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
+        
+        setTimeout(() => {
+            reconnectAttempts++;
+            evtSource.close();
+            const newEvtSource = new EventSource("/admin/bot-metrics-stream");
+            Object.assign(evtSource, newEvtSource);
+        }, delay);
+    } else {
+        console.error("Max reconnection attempts reached");
+        alert("Connection lost. Please refresh the page.");
+    }
+};
+
+// Reset reconnection counter on successful connection
+evtSource.onopen = function() {
+    reconnectAttempts = 0;
 };
 });
 </script>
