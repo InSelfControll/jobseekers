@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0, 0%, 98%;
+    --foreground: 0, 0%, 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Existing variables */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    /* New, more specific variables */
+    --primary-50: 166, 100%, 97%;
+    --primary-100: 166, 83%, 94%;
+    --primary-200: 167, 83%, 87%;
+    --primary-300: 167, 80%, 79%;
+    --primary-400: 167, 79%, 70%;
+    --primary-500: 166, 79%, 58%;
+    --primary-600: 166, 80%, 46%;
+    --primary-700: 167, 80%, 41%;
+    --primary-800: 168, 80%, 36%;
+    --primary-900: 168, 91%, 31%;
+    --primary-1000: 168, 38%, 85%;
+
+    --gray-50: 0, 0%, 98%;
+    --gray-100: 0, 0%, 96%;
+    --gray-200: 0, 0%, 90%;
+    --gray-300: 0, 0%, 80%;
+    --gray-400: 0, 0%, 70%;
+    --gray-500: 0, 0%, 60%;
+    --gray-600: 0, 0%, 50%;
+    --gray-700: 0, 0%, 40%;
+    --gray-800: 0, 0%, 30%;
+    --gray-900: 0, 0%, 20%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --blue-400: 216, 64%, 54%;
+    --blue-500: 216, 79%, 53%;
+  }
+
+  .dark {
+    --background: 0, 0%, 0%;
+    --foreground: 0, 0%, 100%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Existing dark mode variables */
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    /* New, more specific dark mode variables */
+    --primary-50: 164, 60%, 90%;
+    --primary-100: 164, 65%, 82%;
+    --primary-200: 170, 70%, 75%;
+    --primary-300: 168, 65%, 65%;
+    --primary-400: 168, 75%, 58%;
+    --primary-500: 168, 100%, 45%;
+    --primary-600: 169, 100%, 40%;
+    --primary-700: 168, 95%, 35%;
+    --primary-800: 168, 100%, 22%;
+    --primary-900: 168, 100%, 17%;
+    --primary-1000: 172, 42%, 10%;
+
+    --gray-50: 0, 0%, 10%;
+    --gray-100: 0, 0%, 20%;
+    --gray-200: 0, 0%, 30%;
+    --gray-300: 0, 0%, 40%;
+    --gray-400: 0, 0%, 50%;
+    --gray-500: 0, 0%, 60%;
+    --gray-600: 0, 0%, 70%;
+    --gray-700: 0, 0%, 80%;
+    --gray-800: 0, 0%, 90%;
+    --gray-900: 0, 0%, 95%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 40.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+*::selection {
+  background-color: hsla(var(--primary-700), 10%) !important;
+  color: hsla(var(--primary-700), 100%) !important;
+}
+
+.text-link {
+  color: hsla(var(--blue-400), 0.8);
+}
+
+.text-link:hover {
+  color: hsla(var(--blue-400), 0.8);
+}
+
+.thin-bullets ul {
+  list-style-type: disc;
+}
+
+.thin-bullets ul li::marker {
+  font-weight: normal;
+  font-size: 0.75em;
+}
+
+:is([data-theme="light"], .light) .react-tweet-theme {
+  --tweet-bg-color: --foreground;
+  --tweet-bg-color-hover: hsla(var(--gray-200), 100%);
+}
+
+:is([data-theme="dark"], .dark) .react-tweet-theme {
+  --tweet-bg-color: --foreground;
+  --tweet-bg-color-hover: hsla(var(--gray-50), 100%);
+}
+
+.tweet-container_root__0rJLq {
+  max-width: 100% !important;
+}
+
+.custom-tweet-container {
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Prose */
+.prose code:not(pre code) {
+  @apply rounded-md border border-slate-300 bg-slate-200 px-1 py-0.5 before:content-none after:content-none dark:border-slate-700 dark:bg-slate-950;
+}
+
+@layer utilities {
+  .showcase-gradient-light {
+    background-image: linear-gradient(
+        to bottom,
+        rgba(250, 250, 250, 1) 0%,
+        rgba(250, 250, 250, 0) 50%
+      ),
+      radial-gradient(51% 51% at -11% 9%, #ff57dda1 1%, #ff57dd00 100%),
+      radial-gradient(51% 67% at 115% 96%, #ff57dda1 0%, #ff57dd00 100%),
+      radial-gradient(50% 66% at 50% 50%, #f2ff61a3 0%, #f2ff6100 100%),
+      radial-gradient(22% 117% at 2% 87%, #00f3ba00 20%, #00f3ba94 100%),
+      linear-gradient(0deg, #61cdffa3 0%, #61cdffa3 100%);
+  }
+
+  .dark .showcase-gradient-light {
+    background-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.1) 45%
+      ),
+      radial-gradient(51% 51% at -11% 9%, #ff57dda1 1%, #ff57dd00 100%),
+      radial-gradient(51% 67% at 115% 96%, #ff57dda1 0%, #ff57dd00 100%),
+      radial-gradient(50% 66% at 50% 50%, #f2ff61a3 0%, #f2ff6100 100%),
+      radial-gradient(22% 117% at 2% 87%, #00f3ba00 20%, #00f3ba94 100%),
+      linear-gradient(0deg, #61cdffa3 0%, #61cdffa3 100%);
+  }
+}
